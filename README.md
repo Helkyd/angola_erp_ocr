@@ -1,2 +1,3 @@
 # angola_erp_ocr
 OCR PDF or Image files...
+Will be used to scan PDF from Payments
