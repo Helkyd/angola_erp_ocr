@@ -48,6 +48,8 @@ mustValorOperacao = False
 mustIBANCreditado = False
 mustDataPagamento = False
 
+mustIBANDestinatario  = False
+
 numeroOperacao = ""
 valorDepositado = ""
 empresaOrigem0 = ""
@@ -248,10 +250,18 @@ def ocr_img(
 	#Casos ha em que fra+por nao mostra o numero da Operacao...
 	#Para este casos a lang muda pra FRA+ENG
 	print ('linguas ', linguas)
-	if filetype.is_image(input_file):
+	print ('input_file ',input_file)
+	if input_file and filetype.is_image(input_file):
 		#testing...
-		config_param = r'--oem 3 --psm 12 -l spa+fra+por' # fra+spa' # spa+fra' #fra+por' #fra+eng'
-		#frappe.throw(porra)
+		#config_param = r'--oem 3 --psm 12 -l spa+fra+por' # fra+spa' # spa+fra' #fra+por' #fra+eng'
+		#config_param = r'--oem 3 --psm 12 -l fra+por' # fra+spa' # spa+fra' #fra+por' #fra+eng'
+
+		config_param = r'--oem 3 --psm 12 -l fra+por' # GET All; menos IBAN e nomeDestinatario
+
+		if linguas:
+			config_param = r'--oem 3 --psm 4 -l eng' #GETs IBAN with error on AO0E instead of 06; the REST IS WRONG
+		print ('linguas ', linguas)
+		print ('linguas_set ', linguas_set)
 	elif linguas:
 		config_param = r'--oem 3 --psm 4 -l fra+por' # fra+spa' # spa+fra' #fra+por' #fra+eng'
 		#frappe.throw(porra)
@@ -846,7 +856,136 @@ def ocr_pdf(**kwargs):
 				# if 'search_str' in (args.keys()) else None
 				img=None, input_file=args['input_path'], search_str=search_str, highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, generate_output=generate_output, linguas_set=linguas_set,linguas=linguas
 			)
-			print (ggg)
+
+			#Check if following words are present ....
+			ispagamento = False	#Must have Multicaixa/MULEICOISO , automatico/outomárico
+
+			numeroTransacao = ""
+			contaOrigem = ""
+
+			ibanDestino = ""
+			valorTransferencia = ""
+			horaEMISSAO = ""
+			nomeDestinatario = ""
+			dataEMISSAO = ""
+
+			outraslinhas = False
+
+			global mustIBANDestinatario
+
+			for x in ggg:
+				if type(x) == list:
+					for a,b in enumerate(x):
+						if b != []:
+							if "MULEICOISO" in b:
+								#MULTICAIXA
+								ispagamento = True
+							elif "outomárico" in b:
+								ispagamento = True
+							elif "TRANSACÇÃO:" in b or "TRANSACGAD:" in b:
+								print ("Tem Transacao ", b[0])
+								print ("Tem Transacao1 ", b[1])
+								if b[1]:
+									numeroTransacao = b[1]
+							elif "CONTA" in b:
+								outraslinhas = True
+								print ('Fica atento tem conta...')
+							elif outraslinhas == True:
+								print ('sera a CONTA!!!! ', b)
+								outraslinhas = False
+								contaOrigem = b[0]
+							else:
+								#Verifica se tem numeros....
+								print ('Numero ', len(b))
+								print ('Numero b0 ', b[0])
+								if len(b) >1:
+									print ('Numero b1 ', b[1])
+								#Check se Data
+								#date_pattern = '^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])'
+								date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])'
+								print (re.match(date_pattern,b[0]))
+								if re.match(date_pattern,b[0]):
+									#Founda dataEMISSAO
+									dataEMISSAO = b[0]
+									if len(b) >1:
+										horaEMISSAO = b[1]
+
+								if len(b) >1:
+									print ('Numero1 ', b[1])
+									print ('Numeros so ',b[0].isnumeric())
+									print ('Numeros so ',b[1].isnumeric())
+									#caso sim pode ser o IBAN... ainda mal formado...
+									if b[1].isnumeric():
+										ibanDestino = b[1]
+
+									if "KZ" in b[1]:
+										#Valor transferencia
+										frappe.throw(porra)
+										valorTransferencia = b[0]
+
+									cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
+									print ('CASH ',re.match(cash_pattern,b[0]))
+									if re.match(cash_pattern,b[0]):
+										#CASH
+										if "." in b[0] and "," in b[0]:
+											valorTransferencia = b[0]
+
+								elif b[0].isnumeric():
+									#caso sim pode ser o IBAN... ainda mal formado...
+									ibanDestino = b[0]
+
+			#Resumo
+			print ('RESUMO OCR ++++++++++++')
+			print ('numeroTransacao', numeroTransacao )
+			print ('contaOrigem ', contaOrigem)
+			print ('dataEMMISSAO ', dataEMISSAO)
+			print ('ibanDestino ', ibanDestino)
+			print ('valorTransferencia ', valorTransferencia)
+			print ('horaEMISSAO ', horaEMISSAO)
+			print ('Nome Destinatario ', nomeDestinatario)
+
+			if not mustIBANDestinatario:
+				print ('ERRO Run again to ge IBAN...')
+				print ('ERRO Run again to ge IBAN...')
+				search_str = None
+				highlight_readable_text = 1
+				ggg = ocr_img(
+					# if 'search_str' in (args.keys()) else None
+					img=None, input_file=args['input_path'], search_str=search_str, highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, generate_output=generate_output, linguas_set=linguas_set,linguas=True
+				)
+				for x in ggg:
+					if type(x) == list:
+						for a,b in enumerate(x):
+							if b != []:
+								print ('SO QUERO IBAN....')
+								print ('Numero ', len(b))
+								print ('Numero b0 ', b[0])
+								if len(b) >1:
+									print ('Numero b1 ', b[1])
+									iban_pattern = r'^([A][O][O][E]|[A][O][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
+									print ('IBAN DEST. ',re.match(iban_pattern,b[1]))
+									if re.match(iban_pattern,b[1]):
+										#IBAN
+										ibanDestino = b[1].replace('AOOE','AO06')
+										mustIBANDestinatario = True
+										break
+				if not mustIBANDestinatario:
+					#ERROOO
+					print ('ERRO OCR... NAO consegui o IBAN Destinatorio...')
+				else:
+					print ('TUDO OK')
+					#Resumo
+					print ('RESUMO OCR ++++++++++++')
+					print ('numeroTransacao', numeroTransacao )
+					print ('contaOrigem ', contaOrigem)
+					print ('dataEMMISSAO ', dataEMISSAO)
+					print ('ibanDestino ', ibanDestino)
+					print ('valorTransferencia ', valorTransferencia)
+					print ('horaEMISSAO ', horaEMISSAO)
+					print ('Nome Destinatario ', nomeDestinatario)
+
+
+
 		else:
 			ocr_file(
 				input_file=args['input_path'], output_file=output_file, search_str=args['search_str'] if 'search_str' in (args.keys()) else None, pages=pages, highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, generate_output=generate_output, linguas_set=linguas_set,linguas=linguas

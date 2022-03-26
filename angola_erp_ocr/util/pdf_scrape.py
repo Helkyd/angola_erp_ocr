@@ -41,6 +41,7 @@ def pdfscrape(ficheiropdf = None, empresa = None):
     #Read a PDF from Multicaixa EXPRESS payment and extract
     #Date of Payment, Company paid to, IBAN paid to, Amount paid, Transaction number and IBAN from
 
+	'''
 	#we can get the number of pages using “pdf.doc.catalog[‘Pages’].resolve()[‘Count’]”. To extract data from a specific page, we can use “pdf.load(#)”.
 	pagecount = pdf.doc.catalog['Pages'].resolve()['Count']
 	master = pd.DataFrame()
@@ -59,7 +60,6 @@ def pdfscrape(ficheiropdf = None, empresa = None):
 	print ('STILL NEED TO INSTALL PDFQUERY and PANDAS')
 	print ('STILL NEED TO COPY/INSTALL pdfminer and pyquery')
 
-	'''
 	import pdfquery
 	import pandas as pd
     #Read a PDF from Multicaixa EXPRESS payment and extract
