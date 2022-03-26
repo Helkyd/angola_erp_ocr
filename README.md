@@ -1,2 +1,7 @@
-# angola_erp_ocr
-OCR PDF or Image files...
+## Angola Erp Ocr
+
+OCR PDF or Image Files...
+
+#### License
+
+MIT
