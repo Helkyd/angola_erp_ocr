@@ -1,8 +1,8 @@
 #Extracted from https://www.thepythoncode.com/article/extract-text-from-images-or-scanned-pdf-python
-#Last Modifed by HELKYD 26-03-2022
+#Last Modifed by HELKYD 27-03-2022
 
 from __future__ import unicode_literals
-
+import sys
 import frappe
 
 
@@ -49,6 +49,10 @@ mustIBANCreditado = False
 mustDataPagamento = False
 
 mustIBANDestinatario  = False
+mustValorTransferencia = False
+mustDataEmissao = False
+mustContaOrigem = False
+mustNomeDestinatario = False
 
 numeroOperacao = ""
 valorDepositado = ""
@@ -221,7 +225,7 @@ def calculate_ss_confidence(ss_details: dict):
 def ocr_img(
 		img: np.array, input_file: str, search_str: str,linguas_set: str,
 		highlight_readable_text: bool = False, action: str = 'Highlight',
-		show_comparison: bool = False, generate_output: bool = True, linguas: bool = False):
+		show_comparison: bool = False, generate_output: bool = True, linguas: int = 0, psmmode: int = 4):
 	"""Scans an image buffer or an image file.
 	Pre-processes the image.
 	Calls the Tesseract engine with pre-defined parameters.
@@ -256,15 +260,61 @@ def ocr_img(
 		#config_param = r'--oem 3 --psm 12 -l spa+fra+por' # fra+spa' # spa+fra' #fra+por' #fra+eng'
 		#config_param = r'--oem 3 --psm 12 -l fra+por' # fra+spa' # spa+fra' #fra+por' #fra+eng'
 
-		config_param = r'--oem 3 --psm 12 -l fra+por' # GET All; menos IBAN e nomeDestinatario
+		#DEFAULT
+		#config_param = r'--oem 3 --psm 12 -l fra+por' # GET All; menos IBAN e nomeDestinatario
+		print ('psmmode ',psmmode)
+		#config_param = r'--oem 3 --psm ' + str(psmmode) + ' -l ' + linguas_set # GET All; menos IBAN e nomeDestinatario
+		#config_param = r'--dpi 80 --oem 3 --psm ' + str(psmmode) + ' -l ' + linguas_set # GET All; menos IBAN e nomeDestinatario
 
-		if linguas:
-			config_param = r'--oem 3 --psm 4 -l eng' #GETs IBAN with error on AO0E instead of 06; the REST IS WRONG
+		#config_param = r'--dpi 200 --oem 3 --psm ' + str(psmmode) + ' -l ' + linguas_set # Trying to get contaOrigem
+		#config_param = r'--dpi 120 --oem 3 --psm ' + str(psmmode) + ' -l ' + linguas_set # Trying to get contaOrigem
+		#config_param = r'--dpi 80 --oem 3 --psm ' + str(psmmode) + ' -l ' + linguas_set # Trying to get contaOrigem
+		config_param = r'--dpi 73 --oem 3 --psm ' + str(psmmode) + ' -l ' + linguas_set # Trying to get contaOrigem
+
+		#config_param = r'--oem 3 --psm ' + str(psmmode) + ' -l ' + linguas_set #Gets WRONG contaOrigem
+		print ('DPI 73')
+
+		if linguas == 2:	#1
+			#old
+			#config_param = r'--oem 3 --psm ' + str(psmmode) + ' -l eng' #GETs IBAN with error on AO0E instead of 06; the REST IS WRONG
+
+			#DEFAULT; to be done once when starts...
+			config_param = r'--oem 3 --psm 12 -l fra+por' # GET All; menos IBAN e nomeDestinatario
+
+			#config_param = r'--oem 3 --psm 4 -l por' # GETS CONTA ORIGEM 012543850430001 => can remove 0125 if not other match found
+			#config_param = r'--dpi 300 --oem 3 --psm 12 -l fra+por' # GET All; menos IBAN e nomeDestinatario
+			print ('DEFAULT; to be done once when starts...')
+		elif linguas == 3:	#2
+			#old
+			#config_param = r'--oem 3 --psm ' + str(psmmode) + ' -l eng' #GETs IBAN with error on AO0E instead of 06; the REST IS WRONG
+
+			#DEFAULT; to be done once when starts...
+			#config_param = r'--oem 3 --psm 4 -l eng' #
+			config_param = r'--oem 3 --psm 6 -l eng' #GETs IBAN correct relacing 1st and 2nd numbers..
+
+			#config_param = r'--dpi 150 --oem 3 --psm 4 -l eng' #
+			#config_param = r'--dpi 200 --oem 3 --psm 4 -l eng' #
+			print ('4+ENG; to be done aftre DEFAULT when starts...')
+		elif linguas == 1:	#3
+			#Rus lang only to get CONTA ORIGEM
+			config_param = r'--oem 3 --psm 6 -l rus' # GETS CONTA ORIGEM OK OK OK
+			print ('Rus lang only to get CONTA ORIGEM')
+
+
+
+		#REMOVED FOR NOW...
+		'''
+		elif linguas_set != None:
+			#config_param = r'--oem 3 --psm 12 -l ' + linguas_set #fra+eng+spa' # fra+spa' # spa+fra' #fra+por' #fra+eng'
+			config_param = r'--oem 3 --psm ' + str(psmmode) + ' -l ' + linguas_set #fra+eng+spa' # fra+spa' # spa+fra' #fra+por' #fra+eng'
+		'''
 		print ('linguas ', linguas)
 		print ('linguas_set ', linguas_set)
+		print ('psmmode ', psmmode)
+
 	elif linguas:
 		config_param = r'--oem 3 --psm 4 -l fra+por' # fra+spa' # spa+fra' #fra+por' #fra+eng'
-		#frappe.throw(porra)
+		frappe.throw(porra)
 	else:
 		#old
 		print ('linguas_set ', linguas_set)
@@ -402,6 +452,7 @@ def ocr_file(**kwargs):
 	#Added Language aqui para poder add or reduce....
 	linguas = kwargs.get('linguas')
 	linguas_set = kwargs.get('linguas_set')
+	psmmode = kwargs.get('psmmode')
 
 	# Opens the input PDF file
 	pdfIn = fitz.open(input_file)
@@ -454,6 +505,7 @@ def ocr_file(**kwargs):
 					  , generate_output=generate_output  # False
 					  , linguas=linguas #False
 					  , linguas_set=linguas_set
+					  , psmmode=psmmode #default 4
 					  )
 		# Collects the statistics of the page
 		dfResult = dfResult.append({'page': (pg+1), 'page_readable_items': pg_readable_items,
@@ -821,6 +873,45 @@ def ang_read_csv_content(fcontent, ignore_encoding=False):
 @frappe.whitelist(allow_guest=True)
 def ocr_pdf(**kwargs):
 	# Parsing command line arguments entered by user
+	'''
+	TODO:
+		Parse as 1st loop each Lang as: por, eng, fra, spa, lat
+		Parse as 2st loop each 2Langs as:
+			por+eng, por+fra, por+spa, por+lat
+			por+eng, eng+fra, eng+spa, eng+lat
+			fra+eng, fra+por, fra+spa, fra+lat
+			spa+eng, spa+por, spa+fra, spa+lat
+			lat+eng, lat+por, lat+fra, lat+spa
+		Parse as 3rd loop each 3Langs as:
+			por+eng+fra, por+fra, por+spa, por+lat
+			por+eng, eng+fra, eng+spa, eng+lat
+			fra+eng, fra+por, fra+spa, fra+lat
+			spa+eng, spa+por, spa+fra, spa+lat
+			lat+eng, lat+por, lat+fra, lat+spa
+
+
+		Parse as loop --psm as: 4, 6, 12
+			loop Langs for each psm
+
+		NOW Read from wordlist_langs.txt
+
+	'''
+
+	#Get wordlist_langs file
+	psmMode = [4,6,12] # ['4','6','12']
+	filedata = None
+	linguasinstaladas = []
+	with open (frappe.get_app_path('angola_erp_ocr')+'/util/wordlist_langs.txt') as csvfile:
+		#filedata = csvfile.read()
+		readCSV = csv.reader(csvfile, delimiter = "\n" )	#delimiter default , but added ;
+		print ('Reading words list lang....')
+		print ('Assuming following langs are installed: por, eng, fra, spa, lat')
+		for row in readCSV:
+			if row:
+				linguasinstaladas.append(row[0])
+	#print ('linguas instaladas')
+	#print (linguasinstaladas)
+
 	print ('args ',kwargs)
 
 	args = kwargs
@@ -833,7 +924,8 @@ def ocr_pdf(**kwargs):
 		show_comparison = 0
 		generate_output = 1
 		linguas_set = None
-		linguas = False
+		linguas = 0
+		psmmode = 4	#Default
 
 	#Private from another Site...
 	if '/private/files/' in args['input_path']:
@@ -846,16 +938,18 @@ def ocr_pdf(**kwargs):
 
 	# If File Path
 	elif os.path.isfile(args['input_path']):
+		#Nova versao... loops psmmode and langs...
+		#if filetype.is_image(args['input_path']):
+
+		#LOG file
+		text_file = open('/tmp/ocr1.txt', "w")
+
 		# Process a file
 		print ('Site FILE')
 		if filetype.is_image(args['input_path']):
 			print ('File is IMAGEM')
 			search_str = None
-			highlight_readable_text = 1
-			ggg = ocr_img(
-				# if 'search_str' in (args.keys()) else None
-				img=None, input_file=args['input_path'], search_str=search_str, highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, generate_output=generate_output, linguas_set=linguas_set,linguas=linguas
-			)
+			highlight_readable_text = 0
 
 			#Check if following words are present ....
 			ispagamento = False	#Must have Multicaixa/MULEICOISO , automatico/outomárico
@@ -872,6 +966,313 @@ def ocr_pdf(**kwargs):
 			outraslinhas = False
 
 			global mustIBANDestinatario
+			global mustValorTransferencia
+			global mustDataEmissao
+			global mustContaOrigem
+			global mustNomeDestinatario
+
+			paratudo = False
+
+			linguas = 1	#Primeir loop only
+
+			contasOrigem = []	#Temp for getting all scanned accounts... after will see which one is the ONE...
+			ibansDestino = []
+
+			#loop psm first
+
+			for psmm in psmMode:
+				print ('psm++++ ',psmm)
+				if psmm != 4:
+					#remove 1 and 2 from linguasinstaladas
+					linguasinstaladas.remove('1')
+					linguasinstaladas.remove('2')
+					linguasinstaladas.remove('3')
+					print ('REMOVED 1 and 2')
+
+				for linginst in linguasinstaladas:
+					#Skip linginst 1 and 2 from the wordlist_langs
+					print ('linguasint ', linginst)
+					ggg = ocr_img(
+						# if 'search_str' in (args.keys()) else None
+						img=None, input_file=args['input_path'], search_str=search_str, highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, \
+						generate_output=generate_output, linguas_set=linginst,linguas=linguas, psmmode=psmm
+					)
+
+					print ('Resultado ocr_img')
+
+
+					for x in ggg:
+						if type(x) == list:
+							for a,b in enumerate(x):
+								if b != []:
+									if "MULEICOISO" in b:
+										#MULTICAIXA
+										ispagamento = True
+									elif "outomárico" in b:
+										ispagamento = True
+									elif "TRANSACÇÃO:" in b or "TRANSACGAD:" in b:
+										print ("Tem Transacao ", b[0])
+										print ("Tem Transacao1 ", b[1])
+										if b[1]:
+											numeroTransacao = b[1]
+									elif "CONTA" in b:
+										outraslinhas = True
+										print ('Fica atento tem conta...')
+									elif outraslinhas == True:
+										print ('sera a CONTA!!!! ', b)
+										outraslinhas = False
+										contaOrigem = b[0]
+										mustContaOrigem = True
+										contasOrigem.append(b[0])
+										#frappe.throw(porra)
+									else:
+										#Verifica se tem numeros....
+										print ('Numero ', len(b))
+										print ('Numero b0 ', b[0])
+										if len(b) >1:
+											text_file.write("Dados B " + str(b) + "\n" )
+											text_file.write("Dados B1 " + str(b[1]) + "\n" )
+											text_file.write("======= \n" )
+
+											print ('Numero b1 ', b[1])
+											print ('b ', b)
+											if len(b) >=5:
+												print ('CODIGOS....')
+												if "AO" in b[0] or "A006" in b[0] or "A00" in b[0] or "AO0G" in b[0]:
+													#Junta para testar iban_pattern
+													tmpiban = ""
+													for i,t1 in enumerate(b):
+														#replace also 9006 if on the index 1
+														if i == 1:
+															tmpiban = str(tmpiban) + str(t1).replace('9006','0000')
+														else:
+															tmpiban = str(tmpiban) + str(t1)
+													print ('tmpiban ',tmpiban)
+													#Fix for replacing... ;
+													tmpiban1 = tmpiban.replace("A006",'AO06').replace("AO0G",'AO06')
+													tmpiban = tmpiban1
+													iban_pattern = r'^([A][O][O][E]|[A][O][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
+													print ('IBAN DEST. ',re.match(iban_pattern,tmpiban))
+													if re.match(iban_pattern,tmpiban):
+														#IBAN
+														ibanDestino = tmpiban
+														mustIBANDestinatario = False
+														ibansDestino.append(tmpiban)
+												elif "TEOR" in b[0] or "TEO" in b[0] or "LOGICO" in b[1]:
+													print ('NOME Destinatario AQUUUUUU')
+													if "TEOR" in b[0] or "TEO" in b[0]:
+														#frappe.throw(poora)
+														print ('Destino ', b[0])
+
+										#Check se Data
+										#date_pattern = '^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])'
+										date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])'
+										print (re.match(date_pattern,b[0]))
+										if re.match(date_pattern,b[0]):
+											#Founda dataEMISSAO
+											if not dataEMISSAO:
+												dataEMISSAO = b[0]
+												if len(b) >1:
+													horaEMISSAO = b[1]
+												mustDataEmissao = True
+
+										if len(b) >1:
+											print ('LEN ', len(b))
+											print ('Numero1 ', b[1])
+											print ('Numeros so ',b[0].isnumeric())
+											print ('Numeros so ',b[1].isnumeric())
+
+
+											iban_pattern = r'^([A][O][O][E]|[A][O][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
+											print ('IBAN DEST. ',re.match(iban_pattern,b[1]))
+											if re.match(iban_pattern,b[1]):
+												#IBAN
+												if not ibanDestino:
+													ibanDestino = b[1].replace('AOOE','AO06')
+													mustIBANDestinatario = False
+													print ('IBAN DEST. ')
+													print ('IBAN DEST. ')
+													print ('IBAN DEST. ')
+													print (ibanDestino)
+												ibansDestino.append(ibanDestino)
+													#frappe.throw(porra)
+
+											#caso sim pode ser o IBAN... ainda mal formado...
+											if b[1].isnumeric():
+												print ('IBAN DESTINO....')
+												if len(b[1]) > 10 and not ibanDestino and contaOrigem != "":
+													if b[1] != contaOrigem:
+														#Check for numbers iguais  012543850430001
+														if b[1][8:len(b[1])] != contaOrigem[8:len(contaOrigem)]:
+															ibanDestino = b[1]
+															mustIBANDestinatario = True
+															print ('IBAN DESTINO....')
+															print ('IBAN DESTINO....')
+															print ('IBAN DESTINO....')
+															print (contaOrigem)
+															ibansDestino.append(ibanDestino)
+															frappe.throw(porra)
+												if len(b[1]) > 10 and ibanDestino and contaOrigem != "":
+													if b[1] != contaOrigem:
+														#Check for numbers iguais  012543850430001
+														if b[1][8:len(b[1])] != contaOrigem[8:len(contaOrigem)]:
+															ibanDestino = b[1]
+															mustIBANDestinatario = False
+															print ('IBAN DESTINO....')
+															print ('IBAN DESTINO....')
+															print ('IBAN DESTINO....')
+															print (contaOrigem)
+															ibansDestino.append(ibanDestino)
+															frappe.throw(porra)
+
+											#If no contaOrigem
+											if "01884" in b[1] or "1884" in b[1] or "850430001" in b[0] or "850430001" in b[1]:
+												print ('CONTA origem CORRECTA ', b)
+												#Only the 4 first digits not OK on the first loop...
+												#if at the end nothing is correct will use the 1 number removing the 4 first digits ex.012543850430001 => 43850430001
+												contasOrigem.append(b[1])
+												#if "NAL" in b[0] and len(b[1]) == 15:
+												#	print ('ESTE SIM CORRECTO ', b[1])
+												#	frappe.throw(porra)
+											elif len(b)>2:
+												if "50430001" in b[2]:
+													contasOrigem.append(b[2])
+
+											elif "01884" in b[0] or "1884" in b[0] or "850430001" in b[0] or "850430001" in b[0] or "50430001" in b[0]:
+												frappe.throw(porra)
+
+											if not contaOrigem:
+												if len(b[1]) <= 15 and len(b[1]) > 5 and b[1].isnumeric():	#Number of digits for contaOrigem
+													contaOrigem = b[1]
+													mustContaOrigem = True
+													print ('TEM contaOrigem..')
+
+											if "KZ" in b[1]:
+												#Valor transferencia
+												frappe.throw(porra)
+												valorTransferencia = b[0]
+
+											cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
+											print ('CASH ',re.match(cash_pattern,b[0]))
+											if re.match(cash_pattern,b[0]):
+												#CASH
+												if "." in b[0] and "," in b[0] and not valorTransferencia:
+													if b[0].endswith(','):
+														print ('b[1] pode ter os CENTIMOS... ', b[1])
+														valorTransferencia = b[0] + b[1]
+													else:
+														valorTransferencia = b[0]
+													mustValorTransferencia = True
+
+										elif b[0].isnumeric() and not ibanDestino:
+											#caso sim pode ser o IBAN... ainda mal formado...
+											if len(b[0]) > 10:
+												ibanDestino = b[0]
+												ibansDestino.append(ibanDestino)
+
+							#Resumo
+							print ('++++++++++++++++++++++')
+							print ('RESUMO PSM: ', psmm)
+							print ('RESUMO Ling: ', linginst)
+							print ('numeroTransacao', numeroTransacao )
+							print ('contaOrigem ', contaOrigem)
+							print ('dataEMMISSAO ', dataEMISSAO)
+							print ('ibanDestino ', ibanDestino)
+							print ('valorTransferencia ', valorTransferencia)
+							print ('horaEMISSAO ', horaEMISSAO)
+							print ('Nome Destinatario ', nomeDestinatario)
+							print ('VARIAS CONTAS DE ORIGEM ******')
+							print ('contasOrigem ',contasOrigem)
+							print ('ibansDestino ',ibansDestino)
+							print ('++++++++++++++++++++++')
+
+							#paratudo = True
+							if linguas == 1:
+								linguas = 2
+							elif linguas == 2:
+								linguas = 3
+							elif linguas == 3:
+								linguas = 0	#To continue with normal languages...
+
+
+						if mustIBANDestinatario and mustValorTransferencia and mustDataEmissao and mustContaOrigem: # and mustNomeDestinatario:
+							#termina tudo..
+							print ('TERMINA O LOOP.....')
+							#Resumo
+							print ('RESUMO OCR ++++++++++++')
+							print ('numeroTransacao', numeroTransacao )
+							print ('contaOrigem ', contaOrigem)
+							print ('dataEMMISSAO ', dataEMISSAO)
+							print ('ibanDestino ', ibanDestino)
+							print ('valorTransferencia ', valorTransferencia)
+							print ('horaEMISSAO ', horaEMISSAO)
+							print ('Nome Destinatario ', nomeDestinatario)
+							print ('VARIAS CONTAS DE ORIGEM ******')
+							print ('contasOrigem ',contasOrigem)
+							print ('ibansDestino ',ibansDestino)
+
+							paratudo = True
+							text_file.close()
+							#frappe.throw(porra)
+
+						print ('paratudo ',paratudo)
+						if paratudo:
+							break
+
+					print ('paratudo000 ',paratudo)
+					if paratudo:
+						break
+
+				print ('paratudo1111 ',paratudo)
+				if paratudo:
+					break
+
+		#Resumo
+		print ('RESUMO OCR ++++++++++++')
+		print ('numeroTransacao', numeroTransacao )
+		print ('contaOrigem ', contaOrigem)
+		print ('dataEMMISSAO ', dataEMISSAO)
+		print ('ibanDestino ', ibanDestino)
+		print ('valorTransferencia ', valorTransferencia)
+		print ('horaEMISSAO ', horaEMISSAO)
+		print ('Nome Destinatario ', nomeDestinatario)
+		print ('VARIAS CONTAS DE ORIGEM ******')
+		print ('contasOrigem ',contasOrigem)
+		print ('ibansDestino ',ibansDestino)
+
+
+		text_file.close()
+		return
+
+		#======== OLD
+		# Process a file
+		print ('Site FILE')
+		if filetype.is_image(args['input_path']):
+			print ('File is IMAGEM')
+			search_str = None
+			highlight_readable_text = 0
+			ggg = ocr_img(
+				# if 'search_str' in (args.keys()) else None
+				img=None, input_file=args['input_path'], search_str=search_str, highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, \
+				generate_output=generate_output, linguas_set="por",linguas=linguas, psmmode=psmmode
+			)
+
+			#Check if following words are present ....
+			ispagamento = False	#Must have Multicaixa/MULEICOISO , automatico/outomárico
+
+			numeroTransacao = ""
+			contaOrigem = ""
+
+			ibanDestino = ""
+			valorTransferencia = ""
+			horaEMISSAO = ""
+			nomeDestinatario = ""
+			dataEMISSAO = ""
+
+			outraslinhas = False
+
+			#global mustIBANDestinatario	REMOVED FOR NOW
+			#global mustValorTransferencia	REMOVED FOR NOW
 
 			for x in ggg:
 				if type(x) == list:
@@ -894,6 +1295,7 @@ def ocr_pdf(**kwargs):
 								print ('sera a CONTA!!!! ', b)
 								outraslinhas = False
 								contaOrigem = b[0]
+								frappe.throw(porra)
 							else:
 								#Verifica se tem numeros....
 								print ('Numero ', len(b))
@@ -916,7 +1318,10 @@ def ocr_pdf(**kwargs):
 									print ('Numeros so ',b[1].isnumeric())
 									#caso sim pode ser o IBAN... ainda mal formado...
 									if b[1].isnumeric():
-										ibanDestino = b[1]
+										print ('IBAN DESTINO....')
+										if len(b[1]) > 10:
+											ibanDestino = b[1]
+											mustIBANDestinatario = True
 
 									if "KZ" in b[1]:
 										#Valor transferencia
@@ -929,6 +1334,7 @@ def ocr_pdf(**kwargs):
 										#CASH
 										if "." in b[0] and "," in b[0]:
 											valorTransferencia = b[0]
+											mustValorTransferencia = True
 
 								elif b[0].isnumeric():
 									#caso sim pode ser o IBAN... ainda mal formado...
@@ -944,11 +1350,11 @@ def ocr_pdf(**kwargs):
 			print ('horaEMISSAO ', horaEMISSAO)
 			print ('Nome Destinatario ', nomeDestinatario)
 
-			if not mustIBANDestinatario:
-				print ('ERRO Run again to ge IBAN...')
+			if not mustIBANDestinatario and not mustValorTransferencia:
+				print ('ERRO Run again to ge IBAN, valorTransferencia...')
 				print ('ERRO Run again to ge IBAN...')
 				search_str = None
-				highlight_readable_text = 1
+				highlight_readable_text = 0
 				ggg = ocr_img(
 					# if 'search_str' in (args.keys()) else None
 					img=None, input_file=args['input_path'], search_str=search_str, highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, generate_output=generate_output, linguas_set=linguas_set,linguas=True
@@ -968,21 +1374,94 @@ def ocr_pdf(**kwargs):
 										#IBAN
 										ibanDestino = b[1].replace('AOOE','AO06')
 										mustIBANDestinatario = True
-										break
-				if not mustIBANDestinatario:
-					#ERROOO
-					print ('ERRO OCR... NAO consegui o IBAN Destinatorio...')
-				else:
-					print ('TUDO OK')
-					#Resumo
-					print ('RESUMO OCR ++++++++++++')
-					print ('numeroTransacao', numeroTransacao )
-					print ('contaOrigem ', contaOrigem)
-					print ('dataEMMISSAO ', dataEMISSAO)
-					print ('ibanDestino ', ibanDestino)
-					print ('valorTransferencia ', valorTransferencia)
-					print ('horaEMISSAO ', horaEMISSAO)
-					print ('Nome Destinatario ', nomeDestinatario)
+									#If no contaOrigem
+									if not contaOrigem:
+										if len(b[1]) <= 15 and len(b[1]) > 5:	#Number of digits for contaOrigem
+											contaOrigem = b[1]
+											print ('TEM contaOrigem..')
+									if not valorTransferencia:
+										print ('PODE SER O VALOR transferencia')
+										cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
+										print ('CASH ',re.match(cash_pattern,b[0]))
+										if re.match(cash_pattern,b[0]):
+											#CASH
+											if "." in b[0] and "," in b[0]:
+												print ('Numeros ',b[1].isnumeric())
+												if b[0].endswith(','):
+													print ('b[1] pode ter os CENTIMOS... ', b[1])
+													valorTransferencia = b[0] + b[1]
+												else:
+													valorTransferencia = b[0]
+												mustValorTransferencia = True
+			#TRY AGAIN ... other Language
+			if not mustIBANDestinatario:
+				print ('Run again to ge IBAN!!!! 3...')
+				print ('Run again to ge IBAN!!!! 3...')
+				search_str = None
+				highlight_readable_text = 0
+				linguas_set = 'spa+fra+por'
+				ggg = ocr_img(
+					# if 'search_str' in (args.keys()) else None
+					img=None, input_file=args['input_path'], search_str=search_str, highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, generate_output=generate_output, linguas_set=linguas_set,linguas=False
+				)
+				for x in ggg:
+					if type(x) == list:
+						for a,b in enumerate(x):
+							if b != []:
+								print ('SO QUERO IBAN....')
+								print ('Numero ', len(b))
+								print ('Numero b0 ', b[0])
+								if len(b) >1:
+									print ('Numero b1 ', b[1])
+									iban_pattern = r'^([A][O][O][E]|[A][O][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
+									print ('IBAN DEST. ',re.match(iban_pattern,b[1]))
+									if re.match(iban_pattern,b[1]):
+										#IBAN
+										ibanDestino = b[1].replace('AOOE','AO06')
+										mustIBANDestinatario = True
+									#If no contaOrigem
+									if not contaOrigem:
+										if len(b[1]) <= 15 and len(b[1]) > 5:	#Number of digits for contaOrigem
+											contaOrigem = b[1]
+											print ('TEM contaOrigem..')
+									if not valorTransferencia:
+										print ('PODE SER O VALOR transferencia')
+										cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
+										print ('CASH ',re.match(cash_pattern,b[0]))
+										if re.match(cash_pattern,b[0]):
+											#CASH
+											if "." in b[0] and "," in b[0]:
+												print ('Numeros ',b[1].isnumeric())
+												if b[0].endswith(','):
+													print ('b[1] pode ter os CENTIMOS... ', b[1])
+													valorTransferencia = b[0] + b[1]
+												else:
+													valorTransferencia = b[0]
+												mustValorTransferencia = True
+
+
+			if not mustIBANDestinatario:
+				#ERROOO
+				print ('ERRO OCR... NAO consegui o IBAN Destinatorio...')
+				print ('numeroTransacao', numeroTransacao )
+				print ('contaOrigem ', contaOrigem)
+				print ('dataEMMISSAO ', dataEMISSAO)
+				print ('ibanDestino ', ibanDestino)
+				print ('valorTransferencia ', valorTransferencia)
+				print ('horaEMISSAO ', horaEMISSAO)
+				print ('Nome Destinatario ', nomeDestinatario)
+
+			else:
+				print ('TUDO OK')
+				#Resumo
+				print ('RESUMO OCR ++++++++++++')
+				print ('numeroTransacao', numeroTransacao )
+				print ('contaOrigem ', contaOrigem)
+				print ('dataEMMISSAO ', dataEMISSAO)
+				print ('ibanDestino ', ibanDestino)
+				print ('valorTransferencia ', valorTransferencia)
+				print ('horaEMISSAO ', horaEMISSAO)
+				print ('Nome Destinatario ', nomeDestinatario)
 
 
 
