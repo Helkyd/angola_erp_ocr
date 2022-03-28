@@ -1056,7 +1056,7 @@ def ocr_pdf(**kwargs):
 													if re.match(iban_pattern,tmpiban):
 														#IBAN
 														ibanDestino = tmpiban
-														mustIBANDestinatario = False
+														mustIBANDestinatario = True
 														ibansDestino.append(tmpiban)
 												elif "TEOR" in b[0] or "TEO" in b[0] or "LOGICO" in b[1]:
 													print ('NOME Destinatario AQUUUUUU')
@@ -1089,7 +1089,7 @@ def ocr_pdf(**kwargs):
 												#IBAN
 												if not ibanDestino:
 													ibanDestino = b[1].replace('AOOE','AO06')
-													mustIBANDestinatario = False
+													mustIBANDestinatario = True
 													print ('IBAN DEST. ')
 													print ('IBAN DEST. ')
 													print ('IBAN DEST. ')
@@ -1117,7 +1117,7 @@ def ocr_pdf(**kwargs):
 														#Check for numbers iguais  012543850430001
 														if b[1][8:len(b[1])] != contaOrigem[8:len(contaOrigem)]:
 															ibanDestino = b[1]
-															mustIBANDestinatario = False
+															mustIBANDestinatario = True
 															print ('IBAN DESTINO....')
 															print ('IBAN DESTINO....')
 															print ('IBAN DESTINO....')
