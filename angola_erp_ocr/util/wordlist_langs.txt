@@ -7,12 +7,11 @@ por
 eng
 fra
 spa
-lat
+rus
 
 por+eng
 por+fra
 por+spa
-por+lat
 
 eng+fra
 eng+spa

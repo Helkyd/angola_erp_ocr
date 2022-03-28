@@ -316,8 +316,9 @@ def ocr_img(
 		#Usado para PDFs
 		#config_param = r'--oem 3 --psm 4 -l fra+por' # fra+spa' # spa+fra' #fra+por' #fra+eng'
 		#frappe.throw(porra)
-		#config_param = r'--oem 3 --psm 6 -l eng' #MIGHT BE USED AS lingua 4 to get IBAN ORIGEM
-		config_param = r'--oem 3 --psm 4 -l eng' #GETs IBAN correct relacing 1st and 2nd numbers..
+		#config_param = r'--oem 3 --psm 4 -l eng' #MIGHT BE USED AS lingua 4 to get IBAN ORIGEM
+		#config_param = r'--oem 3 --psm 4 -l eng' #GETs IBAN correct relacing 1st and 2nd numbers..
+		config_param = r'--oem 3 --psm 4 -l fra+por'
 
 	elif linguas == 2:
 		config_param = r'--oem 3 --psm 12 -l fra+por'
@@ -330,7 +331,9 @@ def ocr_img(
 		print (linguas_set != None)
 
 		if linguas_set != None:
-			config_param = r'--oem 3 --psm 4 -l ' + linguas_set #fra+eng+spa' # fra+spa' # spa+fra' #fra+por' #fra+eng'
+			#config_param = r'--oem 3 --psm 4 -l ' + linguas_set #fra+eng+spa' # fra+spa' # spa+fra' #fra+por' #fra+eng'
+			config_param = r'--oem 3 --psm ' + str(psmmode) + ' -l ' + linguas_set #fra+eng+spa' # fra+spa' # spa+fra' #fra+por' #fra+eng'
+
 			#frappe.throw(porra)
 		else:
 			config_param = r'--oem 3 --psm 4 -l spa+fra+por' # fra+spa' # spa+fra' #fra+por' #fra+eng'
@@ -1509,7 +1512,7 @@ def ocr_pdf(**kwargs):
 			nomeDestinatario = ""
 			dataEMISSAO = ""
 
-			contaDebitada = ""
+			ibanContaDebitada = ""
 			descricaoPagamento = ""
 			DataHoraPagamento = ""
 
@@ -1557,12 +1560,19 @@ def ocr_pdf(**kwargs):
 			#loop psm first
 			for psmm in psmMode:
 				print ('psm++++ ',psmm)
+
 				if psmm != 4:
 					#remove 1 and 2 from linguasinstaladas
 					linguasinstaladas.remove('1')
 					linguasinstaladas.remove('2')
 					linguasinstaladas.remove('3')
 					print ('REMOVED 1 and 2')
+
+				#Para TUDO
+				if paratudo:
+					print ('********************')
+					print ('PARA TUDO')
+					break
 
 				for linginst in linguasinstaladas:
 					#Skip linginst 1 and 2 from the wordlist_langs
@@ -1607,13 +1617,34 @@ def ocr_pdf(**kwargs):
 							if len(val.split('"')) > 1:
 								print ('aspas1 ', val.split('"')[1])
 
+							'''
+							#Operacao
+							if "153389642" in val:
+								print (val)
+								print (val.split('"'))
+								print (len(val.split('"')))
+								print (len(val.split('"')) > 1)
+								print (val.split('"')[0])
+								vv = val.split('"')[0]
+								print (len(vv.split(',')) > 2)
+								print (vv.split(',')[1])
+								print (vv.split(',')[2])
+								print (vv.split(',')[2][vv.split(',')[2].rfind(' '):])
+								vv0 = vv.split(',')[2][vv.split(',')[2].rfind(' '):]
+								if len(vv.strip()) >5 and len(vv.strip()) < 12 and vv.strip().isnumeric():
+									print ('OKKKKK')
+								if len(vv0.strip()) >5 and len(vv0.strip()) < 12 and vv0.strip().isnumeric():
+									print ('BBBBBBBBB')
 
+								frappe.throw(porra)
+							'''
 							if len(val.split('"')) > 1:
 
 								print ('outro tratamento....')
 								print ('aspas1 ', val.split('"')[1])
 								val0 = val.split('"')[1]
 								print ('outralinha ',outralinha)
+
 								if outralinha:
 									print ('lda ',val0.upper().find('LDA'))
 									print ('limitada', val0.upper().find('LIMITADA'))
@@ -1677,12 +1708,41 @@ def ocr_pdf(**kwargs):
 								#if "671942530121" in dados:
 								#	frappe.throw(porra)
 
+
+								#Operacao
+								vv1 = val.split('"')[0]
+								if len(vv1.split(',')) > 2:
+									print (val)
+									print (val.split('"'))
+									print (len(val.split('"')))
+									print (len(val.split('"')) > 1)
+									print (val.split('"')[0])
+									#vv1 = val.split('"')[0]
+									print (len(vv1.split(',')) > 2)
+									print (vv1.split(',')[1])
+									print (vv1.split(',')[2])
+									print (vv1.split(',')[2][vv1.split(',')[2].rfind(' '):])
+									vv00 = vv1.split(',')[2][vv1.split(',')[2].rfind(' '):]
+									if len(vv00.strip()) >5 and len(vv00.strip()) < 12 and vv00.strip().isnumeric():
+										#oper = vv1.split(',')[2][vv1.split(',')[2].rfind(' '):].strip()
+										oper = vv00.strip()
+										if not numeroOperacao:
+											numeroOperacao = vv00.strip()
+											mustNumOperacao = True
+
+										print ('oper ', oper)
+									#if len(vv00.strip()) >5:
+									#	frappe.throw(porra)
+
 								if dados.strip().isnumeric():
 									#OPERACAO
 									print (dados)
-									numeroOperacao = dados.strip()
-									mustNumOperacao = True
-									#frappe.throw(porra)
+									print ('size ', len(dados.strip()))
+									if len(dados.strip()) >5 and len(dados.strip()) < 12 and dados.strip().isnumeric():
+										#less than 15 is not Account...
+										numeroOperacao = dados.strip()
+										mustNumOperacao = True
+										frappe.throw(porra)
 
 								elif dados == "Nome":
 									#Nome da origemEMPRESA
@@ -1692,18 +1752,53 @@ def ocr_pdf(**kwargs):
 									#numeros....
 									if mustNumOperacao == False and numeroOperacao == "":
 										#IBAN
-										if val.split(',')[2].find('IBAN') != -1:
+										if val.split(',')[2].find('Conta/IBAN') != -1:
+											if not contaCreditada:
+												#contaCreditada = val.split(',')[2].replace('IBAN','').replace(' ','')
+												print (val.split(',')[2])
+												if "Conta/IBAN Creditado" in val.split(',')[2]:
+													cc0 = val.split(',')[2].strip()
+													print ('find ',cc0.find('Conta/IBAN Creditado'))
+													print ('find ',cc0.rfind(' '))
+													cc = cc0[cc0.rfind(' '):]
+													print ('cc ', cc)
+													contaCreditada = cc
+													mustIBANCreditado = True
+
+												print ('contaCreditada ',contaCreditada)
+												#frappe.throw(porra)
+
+										elif val.split(',')[2].find('IBAN') != -1:
 											#pode ser contaOrigem
 											if not ibanOrigem:
 												ibanOrigem = val.split(',')[2].replace('IBAN','').replace(' ','')
+												frappe.throw(porra)
 											print ('TEM contaOrigem ', ibanOrigem)
 										else:
-											if dados[dados.rfind(' '):] != -1:
-												numeroOperacao = dados[dados.rfind(' '):].strip()
+											if val.split(',')[2].find('Conta') != -1:
+												tmp = val[val.find(' '):]
+												print ('tmp ',tmp)
+												print (len(tmp.replace(' ','').strip()))
+												if "Debitada" in tmp:
+													print (tmp.strip().find(' '))
+													tmp1 = tmp.strip()[tmp.strip().find(' '):]
+													print ('tmp1 ',tmp1)
+													tmp = tmp1
+												if  len(tmp.replace(' ','').strip()) >= 14:
+													#Conta ORIGEM
+													contaOrigem = tmp.replace(' ','').strip()
+
+											elif dados[dados.rfind(' '):] != -1:
+												if len(dados.strip()) >5 and len(dados.strip()) < 12 and dados.strip().isnumeric():
+													numeroOperacao = dados[dados.rfind(' '):].strip()
+													mustNumOperacao = True
+													print ('TEM operacao0 ', numeroOperacao)
+													frappe.throw(porra)
 											else:
 												numeroOperacao = dados.strip()
-											mustNumOperacao = True
-											print ('TEM operacao0 ', numeroOperacao)
+												mustNumOperacao = True
+												print ('TEM operacao0 ', numeroOperacao)
+												frappe.throw(porra)
 									else:
 										if dados.find('IBAN') != -1 and not ibanOrigem:
 											print ('TEM IBAN escrito')
@@ -1712,9 +1807,18 @@ def ocr_pdf(**kwargs):
 											print ('IBAN ORIGIMA.....')
 
 											print (dados[dados.rfind(' '):].replace('IBAN','').strip())
-											print (dados.replace('IBAN','').replace(' ','').strip())
-											ibanOrigem = dados.replace('IBAN','').replace(' ','').strip()
-											#frappe.throw(porra)
+											#Might be an internal transfer account
+											#BFA len is
+											validarconta = dados[dados.rfind(' '):].replace('IBAN','').strip()
+											if len(validarconta) == 14 or len(validarconta) == 15:
+												#Conta a receber CASH
+												if not contaCreditada:
+													contaCreditada = validarconta
+													mustIBANCreditado = True
+											else:
+												print (dados.replace('IBAN','').replace(' ','').strip())
+												ibanOrigem = dados.replace('IBAN','').replace(' ','').strip()
+												frappe.throw(porra)
 
 								elif dados[dados.rfind(' ',0, dados.rfind(' ')):].strip().find(':') != -1 and not DataHoraPagamento:
 
@@ -1724,6 +1828,7 @@ def ocr_pdf(**kwargs):
 									dd = dados[dados.rfind(' ',0, dados.rfind(' ')):].strip()
 									if dd.find('/') and dd.find(':'):
 										 DataHoraPagamento = dd
+										 mustDataPagamento = True
 								elif "Pagamento" in dados or "Mensalidade" in dados:
 									#check if Pagamento ou Mensalidade on descricao....
 									duaslinhasdepois = False
@@ -1738,24 +1843,78 @@ def ocr_pdf(**kwargs):
 								if "N.º da Operação" in dados:
 									#Get last info... numbers
 									print ('operacao ', dados[dados.rfind(" "):].strip())
-									numeroOperacao = dados[dados.rfind(" "):].strip()
-									mustNumOperacao = True
+									print ('operacao ', val)
+									if not numeroOperacao:
+										if len(dados.strip()) >5 and len(dados.strip()) < 12 and dados.strip().isnumeric():
+											#less than 15 is not Account...
+											numeroOperacao = dados.strip()
+											mustNumOperacao = True
+											frappe.throw(porra)
+										'''
+										numeroOperacao = dados[dados.rfind(" "):].strip()
+										mustNumOperacao = True
+										frappe.throw(porra)
+										'''
+
 								elif "Conta Debitada" in dados:
 									#Get last info... numbers
 									print ('debitada ', dados[dados.rfind(" "):].strip())
-									contaDebitada = dados[dados.rfind(" "):].strip()
+									ibanContaDebitada = dados[dados.rfind(" "):].strip()
 								elif "Conta/IBAN Creditado" in dados or "Conta/IBAN " in dados or "IBAN " in dados:
+									#Aqui conta da EMPRESA que vai receber o CASH
 									if not contaCreditada and ibanOrigem:
 										print ('pode ser IBAN Beneficiario')
 										print ('creditada ', dados[dados.rfind(" "):].strip())
-										contaCreditada = dados[dados.rfind(' '):].replace('IBAN','').strip()
+										print ('val02 ',val)
+										print ('val2 ',val.split(',')[2])
+										print (dados.replace('A006','AO06'))
+										print ('ibanOrigem ',ibanOrigem)
+										print ('compara')
+										print (dados.replace('A006','AO06').replace(' ','').replace('IBAN','').replace('-',''))
+										print (ibanOrigem.replace('A006','AO06').strip())
+										'''
+										print ('ver o sinal -')
+										print (dados[0:0])
+										print (dados[0:1])
+										print (dados[0:1] == "I")
+										print (dados[0:1].isnumeric())
+										print (ord(dados[0:1]) == 8212)
+										'''
+										dados0 = dados.replace('A006','AO06').replace('IBAN ','')
+										print ('dados0 ', dados0)
+										dados00 = dados0.replace(' ','')
+										print ('dados00 ', dados00)
+
+										'''
+										if dados[0:1] == "I":
+											#Remove the I
+											print ('AUI ver o sinal -')
+											dados1 = dados.replace('A006','AO06').replace(' ','').replace('IBAN','').strip()[1:len(dados)] #dados[1:len(dados)]
+											print (dados1)
+											if dados1.startswith('O'):
+												dados = 'A' + dados1
+											dados = dados1
+										'''
+
+										if dados00.strip() != ibanOrigem.replace('A006','AO06').strip():
+											contaCreditada = dados00
+											print ('contaCreditada correct111111 ',contaCreditada)
+											frappe.throw(porra)
+										'''
+										if dados.replace('A006','AO06').replace(' ','').replace('IBAN','').strip() != ibanOrigem.replace('A006','AO06').strip():
+											contaCreditada = dados.replace('A006','AO06').replace(' ','').replace('IBAN','').strip()
+											print ('contaCreditada correct ',contaCreditada)
+											frappe.throw(porra)
+										'''
 
 									else:
 										#Get last info... numbers
+										print ('contaCreditada ',contaCreditada)
 										print ('creditada ', dados[dados.rfind(" "):].strip())
-										contaCreditada = dados[dados.rfind(" "):].strip()
-									mustIBANCreditado = True
-
+										if not contaCreditada:
+											contaCreditada = dados[dados.rfind(" "):].strip()
+											mustIBANCreditado = True
+											frappe.throw(porra)
 
 								elif linhaseguinte:
 									if dados.find('foi realizada') != -1:
@@ -1808,13 +1967,15 @@ def ocr_pdf(**kwargs):
 					print ('RESUMOS =======')
 					print ('data ', Datapagamento)
 					print ('Operacao ', numeroOperacao)
-					print ('Debitado ', contaDebitada)
+					print ('Conta Debitada ',contaOrigem)
+					print ('IBANDebitado/ORIGEM ', ibanContaDebitada)
 					print ('Creditada ', contaCreditada)
 					print ('Valor ', valorDepositado)
 					print ('Descricao ', descricaoPagamento)
 
 					print ('ibanOrigem ',ibanOrigem)
 					print ('DataHoraPagamento ', DataHoraPagamento)
+					print ('==================  ')
 
 					#frappe.throw(porra)
 
@@ -1827,17 +1988,32 @@ def ocr_pdf(**kwargs):
 							print ('Empresa ', empresaOrigem1)
 						print ('data ', Datapagamento)
 						print ('Operacao ', numeroOperacao)
-						print ('Debitado ', contaDebitada)
+						print ('Conta Debitada ',contaOrigem)
+						print ('IBANDebitado/ORIGEM ', ibanContaDebitada)
+
 						print ('Creditada ', contaCreditada)
 						print ('Valor ', valorDepositado)
 						print ('Descricao ', descricaoPagamento)
 
+						paratudo = True
+
 					else:
-						print ('Repetir OCR... sem uma lingua...')
+						print (' ')
+						print ('+++++++++++++++++++++++++++++++++')
+						print ('DEVE Repetir OCR... sem uma lingua...')
 						print ('numeroOperacao ',mustNumOperacao)
 						print ('ibancredito ',mustIBANCreditado)
 						print ('valor ',mustValorOperacao)
 						print ('Data ',mustDataPagamento)
+
+						print ('data ', Datapagamento)
+						print ('Operacao ', numeroOperacao)
+						print ('Conta Debitada ',contaOrigem)
+						print ('IBANDebitado/ORIGEM ', ibanContaDebitada)
+
+						print ('Creditada ', contaCreditada)
+						print ('Valor ', valorDepositado)
+						print ('Descricao ', descricaoPagamento)
 
 
 					    #Keep values .. in case on the new search not found and clean ....
@@ -1860,11 +2036,15 @@ def ocr_pdf(**kwargs):
 
 						if linguas == 1:
 							linguas = 2
+							#frappe.throw(porra)
 						elif linguas == 2:
 							linguas = 3
-
+							#frappe.throw(porra)
 						elif linguas == 3:
 							linguas = 0	#Off to do other settings...
+					#Para TUDO
+					if paratudo:
+						break
 
 
 
