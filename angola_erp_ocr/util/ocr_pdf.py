@@ -1154,6 +1154,9 @@ def ocr_pdf(**kwargs):
 
 	args = kwargs
 	print (args)
+	#if args['img']:
+	#	print ('TEM conteudo do ficheiro....')
+
 	if args['input_path']:
 		output_file = None
 		pages = 0
@@ -2055,3 +2058,38 @@ def ocr_pdf(**kwargs):
 		ocr_folder(
 			input_folder=args['input_path'], recursive=args['recursive'], search_str=args['search_str'] if 'search_str' in (args.keys()) else None, pages=args['pages'], action=args['action'], generate_output=args['generate_output']
 		)
+
+@frappe.whitelist(allow_guest=True)
+def lerPdf_ocr(ficheiro):
+
+	# importing required modules
+	import PyPDF2
+
+	if ficheiro:
+		# creating a pdf file object
+		pdfFileObj = open(ficheiro, 'rb')
+
+		# creating a pdf reader object
+		pdfReader = PyPDF2.PdfFileReader(pdfFileObj)
+
+		#Chama o OCR
+		#{'input_path': '/home/frappe/pdfs/Modelo6_Teorl.pdf'}
+		file = {'input_path':ficheiro}
+		print ('file ', ficheiro)
+
+		ocr_pdf(input_path=pdfReader)
+		#ocr_pdf(img=pdfReader)
+
+		return
+
+		# printing number of pages in pdf file
+		print(pdfReader.numPages)
+
+		# creating a page object
+		pageObj = pdfReader.getPage(0)
+
+		# extracting text from page
+		print(pageObj.extractText())
+
+		# closing the pdf file object
+		pdfFileObj.close()
