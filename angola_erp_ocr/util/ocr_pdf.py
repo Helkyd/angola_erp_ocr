@@ -1,5 +1,5 @@
 #Extracted from https://www.thepythoncode.com/article/extract-text-from-images-or-scanned-pdf-python
-#Last Modifed by HELKYD 27-03-2022
+#Last Modifed by HELKYD 29-03-2022
 
 from __future__ import unicode_literals
 import sys
@@ -1173,7 +1173,30 @@ def ocr_pdf(**kwargs):
 		#Get Secrest from site_config...
 		print ('Get Secrest from site_config...')
 		print ('Site externo')
+		frappe.throw(porra)
 		conn = FrappeClient(args['input_path'][0:args['input_path'].find('/private/')])
+
+		#t.get_list("Communication", fields=["reference_name","subject","has_attachment","sent_or_received"] , filters={"reference_name": "INT-FT 22/54"})
+		#possible fields
+		#reference_name will have Invoice or Quotation
+		#subject Might have title like Factura de Venda ou Factura Proforma
+		#has_attachment 1 means has
+		#sent_or_received for this case should be received (from Customers)
+		#name to get later the attachment based on this
+
+		#File
+		#attached_to_doctype here is Communication
+		#attached_to_name this will be the NAME from the Communation Doctype.
+		#file_name the name of the attachment
+		#file_url where is located... for sure under private
+
+		#Need to set suport with access to File doctype. if need to read attachments
+		#t.get_list("File", fields=["name","file_name","attached_to_name","file_url"] , filters={"attached_to_name": "f98fbd608d"})
+		#to get url location of the file and the file name of course
+
+		#Now send the file to tools for pdf_scrape or OCR
+
+
 
 
 
@@ -2065,9 +2088,45 @@ def lerPdf_ocr(ficheiro):
 	# importing required modules
 	import PyPDF2
 
+	return "{'resultado':'FILE DATA RECEIVED'}"
+	
 	if ficheiro:
+		print ('FILE DATA RECEIVED....')
+		print (ficheiro)
+		return ('FILE DATA RECEIVED....')
 		# creating a pdf file object
 		pdfFileObj = open(ficheiro, 'rb')
+		with open (ficheiro,'rb') as pdfFileObj:
+			b = pdfFileObj.read()
+
+		print ('JA TENHO OS DADOS......')
+		from PyPDF2 import PdfFileReader, PdfFileWriter
+		p = BytesIO(b)
+		ppdf = PdfFileReader(p)
+
+		output_file = None
+		pages = 0
+		highlight_readable_text = 0
+		action = "Highlight"
+		show_comparison = 0
+		generate_output = 1
+		linguas_set = None
+		linguas = 0
+		psmmode = 4	#Default
+		search_str = None
+		highlight_readable_text = 0
+
+		ggg = ocr_img(
+			# if 'search_str' in (args.keys()) else None
+			img=ppdf, input_file=None, search_str=search_str, highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, \
+			generate_output=generate_output, linguas_set=linguas_set,linguas=linguas, psmmode=psmmode
+		)
+
+		#ocr_pdf(input_path=b)
+		print (ggg)
+
+		return
+
 
 		# creating a pdf reader object
 		pdfReader = PyPDF2.PdfFileReader(pdfFileObj)
