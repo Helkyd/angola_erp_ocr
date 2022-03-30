@@ -300,6 +300,10 @@ def ocr_img(
 			config_param = r'--oem 3 --psm 6 -l rus' # GETS CONTA ORIGEM OK OK OK
 			print ('Rus lang only to get CONTA ORIGEM')
 
+		elif linguas == 4:
+			#Can be used on Images..
+			config_param = r'--oem 3 --psm 1 -l eng'
+
 
 
 		#REMOVED FOR NOW...
@@ -318,12 +322,18 @@ def ocr_img(
 		#frappe.throw(porra)
 		#config_param = r'--oem 3 --psm 4 -l eng' #MIGHT BE USED AS lingua 4 to get IBAN ORIGEM
 		#config_param = r'--oem 3 --psm 4 -l eng' #GETs IBAN correct relacing 1st and 2nd numbers..
+
 		config_param = r'--oem 3 --psm 4 -l fra+por'
+
+
 
 	elif linguas == 2:
 		config_param = r'--oem 3 --psm 12 -l fra+por'
 	elif linguas == 3:
 		config_param = r'--oem 3 --psm 6 -l eng' #GETs IBAN correct relacing 1st and 2nd numbers..
+	elif linguas == 4:
+		#Can be used on Images..
+		config_param = r'--oem 3 --psm 1 -l eng'
 
 	else:
 		#old
@@ -1136,7 +1146,7 @@ def ocr_pdf(**kwargs):
 	'''
 
 	#Get wordlist_langs file
-	psmMode = [4,6,12] # ['4','6','12']
+	psmMode = [1,4,6,12] # ['4','6','12']
 	filedata = None
 	linguasinstaladas = []
 	with open (frappe.get_app_path('angola_erp_ocr')+'/util/wordlist_langs.txt') as csvfile:
@@ -1147,6 +1157,10 @@ def ocr_pdf(**kwargs):
 		for row in readCSV:
 			if row:
 				linguasinstaladas.append(row[0])
+				#For NOW will STOP load at eng+fra+lat+spa+por
+				if row[0] == "eng+fra+lat+spa+por":
+					break
+
 	#print ('linguas instaladas')
 	#print (linguasinstaladas)
 
@@ -1267,6 +1281,7 @@ def ocr_pdf(**kwargs):
 					linguasinstaladas.remove('1')
 					linguasinstaladas.remove('2')
 					linguasinstaladas.remove('3')
+					linguasinstaladas.remove('4')
 					print ('REMOVED 1 and 2')
 
 				for linginst in linguasinstaladas:
@@ -1480,6 +1495,8 @@ def ocr_pdf(**kwargs):
 							elif linguas == 2:
 								linguas = 3
 							elif linguas == 3:
+								linguas = 4
+							elif linguas == 4:
 								linguas = 0	#To continue with normal languages...
 
 
@@ -1589,6 +1606,8 @@ def ocr_pdf(**kwargs):
 
 			global contaCreditada
 
+			isModelo6IVA = False
+
 			paratudo = False
 
 			linguas = 1
@@ -1596,6 +1615,11 @@ def ocr_pdf(**kwargs):
 			contasOrigem = []	#Temp for getting all scanned accounts... after will see which one is the ONE...
 			ibansDestino = []
 
+			#Temporary to show at the end
+			datasubmissaoTEMP = []
+			regimeIvaTranTEMP = []
+			declaracaoTEMP = []
+			nifempresaTEMP = []
 
 			rows = []
 			podeler = False	#read data
@@ -1619,6 +1643,7 @@ def ocr_pdf(**kwargs):
 					#remove 1 and 2 from linguasinstaladas
 					linguasinstaladas.remove('1')
 					linguasinstaladas.remove('2')
+					linguasinstaladas.remove('3')
 					linguasinstaladas.remove('3')
 					print ('REMOVED 1 and 2')
 
@@ -1670,6 +1695,33 @@ def ocr_pdf(**kwargs):
 							print ('aspas ', val.split('"'))
 							if len(val.split('"')) > 1:
 								print ('aspas1 ', val.split('"')[1])
+
+							print (len(val.split('"')))
+							if "Modelo 6 de IVA" in val:
+								#Means is MODELO6
+								isModelo6IVA = True
+								print (len(val.split('"')))
+							elif "DATA SUEMISSAO" in val or "DATA SUBMISSAO" in val:
+								print ('DATA SUBMISSAO')
+								print (len(val.split(',')))
+								print (val.split(',')[2])
+								datatmp = val.split(',')[2][val.split(',')[2].rfind(' '):]
+								datasubmissaoTEMP.append(datatmp.strip())
+								print (datasubmissaoTEMP)
+							elif "3- Regime Transtóro" in val or "3- Regime Trans" in val or "3- Regime Transtóro. E PRE ERC" in val:
+								print ('REGIME TRANSITORIO')
+								regimeIvaTranTEMP.append(val.split(',')[2])
+								print (regimeIvaTranTEMP)
+							elif "REG19007009587X" in val:
+								#REG19007009587X with len 16
+								print (val.split(',')[2])
+								declaracaoTEMP.append(val.split(',')[2].strip())
+								print ('declaracaoTEMP ',declaracaoTEMP)
+							elif "5417537802" in val or "537802" in val:
+								#NIF EMPRESA...
+								print ('NIF EMPRESA...')
+								nifempresaTEMP.append(val.split(',')[2].strip())
+								frappe.throw(porra)
 
 							'''
 							#Operacao
@@ -1749,273 +1801,273 @@ def ocr_pdf(**kwargs):
 									#print (val0.strip().startswith('-'))
 									print ('descricaoPagamento ',descricaoPagamento)
 
+							elif len(val.split('"')) > 2:
+								if val.split(',')[2]:
+									#Has data...
+									print ("val", val.split(',')[2])
+									dados = val.split(',')[2]
+									print ('val origialn ', val)
 
-							elif val.split(',')[2]:
-								#Has data...
-								print ("val", val.split(',')[2])
-								dados = val.split(',')[2]
-								print ('val origialn ', val)
-
-								#Check if numbers... might be numeroOperacao
-								print ('VER IBAN')
-								print (dados[dados.rfind(' '):].replace('IBAN','').strip())
-								#if "671942530121" in dados:
-								#	frappe.throw(porra)
-
-
-								#Operacao
-								vv1 = val.split('"')[0]
-								if len(vv1.split(',')) > 2:
-									print (val)
-									print (val.split('"'))
-									print (len(val.split('"')))
-									print (len(val.split('"')) > 1)
-									print (val.split('"')[0])
-									#vv1 = val.split('"')[0]
-									print (len(vv1.split(',')) > 2)
-									print (vv1.split(',')[1])
-									print (vv1.split(',')[2])
-									print (vv1.split(',')[2][vv1.split(',')[2].rfind(' '):])
-									vv00 = vv1.split(',')[2][vv1.split(',')[2].rfind(' '):]
-									if len(vv00.strip()) >5 and len(vv00.strip()) < 12 and vv00.strip().isnumeric():
-										#oper = vv1.split(',')[2][vv1.split(',')[2].rfind(' '):].strip()
-										oper = vv00.strip()
-										if not numeroOperacao:
-											numeroOperacao = vv00.strip()
-											mustNumOperacao = True
-
-										print ('oper ', oper)
-									#if len(vv00.strip()) >5:
+									#Check if numbers... might be numeroOperacao
+									print ('VER IBAN')
+									print (dados[dados.rfind(' '):].replace('IBAN','').strip())
+									#if "671942530121" in dados:
 									#	frappe.throw(porra)
 
-								if dados.strip().isnumeric():
-									#OPERACAO
-									print (dados)
-									print ('size ', len(dados.strip()))
-									if len(dados.strip()) >5 and len(dados.strip()) < 12 and dados.strip().isnumeric():
-										#less than 15 is not Account...
-										numeroOperacao = dados.strip()
-										mustNumOperacao = True
-										frappe.throw(porra)
 
-								elif dados == "Nome":
-									#Nome da origemEMPRESA
-									trelinhasdepois = True
-
-								elif dados[dados.rfind(' '):].strip().isnumeric():
-									#numeros....
-									if mustNumOperacao == False and numeroOperacao == "":
-										#IBAN
-										if val.split(',')[2].find('Conta/IBAN') != -1:
-											if not contaCreditada:
-												#contaCreditada = val.split(',')[2].replace('IBAN','').replace(' ','')
-												print (val.split(',')[2])
-												if "Conta/IBAN Creditado" in val.split(',')[2]:
-													cc0 = val.split(',')[2].strip()
-													print ('find ',cc0.find('Conta/IBAN Creditado'))
-													print ('find ',cc0.rfind(' '))
-													cc = cc0[cc0.rfind(' '):]
-													print ('cc ', cc)
-													contaCreditada = cc
-													mustIBANCreditado = True
-
-												print ('contaCreditada ',contaCreditada)
-												#frappe.throw(porra)
-
-										elif val.split(',')[2].find('IBAN') != -1:
-											#pode ser contaOrigem
-											if not ibanOrigem:
-												ibanOrigem = val.split(',')[2].replace('IBAN','').replace(' ','')
-												frappe.throw(porra)
-											print ('TEM contaOrigem ', ibanOrigem)
-										else:
-											if val.split(',')[2].find('Conta') != -1:
-												tmp = val[val.find(' '):]
-												print ('tmp ',tmp)
-												print (len(tmp.replace(' ','').strip()))
-												if "Debitada" in tmp:
-													print (tmp.strip().find(' '))
-													tmp1 = tmp.strip()[tmp.strip().find(' '):]
-													print ('tmp1 ',tmp1)
-													tmp = tmp1
-												if  len(tmp.replace(' ','').strip()) >= 14:
-													#Conta ORIGEM
-													contaOrigem = tmp.replace(' ','').strip()
-
-											elif dados[dados.rfind(' '):] != -1:
-												if len(dados.strip()) >5 and len(dados.strip()) < 12 and dados.strip().isnumeric():
-													numeroOperacao = dados[dados.rfind(' '):].strip()
-													mustNumOperacao = True
-													print ('TEM operacao0 ', numeroOperacao)
-													frappe.throw(porra)
-											else:
-												numeroOperacao = dados.strip()
+									#Operacao
+									vv1 = val.split('"')[0]
+									if len(vv1.split(',')) > 2:
+										print (val)
+										print (val.split('"'))
+										print (len(val.split('"')))
+										print (len(val.split('"')) > 1)
+										print (val.split('"')[0])
+										#vv1 = val.split('"')[0]
+										print (len(vv1.split(',')) > 2)
+										print (vv1.split(',')[1])
+										print (vv1.split(',')[2])
+										print (vv1.split(',')[2][vv1.split(',')[2].rfind(' '):])
+										vv00 = vv1.split(',')[2][vv1.split(',')[2].rfind(' '):]
+										if len(vv00.strip()) >5 and len(vv00.strip()) < 12 and vv00.strip().isnumeric():
+											#oper = vv1.split(',')[2][vv1.split(',')[2].rfind(' '):].strip()
+											oper = vv00.strip()
+											if not numeroOperacao:
+												numeroOperacao = vv00.strip()
 												mustNumOperacao = True
-												print ('TEM operacao0 ', numeroOperacao)
-												frappe.throw(porra)
-									else:
-										if dados.find('IBAN') != -1 and not ibanOrigem:
-											print ('TEM IBAN escrito')
-											#if dados[dados.rfind(' '):].replace('IBAN','').strip().isnumeric():
-											#vrifica se tem IBAN antes
-											print ('IBAN ORIGIMA.....')
 
-											print (dados[dados.rfind(' '):].replace('IBAN','').strip())
-											#Might be an internal transfer account
-											#BFA len is
-											validarconta = dados[dados.rfind(' '):].replace('IBAN','').strip()
-											if len(validarconta) == 14 or len(validarconta) == 15:
-												#Conta a receber CASH
-												if not contaCreditada:
-													contaCreditada = validarconta
-													mustIBANCreditado = True
-											else:
-												print (dados.replace('IBAN','').replace(' ','').strip())
-												ibanOrigem = dados.replace('IBAN','').replace(' ','').strip()
-												frappe.throw(porra)
+											print ('oper ', oper)
+										#if len(vv00.strip()) >5:
+										#	frappe.throw(porra)
 
-								elif dados[dados.rfind(' ',0, dados.rfind(' ')):].strip().find(':') != -1 and not DataHoraPagamento:
-
-									print ('PODE TER DATA E HORA PAGMAENTO....')
-									print (dados[dados.rfind(' ',0, dados.rfind(' ')):])
-									#check for / and :
-									dd = dados[dados.rfind(' ',0, dados.rfind(' ')):].strip()
-									if dd.find('/') and dd.find(':'):
-										 DataHoraPagamento = dd
-										 mustDataPagamento = True
-								elif "Pagamento" in dados or "Mensalidade" in dados:
-									#check if Pagamento ou Mensalidade on descricao....
-									duaslinhasdepois = False
-									descricaoPagamento = dados.strip().replace('-','') if dados.strip().startswith('-') else dados.strip()
-									#print (val0.strip().startswith('-'))
-									print ('TEM descricaoPagamento ',descricaoPagamento)
-
-
-								if "COMPROVATIVO" in dados.upper():
-									#Proxima line tera a Data e Empresa que fez transferencia
-									linhaseguinte = True
-								if "N.º da Operação" in dados:
-									#Get last info... numbers
-									print ('operacao ', dados[dados.rfind(" "):].strip())
-									print ('operacao ', val)
-									if not numeroOperacao:
+									if dados.strip().isnumeric():
+										#OPERACAO
+										print (dados)
+										print ('size ', len(dados.strip()))
 										if len(dados.strip()) >5 and len(dados.strip()) < 12 and dados.strip().isnumeric():
 											#less than 15 is not Account...
 											numeroOperacao = dados.strip()
 											mustNumOperacao = True
 											frappe.throw(porra)
-										'''
-										numeroOperacao = dados[dados.rfind(" "):].strip()
-										mustNumOperacao = True
-										frappe.throw(porra)
-										'''
 
-								elif "Conta Debitada" in dados:
-									#Get last info... numbers
-									print ('debitada ', dados[dados.rfind(" "):].strip())
-									ibanContaDebitada = dados[dados.rfind(" "):].strip()
-								elif "Conta/IBAN Creditado" in dados or "Conta/IBAN " in dados or "IBAN " in dados:
-									#Aqui conta da EMPRESA que vai receber o CASH
-									if not contaCreditada and ibanOrigem:
-										print ('pode ser IBAN Beneficiario')
-										print ('creditada ', dados[dados.rfind(" "):].strip())
-										print ('val02 ',val)
-										print ('val2 ',val.split(',')[2])
-										print (dados.replace('A006','AO06'))
-										print ('ibanOrigem ',ibanOrigem)
-										print ('compara')
-										print (dados.replace('A006','AO06').replace(' ','').replace('IBAN','').replace('-',''))
-										print (ibanOrigem.replace('A006','AO06').strip())
-										'''
-										print ('ver o sinal -')
-										print (dados[0:0])
-										print (dados[0:1])
-										print (dados[0:1] == "I")
-										print (dados[0:1].isnumeric())
-										print (ord(dados[0:1]) == 8212)
-										'''
-										dados0 = dados.replace('A006','AO06').replace('IBAN ','')
-										print ('dados0 ', dados0)
-										dados00 = dados0.replace(' ','')
-										print ('dados00 ', dados00)
+									elif dados == "Nome":
+										#Nome da origemEMPRESA
+										trelinhasdepois = True
 
-										'''
-										if dados[0:1] == "I":
-											#Remove the I
-											print ('AUI ver o sinal -')
-											dados1 = dados.replace('A006','AO06').replace(' ','').replace('IBAN','').strip()[1:len(dados)] #dados[1:len(dados)]
-											print (dados1)
-											if dados1.startswith('O'):
-												dados = 'A' + dados1
-											dados = dados1
-										'''
+									elif dados[dados.rfind(' '):].strip().isnumeric():
+										#numeros....
+										if mustNumOperacao == False and numeroOperacao == "":
+											#IBAN
+											if val.split(',')[2].find('Conta/IBAN') != -1:
+												if not contaCreditada:
+													#contaCreditada = val.split(',')[2].replace('IBAN','').replace(' ','')
+													print (val.split(',')[2])
+													if "Conta/IBAN Creditado" in val.split(',')[2]:
+														cc0 = val.split(',')[2].strip()
+														print ('find ',cc0.find('Conta/IBAN Creditado'))
+														print ('find ',cc0.rfind(' '))
+														cc = cc0[cc0.rfind(' '):]
+														print ('cc ', cc)
+														contaCreditada = cc
+														mustIBANCreditado = True
 
-										if dados00.strip() != ibanOrigem.replace('A006','AO06').strip():
-											contaCreditada = dados00
-											print ('contaCreditada correct111111 ',contaCreditada)
-											frappe.throw(porra)
-										'''
-										if dados.replace('A006','AO06').replace(' ','').replace('IBAN','').strip() != ibanOrigem.replace('A006','AO06').strip():
-											contaCreditada = dados.replace('A006','AO06').replace(' ','').replace('IBAN','').strip()
-											print ('contaCreditada correct ',contaCreditada)
-											frappe.throw(porra)
-										'''
+													print ('contaCreditada ',contaCreditada)
+													#frappe.throw(porra)
 
-									else:
+											elif val.split(',')[2].find('IBAN') != -1:
+												#pode ser contaOrigem
+												if not ibanOrigem:
+													ibanOrigem = val.split(',')[2].replace('IBAN','').replace(' ','')
+													frappe.throw(porra)
+												print ('TEM contaOrigem ', ibanOrigem)
+											else:
+												if val.split(',')[2].find('Conta') != -1:
+													tmp = val[val.find(' '):]
+													print ('tmp ',tmp)
+													print (len(tmp.replace(' ','').strip()))
+													if "Debitada" in tmp:
+														print (tmp.strip().find(' '))
+														tmp1 = tmp.strip()[tmp.strip().find(' '):]
+														print ('tmp1 ',tmp1)
+														tmp = tmp1
+													if  len(tmp.replace(' ','').strip()) >= 14:
+														#Conta ORIGEM
+														contaOrigem = tmp.replace(' ','').strip()
+
+												elif dados[dados.rfind(' '):] != -1:
+													if len(dados.strip()) >5 and len(dados.strip()) < 12 and dados.strip().isnumeric():
+														numeroOperacao = dados[dados.rfind(' '):].strip()
+														mustNumOperacao = True
+														print ('TEM operacao0 ', numeroOperacao)
+														frappe.throw(porra)
+												else:
+													numeroOperacao = dados.strip()
+													mustNumOperacao = True
+													print ('TEM operacao0 ', numeroOperacao)
+													frappe.throw(porra)
+										else:
+											if dados.find('IBAN') != -1 and not ibanOrigem:
+												print ('TEM IBAN escrito')
+												#if dados[dados.rfind(' '):].replace('IBAN','').strip().isnumeric():
+												#vrifica se tem IBAN antes
+												print ('IBAN ORIGIMA.....')
+
+												print (dados[dados.rfind(' '):].replace('IBAN','').strip())
+												#Might be an internal transfer account
+												#BFA len is
+												validarconta = dados[dados.rfind(' '):].replace('IBAN','').strip()
+												if len(validarconta) == 14 or len(validarconta) == 15:
+													#Conta a receber CASH
+													if not contaCreditada:
+														contaCreditada = validarconta
+														mustIBANCreditado = True
+												else:
+													print (dados.replace('IBAN','').replace(' ','').strip())
+													ibanOrigem = dados.replace('IBAN','').replace(' ','').strip()
+													frappe.throw(porra)
+
+									elif dados[dados.rfind(' ',0, dados.rfind(' ')):].strip().find(':') != -1 and not DataHoraPagamento:
+
+										print ('PODE TER DATA E HORA PAGMAENTO....')
+										print (dados[dados.rfind(' ',0, dados.rfind(' ')):])
+										#check for / and :
+										dd = dados[dados.rfind(' ',0, dados.rfind(' ')):].strip()
+										if dd.find('/') and dd.find(':'):
+											 DataHoraPagamento = dd
+											 mustDataPagamento = True
+									elif "Pagamento" in dados or "Mensalidade" in dados:
+										#check if Pagamento ou Mensalidade on descricao....
+										duaslinhasdepois = False
+										descricaoPagamento = dados.strip().replace('-','') if dados.strip().startswith('-') else dados.strip()
+										#print (val0.strip().startswith('-'))
+										print ('TEM descricaoPagamento ',descricaoPagamento)
+
+
+									if "COMPROVATIVO" in dados.upper():
+										#Proxima line tera a Data e Empresa que fez transferencia
+										linhaseguinte = True
+									if "N.º da Operação" in dados:
 										#Get last info... numbers
-										print ('contaCreditada ',contaCreditada)
-										print ('creditada ', dados[dados.rfind(" "):].strip())
-										if not contaCreditada:
-											contaCreditada = dados[dados.rfind(" "):].strip()
-											mustIBANCreditado = True
+										print ('operacao ', dados[dados.rfind(" "):].strip())
+										print ('operacao ', val)
+										if not numeroOperacao:
+											if len(dados.strip()) >5 and len(dados.strip()) < 12 and dados.strip().isnumeric():
+												#less than 15 is not Account...
+												numeroOperacao = dados.strip()
+												mustNumOperacao = True
+												frappe.throw(porra)
+											'''
+											numeroOperacao = dados[dados.rfind(" "):].strip()
+											mustNumOperacao = True
 											frappe.throw(porra)
+											'''
 
-								elif linhaseguinte:
-									if dados.find('foi realizada') != -1:
-										Datapagamento = dados[0:dados.find('foi realizada')].strip()
-										dia = Datapagamento[3:5]
-										mes0 = Datapagamento[Datapagamento.find('de ')+2:len(Datapagamento)].strip()
-										mes = mes0[0:mes0.find('de')].strip()
-										ano = Datapagamento[len(Datapagamento)-5:].strip()
-										print ('Datapagamento ',Datapagamento)
-										print ('dia ', dia)
-										print ('mes ', mes)
-										print ('ano ', ano)
-										mes0 = mes.strip().replace('janeiro','01').replace('fevereiro','02').replace('margo','03').replace('março','03').replace('abril','04').replace('maio','05') \
-										.replace('junho','06').replace('julho','07').replace('agosto','08').replace('setembro','09').replace('outubro','10').replace('novembro','11').replace('dezembro','12')
+									elif "Conta Debitada" in dados:
+										#Get last info... numbers
+										print ('debitada ', dados[dados.rfind(" "):].strip())
+										ibanContaDebitada = dados[dados.rfind(" "):].strip()
+									elif "Conta/IBAN Creditado" in dados or "Conta/IBAN " in dados or "IBAN " in dados:
+										#Aqui conta da EMPRESA que vai receber o CASH
+										if not contaCreditada and ibanOrigem:
+											print ('pode ser IBAN Beneficiario')
+											print ('creditada ', dados[dados.rfind(" "):].strip())
+											print ('val02 ',val)
+											print ('val2 ',val.split(',')[2])
+											print (dados.replace('A006','AO06'))
+											print ('ibanOrigem ',ibanOrigem)
+											print ('compara')
+											print (dados.replace('A006','AO06').replace(' ','').replace('IBAN','').replace('-',''))
+											print (ibanOrigem.replace('A006','AO06').strip())
+											'''
+											print ('ver o sinal -')
+											print (dados[0:0])
+											print (dados[0:1])
+											print (dados[0:1] == "I")
+											print (dados[0:1].isnumeric())
+											print (ord(dados[0:1]) == 8212)
+											'''
+											dados0 = dados.replace('A006','AO06').replace('IBAN ','')
+											print ('dados0 ', dados0)
+											dados00 = dados0.replace(' ','')
+											print ('dados00 ', dados00)
 
-										mes = mes0
+											'''
+											if dados[0:1] == "I":
+												#Remove the I
+												print ('AUI ver o sinal -')
+												dados1 = dados.replace('A006','AO06').replace(' ','').replace('IBAN','').strip()[1:len(dados)] #dados[1:len(dados)]
+												print (dados1)
+												if dados1.startswith('O'):
+													dados = 'A' + dados1
+												dados = dados1
+											'''
 
-										Datapagamento = dia + "-" + mes + "-" + ano
-										print ('Datapagamento ',Datapagamento)
+											if dados00.strip() != ibanOrigem.replace('A006','AO06').strip():
+												contaCreditada = dados00
+												print ('contaCreditada correct111111 ',contaCreditada)
+												frappe.throw(porra)
+											'''
+											if dados.replace('A006','AO06').replace(' ','').replace('IBAN','').strip() != ibanOrigem.replace('A006','AO06').strip():
+												contaCreditada = dados.replace('A006','AO06').replace(' ','').replace('IBAN','').strip()
+												print ('contaCreditada correct ',contaCreditada)
+												frappe.throw(porra)
+											'''
 
-										#Inicio da Empresa que fez a transferencia
-										print ('dados ', dados[dados.find('Net Empresas por ')+17:len(dados)])
-										empresaOrigem0 = dados[dados.find('Net Empresas por ')+17:len(dados)]
-										outralinha = True
-										mustDataPagamento = True
+										else:
+											#Get last info... numbers
+											print ('contaCreditada ',contaCreditada)
+											print ('creditada ', dados[dados.rfind(" "):].strip())
+											if not contaCreditada:
+												contaCreditada = dados[dados.rfind(" "):].strip()
+												mustIBANCreditado = True
+												frappe.throw(porra)
 
-									elif outralinha:
-										print ('outra linha com Nome da Empresa')
-										linhaseguinte = False
-										outralinha = False
+									elif linhaseguinte:
+										if dados.find('foi realizada') != -1:
+											Datapagamento = dados[0:dados.find('foi realizada')].strip()
+											dia = Datapagamento[3:5]
+											mes0 = Datapagamento[Datapagamento.find('de ')+2:len(Datapagamento)].strip()
+											mes = mes0[0:mes0.find('de')].strip()
+											ano = Datapagamento[len(Datapagamento)-5:].strip()
+											print ('Datapagamento ',Datapagamento)
+											print ('dia ', dia)
+											print ('mes ', mes)
+											print ('ano ', ano)
+											mes0 = mes.strip().replace('janeiro','01').replace('fevereiro','02').replace('margo','03').replace('março','03').replace('abril','04').replace('maio','05') \
+											.replace('junho','06').replace('julho','07').replace('agosto','08').replace('setembro','09').replace('outubro','10').replace('novembro','11').replace('dezembro','12')
 
-										if len(val.split('"')) > 1:
-											print ('Empresa tem virgulas....procura por LDA ou Limitada')
-											print ('aspas1 ', val.split('"')[1])
-											if val.split('"')[1].upper().find('LDA') != -1 or val.split('"')[1].upper().find('LIMITADA') != -1:
-												empresaOrigem1 = val[0:val.split('"')[1].upper().find('LDA')] or val[0:val.split('"')[1].upper().find('LIMITADA')]
+											mes = mes0
+
+											Datapagamento = dia + "-" + mes + "-" + ano
+											print ('Datapagamento ',Datapagamento)
+
+											#Inicio da Empresa que fez a transferencia
+											print ('dados ', dados[dados.find('Net Empresas por ')+17:len(dados)])
+											empresaOrigem0 = dados[dados.find('Net Empresas por ')+17:len(dados)]
+											outralinha = True
+											mustDataPagamento = True
+
+										elif outralinha:
+											print ('outra linha com Nome da Empresa')
+											linhaseguinte = False
+											outralinha = False
+
+											if len(val.split('"')) > 1:
+												print ('Empresa tem virgulas....procura por LDA ou Limitada')
+												print ('aspas1 ', val.split('"')[1])
+												if val.split('"')[1].upper().find('LDA') != -1 or val.split('"')[1].upper().find('LIMITADA') != -1:
+													empresaOrigem1 = val[0:val.split('"')[1].upper().find('LDA')] or val[0:val.split('"')[1].upper().find('LIMITADA')]
+												else:
+													empresaOrigem1 = dados.replace('"','')
 											else:
 												empresaOrigem1 = dados.replace('"','')
-										else:
-											empresaOrigem1 = dados.replace('"','')
-										print ('empresaOrigem0 ',empresaOrigem0)
-										print ('empresaOrigem1 ',empresaOrigem1)
-								elif treslinhasdepois:
-									#Nome da Empresa... BAI DIRECTO
-									print ('Empresa 3 linhas depois ', dados)
-									empresaOrigem0 = dados
-									treslinhasdepois = False
+											print ('empresaOrigem0 ',empresaOrigem0)
+											print ('empresaOrigem1 ',empresaOrigem1)
+									elif treslinhasdepois:
+										#Nome da Empresa... BAI DIRECTO
+										print ('Empresa 3 linhas depois ', dados)
+										empresaOrigem0 = dados
+										treslinhasdepois = False
 
 					#Check if True
 					print ('RESUMOS =======')
@@ -2069,6 +2121,14 @@ def ocr_pdf(**kwargs):
 						print ('Valor ', valorDepositado)
 						print ('Descricao ', descricaoPagamento)
 
+						if isModelo6IVA:
+							print (' ')
+							print ('VALORES TEMPORARIOS SE FOR MODELO 6')
+							print ('nifempresaTEMP ',nifempresaTEMP)
+							print ('datasubmissaoTEMP ',datasubmissaoTEMP)
+							print ('regimeIvaTranTEMP ',datasubmissaoTEMP)
+							print ('declaracaoTEMP ',datasubmissaoTEMP)
+							print (' ')
 
 					    #Keep values .. in case on the new search not found and clean ....
 						if mustNumOperacao:
@@ -2095,7 +2155,11 @@ def ocr_pdf(**kwargs):
 							linguas = 3
 							#frappe.throw(porra)
 						elif linguas == 3:
+							linguas = 4
+							#frappe.throw(porra)
+						elif linguas == 4:
 							linguas = 0	#Off to do other settings...
+							#frappe.throw(porra)
 					#Para TUDO
 					if paratudo:
 						break
