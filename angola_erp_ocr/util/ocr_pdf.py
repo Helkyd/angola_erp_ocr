@@ -1153,11 +1153,19 @@ def ocr_pdf(**kwargs):
 	print ('args ',kwargs)
 
 	args = kwargs
+	#ttt = args.decode('UTF-8')
 	print (args)
+	# b'{"message":{"input_path":"/files/mensalidade.jpeg"}}'
+	#tmparg = str(args[args.find('input_path'):])
+	#return dict(args)['input_path'] #[25:len(args)-2]
+	#return os.path.isfile(dict(args)['input_path'])
+	#ff = os.path.isfile(frappe.get_site_path('public','files') + dict(args)['input_path'].replace('/files',''))
+	#return ff
+
 	#if args['img']:
 	#	print ('TEM conteudo do ficheiro....')
 
-	if args['input_path']:
+	if args['input_path'] or dict(args)['input_path']:
 		output_file = None
 		pages = 0
 		highlight_readable_text = 0
@@ -1201,7 +1209,7 @@ def ocr_pdf(**kwargs):
 
 
 	# If File Path
-	if os.path.isfile(args['input_path']):
+	if os.path.isfile(args['input_path']) or os.path.isfile(frappe.get_site_path('public','files') + dict(args)['input_path'].replace('/files','')):
 		#Nova versao... loops psmmode and langs...
 		#if filetype.is_image(args['input_path']):
 
@@ -1210,7 +1218,15 @@ def ocr_pdf(**kwargs):
 
 		# Process a file
 		print ('Site FILE')
-		if filetype.is_image(args['input_path']):
+		#return 'Site FILE'
+
+		if os.path.isfile(frappe.get_site_path('public','files') + dict(args)['input_path'].replace('/files','')):
+			filefinal = frappe.get_site_path('public','files') + dict(args)['input_path'].replace('/files','')
+		else:
+			filefinal = args['input_path']
+
+
+		if filetype.is_image(filefinal):
 			print ('File is IMAGEM')
 			search_str = None
 			highlight_readable_text = 0
@@ -1256,11 +1272,19 @@ def ocr_pdf(**kwargs):
 				for linginst in linguasinstaladas:
 					#Skip linginst 1 and 2 from the wordlist_langs
 					print ('linguasint ', linginst)
+					'''
 					ggg = ocr_img(
 						# if 'search_str' in (args.keys()) else None
 						img=None, input_file=args['input_path'], search_str=search_str, highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, \
 						generate_output=generate_output, linguas_set=linginst,linguas=linguas, psmmode=psmm
 					)
+					'''
+					ggg = ocr_img(
+						# if 'search_str' in (args.keys()) else None
+						img=None, input_file=filefinal, search_str=search_str, highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, \
+						generate_output=generate_output, linguas_set=linginst,linguas=linguas, psmmode=psmm
+					)
+
 
 					print ('Resultado ocr_img')
 
@@ -1581,6 +1605,10 @@ def ocr_pdf(**kwargs):
 			duaslinhasdepois = False
 			treslinhasdepois = False
 
+			if os.path.isfile(frappe.get_site_path('public','files') + dict(args)['input_path'].replace('/files','')):
+				filefinal = frappe.get_site_path('public','files') + dict(args)['input_path'].replace('/files','')
+			else:
+				filefinal = args['input_path']
 
 
 			#loop psm first
@@ -1605,17 +1633,17 @@ def ocr_pdf(**kwargs):
 					print ('linguasint ', linginst)
 
 					ocr_file(
-						input_file=args['input_path'], output_file=output_file, search_str=args['search_str'] if 'search_str' in (args.keys()) else None, pages=pages, \
+						input_file=filefinal, output_file=output_file, search_str=args['search_str'] if 'search_str' in (args.keys()) else None, pages=pages, \
 						highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, generate_output=generate_output, \
 						linguas_set=linginst,linguas=linguas, psmmode=psmm
 					)
 					#Check if local file
-					if "https://" in args['input_path']:
+					if "https://" in filefinal:
 						print ('From another server...')
 						frappe.throw(porra)
 					else:
 						#print ('content_file ',args['input_path'].replace('.pdf','.csv'))
-						contentfile = args['input_path'].replace('.pdf','.csv')
+						contentfile = filefinal.replace('.pdf','.csv')
 						with open(contentfile, "rb") as fileobj:
 							filedata = fileobj.read()
 
@@ -2072,6 +2100,17 @@ def ocr_pdf(**kwargs):
 					if paratudo:
 						break
 
+			#Return
+			return {
+				'Empresa':empresaOrigem1,
+				'data': Datapagamento,
+				'Operacao': numeroOperacao,
+				'Conta Debitada':contaOrigem,
+				'IBANDebitado/ORIGEM': ibanContaDebitada,
+				'Creditada': contaCreditada,
+				'Valor': valorDepositado,
+				'Descricao': descricaoPagamento
+			}
 
 
 	# If Folder Path
@@ -2088,21 +2127,27 @@ def lerPdf_ocr(ficheiro):
 	# importing required modules
 	import PyPDF2
 
-	return "{'resultado':'FILE DATA RECEIVED'}"
-	
 	if ficheiro:
-		print ('FILE DATA RECEIVED....')
-		print (ficheiro)
-		return ('FILE DATA RECEIVED....')
+		print ('FILE DATA RECEIVED +++++++')
+		#print (ficheiro)
 		# creating a pdf file object
+		'''
 		pdfFileObj = open(ficheiro, 'rb')
 		with open (ficheiro,'rb') as pdfFileObj:
 			b = pdfFileObj.read()
-
+		'''
+		'''
+		with open('/tmp/fff.pdf','wb') as ppdf:
+			ppdf.write(ficheiro)
+		'''
 		print ('JA TENHO OS DADOS......')
+		'''
 		from PyPDF2 import PdfFileReader, PdfFileWriter
 		p = BytesIO(b)
 		ppdf = PdfFileReader(p)
+		'''
+		ff = frappe.get_site_path('public','files') + ficheiro.replace('/files','')
+		ficheiro = ff
 
 		output_file = None
 		pages = 0
@@ -2115,15 +2160,23 @@ def lerPdf_ocr(ficheiro):
 		psmmode = 4	#Default
 		search_str = None
 		highlight_readable_text = 0
+		linginst = 'fra'
 
+		'''
 		ggg = ocr_img(
 			# if 'search_str' in (args.keys()) else None
-			img=ppdf, input_file=None, search_str=search_str, highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, \
+			img=None, input_file=None, search_str=search_str, highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, \
 			generate_output=generate_output, linguas_set=linguas_set,linguas=linguas, psmmode=psmmode
+		)
+		'''
+		ocr_file(
+			input_file=ficheiro, output_file=output_file, search_str=None, pages=pages, \
+			highlight_readable_text=highlight_readable_text, action=action, show_comparison=show_comparison, generate_output=generate_output, \
+			linguas_set=linginst,linguas=linguas, psmmode=psmmode
 		)
 
 		#ocr_pdf(input_path=b)
-		print (ggg)
+
 
 		return
 

@@ -9,14 +9,17 @@
 from __future__ import unicode_literals
 
 import frappe
-import angola_erp_ocr.util.ocr_pdf
+import angola_erp_ocr.util
+from angola_erp_ocr.util import ocr_pdf
+
 
 @frappe.whitelist(allow_guest=True)
+def lepdfocr(data):
+    import codecs
+    #aaa = codecs.decode(data)
+    ff = {'input_path': data}
+    return ocr_pdf.ocr_pdf(input_path=data)
+
+
 def ping():
     return 'lepdf_ocr'
-
-
-@frappe.whitelist(allow_guest=True)
-def pong(ficheiro):
-    return 'lepdf_ocr'
-    #return lerPdf_ocr(ficheiro)
