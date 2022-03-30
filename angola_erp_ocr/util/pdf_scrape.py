@@ -61,18 +61,25 @@ def pdfscrape_perpage(ficheiropdf = None, empresa = None):
 
 
 	#we can get the number of pages using “pdf.doc.catalog[‘Pages’].resolve()[‘Count’]”. To extract data from a specific page, we can use “pdf.load(#)”.
+	scrapresult = {}
 	pagecount = pdf.doc.catalog['Pages'].resolve()['Count']
 	master = pd.DataFrame()
 	for p in range(pagecount):
 		pdf.load(p)
 		page = pdf_scrape(pdf)
-		print ('page ', page)
+		if not scrapresult:
+			scrapresult = page
+		else:
+			scrapresult.update(page)
 		master = master.append(page, ignore_index=True)
 
 	print ('GRAVAR FILE')
-	#master.to_csv('/tmp/output' + page + '.csv', index = False)
+	print (scrapresult)
+	#print (master['datahora'])
+	#print (master['datahora'][0])
+	#print (master['empresa'][0])
 
-	return
+	return scrapresult #master
 
 def pdf_scrape(pdf):
 
@@ -152,6 +159,7 @@ def pdf_scrape(pdf):
 
 	elif "Comprovativo de Entrega de" in modelo6IVA_comprovativo or "Comprovativo de Entrega de Declara&#231;&#227;o" in modelo6IVA_comprovativo or "Modelo 6 de IVA" in modelo6IVA:
 		#Modelo 6 IVA
+		print ('Modelo 6 IVA')
 		if not modelo6IVA_numDeclaracao:
 			modelo6IVA_numDeclaracao = pdf.pq('LTTextBoxHorizontal:overlaps_bbox("509.0, 735.604, 562.7, 742.54")').text()	#N. Declaracao
 		if not modelo6IVA_DataSubmissao:
@@ -183,6 +191,7 @@ def pdf_scrape(pdf):
 			print (modelo6IVA_DataEmissao)
 
 	elif "MULTICAIXA Express" in mcexpress:
+		print ('MULTICAIXA EXPRESS')
 		pagamentovia = "MULTICAIXA Express"
 
 		datahora = pdf.pq('LTTextBoxHorizontal:overlaps_bbox("223.67, 615.843, 325.794, 626.843")').text()
@@ -203,6 +212,8 @@ def pdf_scrape(pdf):
 		origemIBAN = pdf.pq('LTTextBoxHorizontal:overlaps_bbox("204.65, 284.274, 390.858, 292.274")').text()
 		print ('tem origemIBAN')
 	elif "serviço BAIDirecto" in baidirecto or "servi&#231;o BAIDirecto." in baidirecto:
+		print ('BAIDIRECTO')
+
 		pagamentovia = "BAIDIRECTO"
 		origemEMPRESA = pdf.pq('LTTextBoxHorizontal:overlaps_bbox("193.0, 647.947, 357.205, 655.447")').text()
 		print ('tem origemEMPRESA')
@@ -229,6 +240,8 @@ def pdf_scrape(pdf):
 		print ('tem referenciadestino')
 	elif "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in pagamentoDC:
 		#Pagamento da DC...
+		print ('Pagamento da DC...')
+
 		pagamentovia = "PAGAMENTO DC"
 
 		dadoscontribuinte = pdf.pq('LTTextBoxHorizontal:overlaps_bbox("342.7, 680.657, 523.972, 687.657")').text()
@@ -325,14 +338,21 @@ def pdf_scrape(pdf):
 	#print (page)
 
 	dadospdf = page.to_dict()
+	print ('printing..... DADOS')
 	print (dadospdf)
 
+	dadospdf1 = {}
 	for ff,f1 in enumerate(dadospdf):
-		print (ff)
-		print (f1)
+		print ('ff ' ,ff)
+		print ('f1 ',f1)
 		print (dadospdf[f1][0])
+		dadospdf1[f1] = dadospdf[f1][0]
 
-	return (dadospdf)
+	#print ('tipo ', type(dadospdf))
+	print ('printing..... DADOS 1')
+	print (dadospdf1)
+
+	return (dadospdf) #(page.to_json(orient = 'columns'))
 
 
 	# Extract each relevant information individually

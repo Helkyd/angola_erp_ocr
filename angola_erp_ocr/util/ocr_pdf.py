@@ -1,5 +1,5 @@
 #Extracted from https://www.thepythoncode.com/article/extract-text-from-images-or-scanned-pdf-python
-#Last Modifed by HELKYD 29-03-2022
+#Last Modifed by HELKYD 30-03-2022
 
 from __future__ import unicode_literals
 import sys
