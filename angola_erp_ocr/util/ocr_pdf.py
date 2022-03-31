@@ -1268,6 +1268,7 @@ def ocr_pdf(**kwargs):
 			paratudo = False
 
 			linguas = 1	#Primeir loop only
+			Removedlinguasinstaladas = False
 
 			contasOrigem = []	#Temp for getting all scanned accounts... after will see which one is the ONE...
 			ibansDestino = []
@@ -1276,13 +1277,14 @@ def ocr_pdf(**kwargs):
 
 			for psmm in psmMode:
 				print ('psm++++ ',psmm)
-				if psmm != 4:
+				if psmm != 4 and not Removedlinguasinstaladas:
 					#remove 1 and 2 from linguasinstaladas
 					linguasinstaladas.remove('1')
 					linguasinstaladas.remove('2')
 					linguasinstaladas.remove('3')
 					linguasinstaladas.remove('4')
 					print ('REMOVED 1 and 2')
+					Removedlinguasinstaladas = true
 
 				for linginst in linguasinstaladas:
 					#Skip linginst 1 and 2 from the wordlist_langs
@@ -1611,6 +1613,7 @@ def ocr_pdf(**kwargs):
 			paratudo = False
 
 			linguas = 1
+			Removedlinguasinstaladas = False
 
 			contasOrigem = []	#Temp for getting all scanned accounts... after will see which one is the ONE...
 			ibansDestino = []
@@ -1639,13 +1642,14 @@ def ocr_pdf(**kwargs):
 			for psmm in psmMode:
 				print ('psm++++ ',psmm)
 
-				if psmm != 4:
+				if psmm != 4 and not Removedlinguasinstaladas:
 					#remove 1 and 2 from linguasinstaladas
 					linguasinstaladas.remove('1')
 					linguasinstaladas.remove('2')
 					linguasinstaladas.remove('3')
-					linguasinstaladas.remove('3')
+					linguasinstaladas.remove('4')
 					print ('REMOVED 1 and 2')
+					Removedlinguasinstaladas = True
 
 				#Para TUDO
 				if paratudo:
@@ -1717,6 +1721,7 @@ def ocr_pdf(**kwargs):
 								print (val.split(',')[2])
 								declaracaoTEMP.append(val.split(',')[2].strip())
 								print ('declaracaoTEMP ',declaracaoTEMP)
+								#frappe.throw(porra)
 							elif "5417537802" in val or "537802" in val:
 								#NIF EMPRESA...
 								print ('NIF EMPRESA...')
@@ -2126,8 +2131,8 @@ def ocr_pdf(**kwargs):
 							print ('VALORES TEMPORARIOS SE FOR MODELO 6')
 							print ('nifempresaTEMP ',nifempresaTEMP)
 							print ('datasubmissaoTEMP ',datasubmissaoTEMP)
-							print ('regimeIvaTranTEMP ',datasubmissaoTEMP)
-							print ('declaracaoTEMP ',datasubmissaoTEMP)
+							print ('regimeIvaTranTEMP ',regimeIvaTranTEMP)
+							print ('declaracaoTEMP ',declaracaoTEMP)
 							print (' ')
 
 					    #Keep values .. in case on the new search not found and clean ....

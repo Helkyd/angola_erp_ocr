@@ -47,6 +47,7 @@ modelo6IVA_RegimeIVA_GERA = ""
 modelo6IVA_RegimeIVA_SIMP = ""
 modelo6IVA_GrupoB = ""
 modelo6IVA_RegimeIVA_II = ""
+modelo6IVA_NIF = ""
 
 @frappe.whitelist(allow_guest=True)
 def pdfscrape_perpage(ficheiropdf = None, empresa = None):
@@ -123,6 +124,7 @@ def pdf_scrape(pdf):
 	global modelo6IVA_RegimeIVA_SIMP
 	global modelo6IVA_GrupoB
 	global modelo6IVA_RegimeIVA_II
+	global modelo6IVA_NIF
 
 
 	#Check if PDF is AGT Modelo 6
@@ -189,6 +191,10 @@ def pdf_scrape(pdf):
 		if not modelo6IVA_DataEmissao:
 			modelo6IVA_DataEmissao = "DDDDDDD" #pdf.pq('LTTextBoxHorizontal:overlaps_bbox("55.15, 161.701, 80.72, 167.481")').text()	#
 			print (modelo6IVA_DataEmissao)
+
+		if not modelo6IVA_NIF:
+			modelo6IVA_NIF = pdf.pq('LTTextBoxHorizontal:overlaps_bbox("465.499, 661.821, 493.299, 667.601")').text()	#
+			print (modelo6IVA_NIF)
 
 	elif "MULTICAIXA Express" in mcexpress:
 		print ('MULTICAIXA EXPRESS')
@@ -296,7 +302,8 @@ def pdf_scrape(pdf):
 			'modelo6IVA_RegimeIVA_SIMP': modelo6IVA_RegimeIVA_SIMP,
 			'modelo6IVA_DataSubmissao': modelo6IVA_DataSubmissao,
 			'modelo6IVA_GrupoB': modelo6IVA_GrupoB,
-			'modelo6IVA_RegimeIVA_II': modelo6IVA_RegimeIVA_II
+			'modelo6IVA_RegimeIVA_II': modelo6IVA_RegimeIVA_II,
+			'modelo6IVA_NIF': modelo6IVA_NIF
 		}, index=[0])
 
 	elif pagamentovia != "PAGAMENTO DC":
