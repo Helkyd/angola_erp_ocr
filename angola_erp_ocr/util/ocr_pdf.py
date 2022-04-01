@@ -1,5 +1,5 @@
 #Extracted from https://www.thepythoncode.com/article/extract-text-from-images-or-scanned-pdf-python
-#Last Modifed by HELKYD 30-03-2022
+#Last Modifed by HELKYD 01-04-2022
 
 from __future__ import unicode_literals
 import sys
@@ -61,6 +61,16 @@ empresaOrigem1 = ""
 Datapagamento = ""
 
 contaCreditada = ""
+
+dadoscontribuinte = ""
+dadoscontribuinteNIF = ""
+valorPAGO = ""
+referenciaPERIODO = ""
+descricaoRECEITA = ""
+valortributavel = ""
+referenciadocumento = ""
+BeneficiarioTL = ""
+BeneficiarioNOME = ""
 
 def pix2np(pix):
 	"""
@@ -240,6 +250,7 @@ def ocr_img(
 	if input_file:
 		# Reading image using opencv
 		img = cv2.imread(input_file)
+
 	# Preserve a copy of this image for comparison purposes
 	initial_img = img.copy()
 	highlighted_img = img.copy()
@@ -324,7 +335,6 @@ def ocr_img(
 		#config_param = r'--oem 3 --psm 4 -l eng' #GETs IBAN correct relacing 1st and 2nd numbers..
 
 		config_param = r'--oem 3 --psm 4 -l fra+por'
-
 
 
 	elif linguas == 2:
@@ -1158,8 +1168,8 @@ def ocr_pdf(**kwargs):
 			if row:
 				linguasinstaladas.append(row[0])
 				#For NOW will STOP load at eng+fra+lat+spa+por
-				if row[0] == "eng+fra+lat+spa+por":
-					break
+				#if row[0] == "eng+fra+lat+spa+por":
+				#	break
 
 	#print ('linguas instaladas')
 	#print (linguasinstaladas)
@@ -1608,6 +1618,16 @@ def ocr_pdf(**kwargs):
 
 			global contaCreditada
 
+			global dadoscontribuinte
+			global dadoscontribuinteNIF
+			global valorPAGO
+			global referenciaPERIODO
+			global descricaoRECEITA
+			global valortributavel
+			global referenciadocumento
+			global BeneficiarioTL
+			global BeneficiarioNOME
+
 			isModelo6IVA = False
 
 			paratudo = False
@@ -1631,6 +1651,8 @@ def ocr_pdf(**kwargs):
 			outralinha = False
 			duaslinhasdepois = False
 			treslinhasdepois = False
+
+			pagamentoDC = False	#Pagamento DC AGT
 
 			if os.path.isfile(frappe.get_site_path('public','files') + dict(args)['input_path'].replace('/files','')):
 				filefinal = frappe.get_site_path('public','files') + dict(args)['input_path'].replace('/files','')
@@ -1727,9 +1749,106 @@ def ocr_pdf(**kwargs):
 								print ('NIF EMPRESA...')
 								nifempresaTEMP.append(val.split(',')[2].strip())
 								frappe.throw(porra)
+							elif "RECIBO DE PAGAMENTO" in val or "3º REPARTIÇÃO FISCAL" in val:
+								print ('Pagamento Retencao na FONTE...')
+								if "RECIBO DE PAGAMENTO" in val:
+									pagamentovia = "PAGAMENTO DC"
+									pagamentoDC = True
+								if len(val.split(',')[2]) > 25:
+									print ('Nome do Contribuinte.. EMPRESA que PAGOU')
+									print (val.split(',')[2][21:])
+									dadoscontribuinte = val.split(',')[2][21:]
+									print (dadoscontribuinte)
+							elif len(val.split(',')) > 1:
+								if len(val.split(',')[2]) == 10 and val.split(',')[2].isnumeric() and pagamentoDC:
+									#NIF do Contribuinte
+									print ('NIF do Contribuinte')
+									print (val.split(',')[2])
 
-							'''
+									if not dadoscontribuinteNIF:
+										dadoscontribuinteNIF = val.split(',')[2]
+								elif "IMPOSTO INDUSTRIAL - RETENÇÃO NA FONTE" in val.split(',')[2]:
+									#descricaoRECEITA and valortributavel
+									print (val.split(',')[2])
+									if not descricaoRECEITA:
+										if val.split(',')[2].startswith('IMPOSTO'):
+											descricaoRECEITA = val.split(',')[2][0:val.split(',')[2].rfind(' ')]
+											#print ('descricaoRECEITA0 ',descricaoRECEITA)
+										else:
+											descricaoRECEITA = val.split(',')[2][2:val.split(',')[2].rfind(' ')]
+											#print ('descricaoRECEITA1 ',descricaoRECEITA)
+									print ('numeros ', val.split(',')[2][val.split(',')[2].rfind(' '):].strip().isnumeric())
+									print ('numeros', val.split(',')[2][val.split(',')[2].rfind(' '):].strip())
+
+									if "," in val.split(',')[2][val.split(',')[2].rfind(' '):].strip() or "." in val.split(',')[2][val.split(',')[2].rfind(' '):].strip():
+										valortributavel = val.split(',')[2][val.split(',')[2].rfind(' '):].strip()
+
+									print (valortributavel)
+									cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
+									print ('valortributavel ',re.match(cash_pattern,valortributavel))
+
+									#frappe.throw(porra)
+
+							elif "VALOR TOTAL PAGO" in val:
+								#Valor page
+								print (val.split(',')[2])
+								if not valorPAGO:
+									print (val.split(',')[2])
+									if len(val.split('"')) > 1:
+										if "VALOR TOTAL PAGO" in val.split('"')[1]:
+											valorPAGO = val.split('"')[1][val.split('"')[1].rfind(' '):].strip()
+										else:
+											valorPAGO = val.split(',')[2][val.split(',')[2].rfind(' '):].strip()
+										print ('valorPAGO ', valorPAGO)
+										cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
+										print ('valorPAGOPATERN ',re.match(cash_pattern,valorPAGO))
+
+							elif "MENSAL " in val:
+								#Periodo
+								print (val.split(',')[2])
+								referenciaPERIODO = val.split(',')[2][val.split(',')[2].rfind(' '):].strip()
+								print ('referenciaPERIODO ',referenciaPERIODO)
+
+							elif "220102899175192" in val or "9175192" in val:
+								print ('Referencia documento')
+								print (val)
+								referenciadocumento = val
+								frappe.throw(porra)
+
+							elif "5417537802" in val or "TEOR" in val:
+								print ('NIF TEORL')
+								print (val)
+								if "5417537802" in val:
+									BeneficiarioNIF = val
+									print ('BeneficiarioNIF ',BeneficiarioNIF)
+									frappe.throw(porra)
+								elif "TEOR" in val or "TEOR LGGIGO-PRESTACAD DE SERVICOS LDA." in val:
+									#ESPECIFCAMENTE PARA TEOR LOGICO
+									print (val.split(',')[2])
+									BeneficiarioTL = val.split(',')[2][val.split(',')[2].find('TEOR'):]
+									BeneficiarioNOME = val.split(',')[2]
+									print ('BeneficiarioTL ',BeneficiarioTL)
+									print ('BeneficiarioNOME ',BeneficiarioNOME)
+
+							elif "25-02-2022" in val:
+								print ('DATA EMISSAO OU PAGAMENTO')
+								print (val)
+								frappe.throw(porra)
+							elif "467911400660" in val or "400660" in val:
+								print ('Referencia do PAGAMENTO')
+								print (val)
+								frappe.throw(porra)
+
+
+
+
+
+
+
+
+
 							#Operacao
+							'''
 							if "153389642" in val:
 								print (val)
 								print (val.split('"'))
@@ -1749,6 +1868,7 @@ def ocr_pdf(**kwargs):
 
 								frappe.throw(porra)
 							'''
+
 							if len(val.split('"')) > 1:
 
 								print ('outro tratamento....')
@@ -2133,6 +2253,21 @@ def ocr_pdf(**kwargs):
 							print ('datasubmissaoTEMP ',datasubmissaoTEMP)
 							print ('regimeIvaTranTEMP ',regimeIvaTranTEMP)
 							print ('declaracaoTEMP ',declaracaoTEMP)
+							print (' ')
+
+						if pagamentoDC:
+							print (' ')
+							print ('VALORES TEMPORARIOS PAG. DC - Recibo de Pagamento AGT')
+							print ('dadoscontribuinteNIF ',dadoscontribuinteNIF)
+							print ('dadoscontribuinte ',dadoscontribuinte)
+							print ('referenciaPERIODO ',referenciaPERIODO)
+							print ('descricaoRECEITA ',descricaoRECEITA)
+							print ('valorPAGO ',valorPAGO)
+							print ('valortributavel ',valortributavel)
+							print ('referenciadocumento ', referenciadocumento)
+							print ('BeneficiarioNOME ', BeneficiarioNOME)
+							print ('BeneficiarioTL ', BeneficiarioTL)
+
 							print (' ')
 
 					    #Keep values .. in case on the new search not found and clean ....
