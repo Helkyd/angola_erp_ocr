@@ -3,8 +3,15 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-# import frappe
+
+import frappe
+from frappe import _
+from frappe.model.document import Document
+
 from frappe.model.document import Document
 
 class ConfiguracaoOCR(Document):
-	pass
+    def validate(self):
+        if not self.resolucao_pdf > 0:
+            frappe.throw(
+                _("PDF Resolution must be a positive integer eg 300 (high) or 200 (normal)."))

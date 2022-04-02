@@ -1,0 +1,95 @@
+{
+ "creation": "2022-04-02 05:17:26.976833",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "language",
+  "file_to_read",
+  "read_section_break_section",
+  "read_image",
+  "spell_checker",
+  "result_section_break_section",
+  "read_result",
+  "read_time",
+  "ocr_import",
+  "import"
+ ],
+ "fields": [
+  {
+   "fieldname": "language",
+   "fieldtype": "Link",
+   "label": "Language",
+   "options": "OCR Language"
+  },
+  {
+   "fieldname": "file_to_read",
+   "fieldtype": "Attach",
+   "label": "File to Read"
+  },
+  {
+   "fieldname": "read_section_break_section",
+   "fieldtype": "Section Break",
+   "label": "Read Section Break"
+  },
+  {
+   "fieldname": "read_image",
+   "fieldtype": "Button",
+   "label": "Read Image"
+  },
+  {
+   "default": "0",
+   "fieldname": "spell_checker",
+   "fieldtype": "Check",
+   "label": "Spell Checker"
+  },
+  {
+   "fieldname": "result_section_break_section",
+   "fieldtype": "Section Break",
+   "label": "Result Section Break"
+  },
+  {
+   "fieldname": "read_result",
+   "fieldtype": "Long Text",
+   "label": "Read Result"
+  },
+  {
+   "fieldname": "read_time",
+   "fieldtype": "Read Only",
+   "label": "Read Time"
+  },
+  {
+   "fieldname": "ocr_import",
+   "fieldtype": "Link",
+   "label": "OCR Import",
+   "options": "OCR Import"
+  },
+  {
+   "fieldname": "import",
+   "fieldtype": "Button",
+   "label": "Import"
+  }
+ ],
+ "modified": "2022-04-02 05:17:26.976833",
+ "modified_by": "Administrator",
+ "module": "Angola Erp Ocr",
+ "name": "OCR Read",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

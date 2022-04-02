@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 30/03/2022
+#Date Changed: 02/04/2022
 
 
 from __future__ import unicode_literals
@@ -13,6 +13,8 @@ import angola_erp_ocr.util
 from angola_erp_ocr.util import ocr_pdf
 from angola_erp_ocr.util import pdf_scrape
 import os
+
+from angola_erp_ocr.angola_erp_ocr.doctype.ocr_read import ocr_read
 
 @frappe.whitelist(allow_guest=True)
 def lepdfocr(data,action = "SCRAPE"):
@@ -41,6 +43,18 @@ def lepdfocr(data,action = "SCRAPE"):
 					print ('PODE TERMINAR....')
 					return temScrape
 				else:
+					#Podemos fazer OCR with tesseract before trying with pytesseract
+					""" File, Language, DPI
+					angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document --args="['/home/frappe/pdfs/Modelo6_Teorl.pdf','por', '150']" """
+					'''
+					ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'por','150')
+					print ('OCR TESSERACT')
+					print ('OCR TESSERACT')
+					print ('OCR TESSERACT')
+					print (ocr_tesserac)
+					if not ocr_tesserac:
+					'''
+
 					print ('TERA DE FAZER O OCR......')
 					print ('TERA DE FAZER O OCR......')
 					print ('TERA DE FAZER O OCR......')

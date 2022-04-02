@@ -1,0 +1,64 @@
+{
+ "creation": "2022-04-02 04:59:00.932817",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "field",
+  "regexp",
+  "value",
+  "value_type",
+  "link_to_child_doc"
+ ],
+ "fields": [
+  {
+   "fieldname": "field",
+   "fieldtype": "Data",
+   "label": "Field"
+  },
+  {
+   "fieldname": "regexp",
+   "fieldtype": "Data",
+   "label": "RegExp"
+  },
+  {
+   "fieldname": "value",
+   "fieldtype": "Long Text",
+   "label": "Value"
+  },
+  {
+   "fieldname": "value_type",
+   "fieldtype": "Select",
+   "label": "Value Type",
+   "options": "Table\nPython\nRegex group\nDate"
+  },
+  {
+   "fieldname": "link_to_child_doc",
+   "fieldtype": "Data",
+   "label": "link to Child Doc"
+  }
+ ],
+ "modified": "2022-04-02 04:59:00.932817",
+ "modified_by": "Administrator",
+ "module": "Angola Erp Ocr",
+ "name": "OCR Import Mapping",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

@@ -127,3 +127,5 @@ app_license = "MIT"
 # 	"Task": "angola_erp_ocr.task.get_dashboard_data"
 # }
 
+before_tests = "angola_erp_ocr.install.before_tests"
+fixtures = [{'doctype': 'OCR Language'}]

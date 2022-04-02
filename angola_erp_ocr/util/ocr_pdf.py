@@ -1,5 +1,5 @@
 #Extracted from https://www.thepythoncode.com/article/extract-text-from-images-or-scanned-pdf-python
-#Last Modifed by HELKYD 01-04-2022
+#Last Modifed by HELKYD 02-04-2022
 
 from __future__ import unicode_literals
 import sys
@@ -71,6 +71,8 @@ valortributavel = ""
 referenciadocumento = ""
 BeneficiarioTL = ""
 BeneficiarioNOME = ""
+
+dataEMISSAO = ""
 
 def pix2np(pix):
 	"""
@@ -148,6 +150,11 @@ def convert_img2bin(img):
 	"""
 	# Convert the image into a grayscale image
 	output_img = grayscale(img)
+	#TESTING
+	#output_img1 = dilate(output_img)
+	#output_img = remove_noise(output_img1)
+	#output_img = output_img
+
 	# Invert the grayscale image by flipping pixel values.
 	# All pixels that are grater than 0 are set to 0 and all pixels that are = to 0 are set to 255
 	output_img = cv2.bitwise_not(output_img)
@@ -1168,8 +1175,8 @@ def ocr_pdf(**kwargs):
 			if row:
 				linguasinstaladas.append(row[0])
 				#For NOW will STOP load at eng+fra+lat+spa+por
-				#if row[0] == "eng+fra+lat+spa+por":
-				#	break
+				if row[0] == "eng+fra+lat+spa+por":
+					break
 
 	#print ('linguas instaladas')
 	#print (linguasinstaladas)
@@ -1188,6 +1195,39 @@ def ocr_pdf(**kwargs):
 
 	#if args['img']:
 	#	print ('TEM conteudo do ficheiro....')
+
+	# ==== Global Variables
+	global mustIBANDestinatario
+	global mustValorTransferencia
+	global mustDataEmissao
+	global mustContaOrigem
+	global mustNomeDestinatario
+
+	global mustNumOperacao
+	global mustValorOperacao
+	global mustIBANCreditado
+	global mustDataPagamento
+
+	global numeroOperacao
+	global valorDepositado
+	global empresaOrigem0
+	global empresaOrigem1
+	global Datapagamento
+
+	global contaCreditada
+
+	global dadoscontribuinte
+	global dadoscontribuinteNIF
+	global valorPAGO
+	global referenciaPERIODO
+	global descricaoRECEITA
+	global valortributavel
+	global referenciadocumento
+	global BeneficiarioTL
+	global BeneficiarioNOME
+	global dataEMISSAO
+
+	# Global Variables	======
 
 	if args['input_path'] or dict(args)['input_path']:
 		output_file = None
@@ -1265,15 +1305,10 @@ def ocr_pdf(**kwargs):
 			valorTransferencia = ""
 			horaEMISSAO = ""
 			nomeDestinatario = ""
-			dataEMISSAO = ""
+
 
 			outraslinhas = False
 
-			global mustIBANDestinatario
-			global mustValorTransferencia
-			global mustDataEmissao
-			global mustContaOrigem
-			global mustNomeDestinatario
 
 			paratudo = False
 
@@ -1366,7 +1401,7 @@ def ocr_pdf(**kwargs):
 													#Fix for replacing... ;
 													tmpiban1 = tmpiban.replace("A006",'AO06').replace("AO0G",'AO06')
 													tmpiban = tmpiban1
-													iban_pattern = r'^([A][O][O][E]|[A][O][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
+													iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
 													print ('IBAN DEST. ',re.match(iban_pattern,tmpiban))
 													if re.match(iban_pattern,tmpiban):
 														#IBAN
@@ -1398,7 +1433,7 @@ def ocr_pdf(**kwargs):
 											print ('Numeros so ',b[1].isnumeric())
 
 
-											iban_pattern = r'^([A][O][O][E]|[A][O][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
+											iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
 											print ('IBAN DEST. ',re.match(iban_pattern,b[1]))
 											if re.match(iban_pattern,b[1]):
 												#IBAN
@@ -1605,29 +1640,6 @@ def ocr_pdf(**kwargs):
 
 
 
-			global mustNumOperacao
-			global mustValorOperacao
-			global mustIBANCreditado
-			global mustDataPagamento
-
-			global numeroOperacao
-			global valorDepositado
-			global empresaOrigem0
-			global empresaOrigem1
-			global Datapagamento
-
-			global contaCreditada
-
-			global dadoscontribuinte
-			global dadoscontribuinteNIF
-			global valorPAGO
-			global referenciaPERIODO
-			global descricaoRECEITA
-			global valortributavel
-			global referenciadocumento
-			global BeneficiarioTL
-			global BeneficiarioNOME
-
 			isModelo6IVA = False
 
 			paratudo = False
@@ -1707,6 +1719,10 @@ def ocr_pdf(**kwargs):
 					#outralinha = False
 					#duaslinhasdepois = False
 
+					date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|^([0-9][0-9])\-([0-9][0-9])\-([1-9][0-9][0-9][0-9])'
+					iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
+					cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
+
 					for row in csv.reader(ang_read_csv_content(filedata),delimiter=';'):
 						r = []
 						for val in row:
@@ -1723,6 +1739,12 @@ def ocr_pdf(**kwargs):
 								print ('aspas1 ', val.split('"')[1])
 
 							print (len(val.split('"')))
+							print ('val> 1 ',len(val.split('"')) > 1)
+							print ('val> 1 ',len(val.split(',')) > 1)
+
+							if "01-10-2019" in val:
+								frappe.throw(porra)
+
 							if "Modelo 6 de IVA" in val:
 								#Means is MODELO6
 								isModelo6IVA = True
@@ -1759,49 +1781,22 @@ def ocr_pdf(**kwargs):
 									print (val.split(',')[2][21:])
 									dadoscontribuinte = val.split(',')[2][21:]
 									print (dadoscontribuinte)
-							elif len(val.split(',')) > 1:
-								if len(val.split(',')[2]) == 10 and val.split(',')[2].isnumeric() and pagamentoDC:
-									#NIF do Contribuinte
-									print ('NIF do Contribuinte')
-									print (val.split(',')[2])
 
-									if not dadoscontribuinteNIF:
-										dadoscontribuinteNIF = val.split(',')[2]
-								elif "IMPOSTO INDUSTRIAL - RETENÇÃO NA FONTE" in val.split(',')[2]:
-									#descricaoRECEITA and valortributavel
-									print (val.split(',')[2])
-									if not descricaoRECEITA:
-										if val.split(',')[2].startswith('IMPOSTO'):
-											descricaoRECEITA = val.split(',')[2][0:val.split(',')[2].rfind(' ')]
-											#print ('descricaoRECEITA0 ',descricaoRECEITA)
-										else:
-											descricaoRECEITA = val.split(',')[2][2:val.split(',')[2].rfind(' ')]
-											#print ('descricaoRECEITA1 ',descricaoRECEITA)
-									print ('numeros ', val.split(',')[2][val.split(',')[2].rfind(' '):].strip().isnumeric())
-									print ('numeros', val.split(',')[2][val.split(',')[2].rfind(' '):].strip())
-
-									if "," in val.split(',')[2][val.split(',')[2].rfind(' '):].strip() or "." in val.split(',')[2][val.split(',')[2].rfind(' '):].strip():
-										valortributavel = val.split(',')[2][val.split(',')[2].rfind(' '):].strip()
-
-									print (valortributavel)
-									cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
-									print ('valortributavel ',re.match(cash_pattern,valortributavel))
-
-									#frappe.throw(porra)
 
 							elif "VALOR TOTAL PAGO" in val:
 								#Valor page
 								print (val.split(',')[2])
 								if not valorPAGO:
 									print (val.split(',')[2])
-									if len(val.split('"')) > 1:
-										if "VALOR TOTAL PAGO" in val.split('"')[1]:
-											valorPAGO = val.split('"')[1][val.split('"')[1].rfind(' '):].strip()
-										else:
-											valorPAGO = val.split(',')[2][val.split(',')[2].rfind(' '):].strip()
-										print ('valorPAGO ', valorPAGO)
-										cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
-										print ('valorPAGOPATERN ',re.match(cash_pattern,valorPAGO))
+									#if len(val.split('"')) > 1:
+									if "VALOR TOTAL PAGO" in val.split('"')[1]:
+										valorPAGO = val.split('"')[1][val.split('"')[1].rfind(' '):].strip()
+									else:
+										valorPAGO = val.split(',')[2][val.split(',')[2].rfind(' '):].strip()
+									print ('valorPAGO ', valorPAGO)
+									cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
+									print ('valorPAGOPATERN ',re.match(cash_pattern,valorPAGO))
+									#frappe.throw(porra)
 
 							elif "MENSAL " in val:
 								#Periodo
@@ -1825,15 +1820,16 @@ def ocr_pdf(**kwargs):
 								elif "TEOR" in val or "TEOR LGGIGO-PRESTACAD DE SERVICOS LDA." in val:
 									#ESPECIFCAMENTE PARA TEOR LOGICO
 									print (val.split(',')[2])
-									BeneficiarioTL = val.split(',')[2][val.split(',')[2].find('TEOR'):]
+									if not BeneficiarioTL:
+										BeneficiarioTL = val.split(',')[2][val.split(',')[2].find('TEOR'):]
 									BeneficiarioNOME = val.split(',')[2]
 									print ('BeneficiarioTL ',BeneficiarioTL)
 									print ('BeneficiarioNOME ',BeneficiarioNOME)
+									if "LOGICO" in val:
+										print ('EMPRESA')
+										#frappe.throw(porra)
 
-							elif "25-02-2022" in val:
-								print ('DATA EMISSAO OU PAGAMENTO')
-								print (val)
-								frappe.throw(porra)
+
 							elif "467911400660" in val or "400660" in val:
 								print ('Referencia do PAGAMENTO')
 								print (val)
@@ -1841,6 +1837,82 @@ def ocr_pdf(**kwargs):
 
 
 
+							elif len(val.split(',')) > 2:
+								print (len(val.split(',')))
+								print ('val+ que 2 ',val)
+								print (val.split(',')[1])
+								print (val.split(',')[2])
+								if len(val.split('"')) >1:
+									print (val.split('"')[1])
+
+								if len(val.split(',')[2]) == 10 and val.split(',')[2].isnumeric() and pagamentoDC:
+									#NIF do Contribuinte
+									print ('NIF do Contribuinte')
+									print (val.split(',')[2])
+
+									if not dadoscontribuinteNIF:
+										dadoscontribuinteNIF = val.split(',')[2]
+
+									#frappe.throw(porra)
+								elif len(val.split(',')) > 1 and re.match(date_pattern,val.split(',')[2]): # "25-02-2022" in val:
+									print ('DATA EMISSAO OU PAGAMENTO')
+									print (val)
+									print ('date ',val.split(',')[2])
+									if not dataEMISSAO:
+										dataEMISSAO = val.split(',')[2]
+										mustDataEmissao = True
+
+								elif "IMPOSTO INDUSTRIAL - RETENÇÃO NA FONTE" in val.split(',')[2]:
+									#descricaoRECEITA and valortributavel
+									print (val.split(',')[2])
+									if not descricaoRECEITA:
+										if val.split(',')[2].startswith('IMPOSTO'):
+											descricaoRECEITA = val.split(',')[2][0:val.split(',')[2].rfind(' ')]
+											#print ('descricaoRECEITA0 ',descricaoRECEITA)
+										else:
+											descricaoRECEITA = val.split(',')[2][2:val.split(',')[2].rfind(' ')]
+											#print ('descricaoRECEITA1 ',descricaoRECEITA)
+									print ('numeros ', val.split(',')[2][val.split(',')[2].rfind(' '):].strip().isnumeric())
+									print ('numeros', val.split(',')[2][val.split(',')[2].rfind(' '):].strip())
+
+									if "," in val.split(',')[2][val.split(',')[2].rfind(' '):].strip() or "." in val.split(',')[2][val.split(',')[2].rfind(' '):].strip():
+										valortributavel = val.split(',')[2][val.split(',')[2].rfind(' '):].strip()
+
+									print (valortributavel)
+
+									print ('valortributavel ',re.match(cash_pattern,valortributavel))
+
+									#frappe.throw(porra)
+								elif "N.CAIXA:" in val and "TRANSACÇÃO:" in val:
+									#Pagamento Multicaixa...
+									ispagamento = True
+									numeroTransacao = val.split(',')[2][val.split(',')[2].rfind(' '):]
+									print ('numeroTransacao ',numeroTransacao)
+									#frappe.throw(porra)
+								elif "CONTA:" in val:
+									#Pagamento Multicaixa...
+									if ispagamento:
+										contaOrigem = val.split(',')[2][val.split(',')[2].find(' '):find_second_last(val.split(',')[2], ' ')].strip()
+										print ('contaOrigem ',contaOrigem)
+										if not dataEMISSAO:
+											dataEMISSAO = val.split(',')[2][find_second_last(val.split(',')[2], ' '):].strip()
+											print ('dataEMISSAO ',dataEMISSAO)
+
+								elif re.match(iban_pattern,val.split(',')[2]):
+									#IBAN
+									if ispagamento and not ibanDestino:
+										ibanDestino = val.split(',')[2].strip()
+										print ('ibanDestino ',ibanDestino)
+								elif len(val.split('"')) >1:
+									print ('HEREEEEEE ',val.split('"')[1])
+									if "." in val.split('"')[1] and "," in val.split('"')[1]:
+										print ('aquiiiiiii')
+										if re.match(cash_pattern,val.split('"')[1]):
+											print (val.split('"')[1])
+											print ('VALOR ')
+											if ispagamento and not valorPAGO:
+												valorPAGO = val.split('"')[1].replace('Ka','KZ').strip()
+												print ('valorPAGO ',valorPAGO)
 
 
 
@@ -1925,6 +1997,7 @@ def ocr_pdf(**kwargs):
 									descricaoPagamento = val0.strip().replace('-','') if val0.strip().startswith('-') else val0.strip()
 									#print (val0.strip().startswith('-'))
 									print ('descricaoPagamento ',descricaoPagamento)
+
 
 							elif len(val.split('"')) > 2:
 								if val.split(',')[2]:
@@ -2227,11 +2300,20 @@ def ocr_pdf(**kwargs):
 						print ('Descricao ', descricaoPagamento)
 
 						paratudo = True
+					elif ispagamento and valorPAGO and ibanDestino:
+						print ('Pagamento MULTICAIXA')
+						print ('dataEMISSAO ', dataEMISSAO)
+						print ('ibanDestino ', ibanDestino)
+						print ('valorPAGO ', valorPAGO)
+						print ('contaOrigem ', contaOrigem)
+						print ('numeroTransacao ', numeroTransacao)
+						paratudo = True
 
 					else:
 						print (' ')
 						print ('+++++++++++++++++++++++++++++++++')
 						print ('DEVE Repetir OCR... sem uma lingua...')
+						print ('psm++++ ',psmm)
 						print ('numeroOperacao ',mustNumOperacao)
 						print ('ibancredito ',mustIBANCreditado)
 						print ('valor ',mustValorOperacao)
@@ -2257,7 +2339,7 @@ def ocr_pdf(**kwargs):
 
 						if pagamentoDC:
 							print (' ')
-							print ('VALORES TEMPORARIOS PAG. DC - Recibo de Pagamento AGT')
+							print ('===VALORES TEMPORARIOS PAG. DC - Recibo de Pagamento AGT====')
 							print ('dadoscontribuinteNIF ',dadoscontribuinteNIF)
 							print ('dadoscontribuinte ',dadoscontribuinte)
 							print ('referenciaPERIODO ',referenciaPERIODO)
@@ -2267,8 +2349,17 @@ def ocr_pdf(**kwargs):
 							print ('referenciadocumento ', referenciadocumento)
 							print ('BeneficiarioNOME ', BeneficiarioNOME)
 							print ('BeneficiarioTL ', BeneficiarioTL)
+							print ('dataEMISSAO ', dataEMISSAO)
 
 							print (' ')
+						if ispagamento:
+							print ('Pagamento MULTICAIXA')
+							print ('dataEMISSAO ', dataEMISSAO)
+							print ('ibanDestino ', ibanDestino)
+							print ('valorPAGO ', valorPAGO)
+							print ('contaOrigem ', contaOrigem)
+							print ('numeroTransacao ', numeroTransacao)
+
 
 					    #Keep values .. in case on the new search not found and clean ....
 						if mustNumOperacao:
@@ -2305,16 +2396,47 @@ def ocr_pdf(**kwargs):
 						break
 
 			#Return
-			return {
-				'Empresa':empresaOrigem1,
-				'data': Datapagamento,
-				'Operacao': numeroOperacao,
-				'Conta Debitada':contaOrigem,
-				'IBANDebitado/ORIGEM': ibanContaDebitada,
-				'Creditada': contaCreditada,
-				'Valor': valorDepositado,
-				'Descricao': descricaoPagamento
-			}
+			if isModelo6IVA:
+				return {
+					'nifempresaTEMP': nifempresaTEMP,
+					'datasubmissaoTEMP': datasubmissaoTEMP,
+					'regimeIvaTranTEMP':regimeIvaTranTEMP,
+					'declaracaoTEMP':declaracaoTEMP
+				}
+
+			elif pagamentoDC:
+				return {
+					'dadoscontribuinteNIF': dadoscontribuinteNIF,
+					'dadoscontribuinte':dadoscontribuinte,
+					'referenciaPERIODO':referenciaPERIODO,
+					'descricaoRECEITA':descricaoRECEITA,
+					'valorPAGO':valorPAGO,
+					'valortributavel':valortributavel,
+					'referenciadocumento': referenciadocumento,
+					'BeneficiarioNOME': BeneficiarioNOME,
+					'BeneficiarioTL': BeneficiarioTL,
+					'dataEMISSAO': dataEMISSAO
+				}
+			elif ispagamento:
+				return {
+					'dataEMISSAO': dataEMISSAO,
+					'ibanDestino': ibanDestino,
+					'valorPAGO': valorPAGO,
+					'contaOrigem': contaOrigem,
+					'numeroTransacao': numeroTransacao
+				}
+
+			else:
+				return {
+					'Empresa':empresaOrigem1,
+					'data': Datapagamento,
+					'Operacao': numeroOperacao,
+					'Conta Debitada':contaOrigem,
+					'IBANDebitado/ORIGEM': ibanContaDebitada,
+					'Creditada': contaCreditada,
+					'Valor': valorDepositado,
+					'Descricao': descricaoPagamento
+				}
 
 
 	# If Folder Path
@@ -2409,3 +2531,6 @@ def lerPdf_ocr(ficheiro):
 
 		# closing the pdf file object
 		pdfFileObj.close()
+
+def find_second_last(text, pattern):
+	return text.rfind(pattern, 0, text.rfind(pattern))
