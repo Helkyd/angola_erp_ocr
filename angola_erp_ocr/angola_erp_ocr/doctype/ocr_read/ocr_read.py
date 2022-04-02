@@ -116,6 +116,8 @@ def read_document(path, lang='eng', spellcheck=False, resolucao=150, event="ocr_
 
 	ocr = frappe.get_doc("Configuracao OCR") #frappe.get_doc("OCR Settings")
 
+	print ('resolucao ', resolucao)
+
 	text = " "
 	with tesserocr.PyTessBaseAPI(lang=lang) as api:
 

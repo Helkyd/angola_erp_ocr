@@ -1416,7 +1416,7 @@ def ocr_pdf(**kwargs):
 
 										#Check se Data
 										#date_pattern = '^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])'
-										date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])'
+										date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
 										print (re.match(date_pattern,b[0]))
 										if re.match(date_pattern,b[0]):
 											#Founda dataEMISSAO

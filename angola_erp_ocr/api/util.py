@@ -15,6 +15,7 @@ from angola_erp_ocr.util import pdf_scrape
 import os
 
 from angola_erp_ocr.angola_erp_ocr.doctype.ocr_read import ocr_read
+import re
 
 @frappe.whitelist(allow_guest=True)
 def lepdfocr(data,action = "SCRAPE"):
@@ -44,21 +45,171 @@ def lepdfocr(data,action = "SCRAPE"):
 					return temScrape
 				else:
 					#Podemos fazer OCR with tesseract before trying with pytesseract
-					""" File, Language, DPI
-					angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document --args="['/home/frappe/pdfs/Modelo6_Teorl.pdf','por', '150']" """
-					'''
-					ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'por','150')
+					""" File, Language, DPI """
+
+					ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'por',False,200) #180) #200)
 					print ('OCR TESSERACT')
 					print ('OCR TESSERACT')
 					print ('OCR TESSERACT')
 					print (ocr_tesserac)
-					if not ocr_tesserac:
-					'''
+					print (type(ocr_tesserac))
+					print (ocr_tesserac.split('\n'))
+					print ('=====================')
+					print (ocr_tesserac.split(':'))
+					#Check RECIBO DE PAGAMENTO e EMITIDO EM: RF PORTAL DO CONTRIBUINTE tp be RETENCAO na FONTE
+					print ('*********************')
+					print ("RECIBO DE PAGAMENTO" in ocr_tesserac)
+					print ("EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac)
 
-					print ('TERA DE FAZER O OCR......')
-					print ('TERA DE FAZER O OCR......')
-					print ('TERA DE FAZER O OCR......')
-					return ocr_pdf.ocr_pdf(input_path=data)
+					referenciadocumento = ""
+
+					if "RECIBO DE PAGAMENTO" in ocr_tesserac and "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac:
+						print ('RECIBO RETENCAO NA FONTE...')
+						Temdadoscontribuinte = False
+						TemdadoscontribuinteNIF = False
+
+						dadoscontribuinte = ""
+						dadoscontribuinteNIF = ""
+						descricaoRECEITA = ""
+						referenciaANO = ""
+						referenciaPERIODO = ""
+						datadePAGAMENTO = ""
+						dataEMISSAO = ""
+
+						cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
+						date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
+
+
+						#print ('CASH ',re.match(cash_pattern,b[0]))
+
+						for dd in ocr_tesserac.split('\n'):
+							print ('dd ', dd)
+							print ('ddsplit ', dd.split(' '))
+							print ('ddsplit ', len(dd.split(' ')))
+							dd0 = dd.split(' ')
+							print ('dd0 ', len(dd0))
+							print ('DATAS ', re.match(date_pattern,dd0[0].strip()))
+							print ('DATAS ', re.match(date_pattern,dd.strip()))
+
+							if "LIQUIDAÇÃO GENÉRICA DE TRIBUTO" in dd:
+								print ('Numero Referencia..')
+								print (dd[0:dd.find(' ')])
+								print (dd[0:dd.find(' ')].strip().isnumeric())
+								referenciadocumento = dd[0:dd.find(' ')].strip()
+								print (referenciadocumento)
+							elif "DADOS DO CONTRIBUINTE:" in dd:
+								Temdadoscontribuinte = True
+							elif Temdadoscontribuinte and not dadoscontribuinte:
+								dadoscontribuinte = dd.strip()
+							elif "LUANDA - ANGOLA" in dd:
+								#Might be different on other... with time will be added more or changed...
+								TemdadoscontribuinteNIF = True
+							elif TemdadoscontribuinteNIF and not dadoscontribuinteNIF:
+								dadoscontribuinteNIF = dd.strip()
+							elif "MENSAL" in dd:
+								#Ano, Periodo
+								if dd[0:dd.find(' ')].strip().isnumeric():
+									referenciaANO = dd[0:dd.find(' ')].strip()
+									referenciaPERIODO = dd[dd.find(' '):dd.find(' LUANDA')-2].strip()
+									print ('referenciaANO ', referenciaANO)
+									print ('referenciaPERIODO ', referenciaPERIODO)
+									#frappe.throw(porra)
+							elif len(dd0) == 10:
+								print (dd.split(' ')[8])
+								print (dd.split(' ')[7])
+								print (dd.split(' ')[9])
+								if dd.split(' ')[8].strip() == '65%':
+									#Retencao 6.5
+									descricaoRECEITA = "IMPOSTO INDUSTRIAL - RETENÇÃO NA FONTE"
+									#Check valortributavel
+									tmpvalorPagar = dd.split(' ')[9]
+									print ('tmpvalorPagar ', tmpvalorPagar)
+									tmpTAXA = dd.split(' ')[8]
+									print ('tmpTaxa ', tmpTAXA)
+									Tmpvalortributavel = dd.split(' ')[7]
+									print ('Tmpvalortributavel ', Tmpvalortributavel)
+
+							elif "INDUSTRIAL" in dd or "A28" in dd:
+								if not Tmpvalortributavel:
+									descricaoRECEITA = "IMPOSTO INDUSTRIAL - RETENÇÃO NA FONTE"
+									#Check valortributavel
+									print (dd)
+									tmpvalorPagar = dd[dd.rfind(' '):].strip()
+									print ('tmpvalorPagar ', tmpvalorPagar)
+									dd1 = dd[0:dd.rfind(' ')].strip()
+									tmpTAXA = dd[find_second_last(dd,' '):dd.rfind(' ')]
+									print ('tmpTaxa ', tmpTAXA)
+									dd2 = dd1[find_second_last(dd1,' '):dd1.rfind(' ')]
+									print ('dd2 ', dd2)
+									Tmpvalortributavel = dd2[0:len(dd2)-dd2.rfind(' ')].strip()
+									print ('Tmpvalortributavel ', Tmpvalortributavel)
+
+							elif "VALOR TOTAL PAGO" in dd:
+								print (dd.split(' ')[3])
+								if len(dd.split(' ')) == 5:
+									valorPAGO = dd.split(' ')[3]
+									print ('valorPAGO ', valorPAGO)
+							elif dd[0:dd.find(' ')].strip().isnumeric():
+								#Can be NIF for Benificiario...
+								#5417537802 TEOR LOGICO-PRESTACAO DE SERVICOS LDA.
+								if len(dd[0:dd.find(' ')].strip()) == 10:
+									#NIF
+									BeneficiarioNIF = dd[0:dd.find(' ')].strip()
+								print ('NUMEROSSSSSSS')
+							elif re.match(date_pattern,dd.strip()):
+								print ('DATAAAAAAASSSS')
+								#DATA....Pagamento ou EMISSAO
+								if not datadePAGAMENTO and not dataEMISSAO:
+									datadePAGAMENTO = dd.strip()
+									dataEMISSAO = dd.strip()
+									print ('dataEMISSAO ', dataEMISSAO)
+									print ('datadePAGAMENTO ', datadePAGAMENTO)
+
+
+
+						#Resumo dos DADOS
+						print ('====================')
+						print ('referenciadocumento ',referenciadocumento)
+						print ('dadoscontribuinte ',dadoscontribuinte)
+						print ('dadoscontribuinteNIF ',dadoscontribuinteNIF)
+						print ('referenciaANO ',referenciaANO)
+						print ('referenciaPERIODO ', referenciaPERIODO)
+						print ('BeneficiarioNIF ', BeneficiarioNIF)
+						print ('descricaoRECEITA ',descricaoRECEITA)
+						print ('tmpvalorPagar ', tmpvalorPagar)
+						print ('tmpTAXA ', tmpTAXA)
+						print ('Tmpvalortributavel ', Tmpvalortributavel)
+						print ('valorPAGO ',valorPAGO)
+						print ('datadePAGAMENTO ',datadePAGAMENTO)
+						print ('dataEMISSAO ', dataEMISSAO)
+
+						if referenciadocumento and valorPAGO and BeneficiarioNIF:
+							return {
+								'referenciadocumento':referenciadocumento,
+								'dadoscontribuinte':dadoscontribuinte,
+								'dadoscontribuinteNIF':dadoscontribuinteNIF,
+								'referenciaANO':referenciaANO,
+								'referenciaPERIODO': referenciaPERIODO,
+								'BeneficiarioNIF': BeneficiarioNIF,
+								'descricaoRECEITA': descricaoRECEITA,
+								'tmpvalorPagar': tmpvalorPagar,
+								'tmpTAXA': tmpTAXA,
+								'Tmpvalortributavel': Tmpvalortributavel,
+								'valorPAGO': valorPAGO,
+								'datadePAGAMENTO': datadePAGAMENTO,
+								'dataEMISSAO': dataEMISSAO
+							}
+
+					elif "Modelo 6 de IVA" in ocr_tesserac:
+						print ('AINDA POR FAZER.... Modelo 6 de IVA')
+						print ('AINDA POR FAZER.... Modelo 6 de IVA')
+						print ('AINDA POR FAZER.... Modelo 6 de IVA')												
+
+					if not ocr_tesserac or not referenciadocumento:
+						print ('TERA DE FAZER O OCR......')
+						print ('TERA DE FAZER O OCR......')
+						print ('TERA DE FAZER O OCR......')
+						return ocr_pdf.ocr_pdf(input_path=data)
 
 		elif 'modelo6IVA_numDeclaracao' in temScrape:
 			print (temScrape['modelo6IVA_numDeclaracao'])
@@ -79,3 +230,6 @@ def lepdfocr(data,action = "SCRAPE"):
 	elif action == "OCR":
 		print ('OCR PDF')
 		return ocr_pdf.ocr_pdf(input_path=data)
+
+def find_second_last(text, pattern):
+	return text.rfind(pattern, 0, text.rfind(pattern))

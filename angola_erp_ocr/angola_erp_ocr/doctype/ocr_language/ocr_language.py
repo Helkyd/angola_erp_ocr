@@ -28,7 +28,6 @@ def check_language(lang):
 def lang_available(lang):
 	"""Call Tesseract OCR to verify language is available."""
 	list_of_languages = pytesseract.get_languages() # pytesseract.get_languages()[1]
-	print (list_of_languages)
 	if len(lang) == 2:
 		return frappe.get_doc("OCR Language", {"lang": lang}).code in list_of_languages
 
