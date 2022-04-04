@@ -21,6 +21,13 @@ import re
 def lepdfocr(data,action = "SCRAPE"):
 	#TODO: add action SCRAPE or OCR
 	#default will SCRAPE
+
+	cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
+	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
+
+	ocr_tesserac = ""
+	ocr_tesserac1 = ""
+
 	if action == "SCRAPE":
 		print ('SCRAPE PDF')
 		#print (dict(data))
@@ -76,8 +83,6 @@ def lepdfocr(data,action = "SCRAPE"):
 						datadePAGAMENTO = ""
 						dataEMISSAO = ""
 
-						cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
-						date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
 
 
 						#print ('CASH ',re.match(cash_pattern,b[0]))
@@ -203,9 +208,50 @@ def lepdfocr(data,action = "SCRAPE"):
 					elif "Modelo 6 de IVA" in ocr_tesserac:
 						print ('AINDA POR FAZER.... Modelo 6 de IVA')
 						print ('AINDA POR FAZER.... Modelo 6 de IVA')
-						print ('AINDA POR FAZER.... Modelo 6 de IVA')												
+						print ('AINDA POR FAZER.... Modelo 6 de IVA')
 
-					if not ocr_tesserac or not referenciadocumento:
+						#procura pelo REG if not run again with 180 DPI or 300
+						#REG19007009587X
+
+						datasubmissaoTEMP = ""
+						NIFContribuinte = ""
+						temREG = False
+
+						for aa in ocr_tesserac.split('\n'):
+							if aa.find('REG') != -1 and len(aa) == 15:
+								#Pode ser o Numero de Declaracao... if has 11 numbers
+								print ('REGNumbers ', aa[3:len(aa)-1])
+								temREG = True
+
+						if not temREG: #not "REG" in ocr_tesserac:
+							ocr_tesserac1 = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'por',False,180)
+							print (ocr_tesserac1.split('\n'))
+							for aa in ocr_tesserac1.split('\n'):
+								if aa.find('REG') != -1 and len(aa) == 15:
+									#Pode ser o Numero de Declaracao... if has 11 numbers
+									print ('REGNumbers ', aa[3:len(aa)-1])
+									referenciadocumento = aa.strip()
+									temREG = True
+								elif re.match(date_pattern,aa.strip()):
+									if not datasubmissaoTEMP:
+										datasubmissaoTEMP = aa.strip()
+										print ('datasubmissaoTEMP ', datasubmissaoTEMP)
+								elif len(aa.strip()) == 10:
+									#Might be NIF
+									if aa.strip().isnumeric() and not NIFContribuinte:
+										NIFContribuinte = aa.strip()
+										print ('NIFContribuinte ', NIFContribuinte)
+							if referenciadocumento and datasubmissaoTEMP and NIFContribuinte:
+								#Still missing to find what REGIME is it on....
+								return {
+									'referenciadocumento': referenciadocumento,
+									'datasubmissaoTEMP': datasubmissaoTEMP,
+									'NIFContribuinte': NIFContribuinte
+								}
+
+
+
+					if not ocr_tesserac or not ocr_tesserac1 or not referenciadocumento:
 						print ('TERA DE FAZER O OCR......')
 						print ('TERA DE FAZER O OCR......')
 						print ('TERA DE FAZER O OCR......')

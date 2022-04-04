@@ -2,6 +2,8 @@
 # Copyright (c) 2022, Helio de Jesus and contributors
 # For license information, please see license.txt
 
+#Last modified by HELKYds: 04-03-2022
+
 from __future__ import unicode_literals
 
 import io
@@ -117,6 +119,7 @@ def read_document(path, lang='eng', spellcheck=False, resolucao=150, event="ocr_
 	ocr = frappe.get_doc("Configuracao OCR") #frappe.get_doc("OCR Settings")
 
 	print ('resolucao ', resolucao)
+	print ('lang ', lang)
 
 	text = " "
 	with tesserocr.PyTessBaseAPI(lang=lang) as api:
