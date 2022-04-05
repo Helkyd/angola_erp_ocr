@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 02/04/2022
+#Date Changed: 05/04/2022
 
 
 from __future__ import unicode_literals
@@ -24,6 +24,7 @@ def lepdfocr(data,action = "SCRAPE"):
 
 	cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
+	iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
 
 	ocr_tesserac = ""
 	ocr_tesserac1 = ""
@@ -54,7 +55,7 @@ def lepdfocr(data,action = "SCRAPE"):
 					#Podemos fazer OCR with tesseract before trying with pytesseract
 					""" File, Language, DPI """
 
-					ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'por',False,200) #180) #200)
+					ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'eng',False,200) #'por',False,200) #180) #200)
 					print ('OCR TESSERACT')
 					print ('OCR TESSERACT')
 					print ('OCR TESSERACT')
@@ -70,10 +71,14 @@ def lepdfocr(data,action = "SCRAPE"):
 
 					referenciadocumento = ""
 
-					if "RECIBO DE PAGAMENTO" in ocr_tesserac and "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac:
+					if ("RECIBO DE PAGAMENTO" in ocr_tesserac and "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac) or "MCX DEBIT" in ocr_tesserac:
+						#MCX DEBIT -> Multicaixa Express
+
 						print ('RECIBO RETENCAO NA FONTE...')
 						Temdadoscontribuinte = False
 						TemdadoscontribuinteNIF = False
+
+						mcexpress = False
 
 						dadoscontribuinte = ""
 						dadoscontribuinteNIF = ""
@@ -154,6 +159,25 @@ def lepdfocr(data,action = "SCRAPE"):
 								if len(dd.split(' ')) == 5:
 									valorPAGO = dd.split(' ')[3]
 									print ('valorPAGO ', valorPAGO)
+							elif "N.CAIXA:" in dd:
+								print ('N. Caixa e Num Transacao')
+								mcexpress = True
+								numeroTransacao = dd[dd.rfind(' '):].strip()
+								if not numeroTransacao.strip().isnumeric():
+									numeroTransacao = ""
+								print ('numeroTransacao ',numeroTransacao)
+								#frappe.throw(porra)
+							elif "CONTA:" in dd:
+								print ('mcexpress', mcexpress)
+								print ('Conta e Data')
+								contaOrigem = dd[dd.find(' '):find_second_last(dd, ' ')].strip()
+								print ('contaOrigem ',contaOrigem)
+								datadePAGAMENTO = dd[find_second_last(dd, ' '):len(dd)].strip()
+								print ('datadePAGAMENTO ',datadePAGAMENTO)
+
+
+								#frappe.throw(porra)
+
 							elif dd[0:dd.find(' ')].strip().isnumeric():
 								#Can be NIF for Benificiario...
 								#5417537802 TEOR LOGICO-PRESTACAO DE SERVICOS LDA.
@@ -161,6 +185,22 @@ def lepdfocr(data,action = "SCRAPE"):
 									#NIF
 									BeneficiarioNIF = dd[0:dd.find(' ')].strip()
 								print ('NUMEROSSSSSSS')
+
+							elif re.match(iban_pattern,dd.strip()):
+								print ('IBAN DEST. ',re.match(iban_pattern,dd.strip()))
+								if mcexpress:
+									#IBAN Destinatario
+									ibanDestino = dd.strip()
+									print ('ibanDestino ',ibanDestino)
+								#frappe.throw(porra)
+							elif re.match(cash_pattern,dd.strip()):
+								print ('VALOR PAGO. ',re.match(cash_pattern,dd.strip()))
+								if mcexpress:
+									#IBAN Destinatario
+									valorPAGO = dd.strip()
+									print ('valorPAGO ',valorPAGO)
+								#frappe.throw(porra)
+
 							elif re.match(date_pattern,dd.strip()):
 								print ('DATAAAAAAASSSS')
 								#DATA....Pagamento ou EMISSAO
@@ -172,21 +212,6 @@ def lepdfocr(data,action = "SCRAPE"):
 
 
 
-						#Resumo dos DADOS
-						print ('====================')
-						print ('referenciadocumento ',referenciadocumento)
-						print ('dadoscontribuinte ',dadoscontribuinte)
-						print ('dadoscontribuinteNIF ',dadoscontribuinteNIF)
-						print ('referenciaANO ',referenciaANO)
-						print ('referenciaPERIODO ', referenciaPERIODO)
-						print ('BeneficiarioNIF ', BeneficiarioNIF)
-						print ('descricaoRECEITA ',descricaoRECEITA)
-						print ('tmpvalorPagar ', tmpvalorPagar)
-						print ('tmpTAXA ', tmpTAXA)
-						print ('Tmpvalortributavel ', Tmpvalortributavel)
-						print ('valorPAGO ',valorPAGO)
-						print ('datadePAGAMENTO ',datadePAGAMENTO)
-						print ('dataEMISSAO ', dataEMISSAO)
 
 						if referenciadocumento and valorPAGO and BeneficiarioNIF:
 							return {
@@ -204,6 +229,33 @@ def lepdfocr(data,action = "SCRAPE"):
 								'datadePAGAMENTO': datadePAGAMENTO,
 								'dataEMISSAO': dataEMISSAO
 							}
+						elif mcexpress and valorPAGO and ibanDestino:
+							#Multicaixa EXPRESS
+							return {
+								"mcexpress": mcexpress,
+								"numeroTransacao": numeroTransacao,
+								"datadePAGAMENTO": datadePAGAMENTO,
+								"contaOrigem": contaOrigem,
+								"ibanDestino": ibanDestino,
+								"valorPAGO": valorPAGO
+							}
+
+
+						#Resumo dos DADOS
+						print ('====================')
+						print ('referenciadocumento ',referenciadocumento)
+						print ('dadoscontribuinte ',dadoscontribuinte)
+						print ('dadoscontribuinteNIF ',dadoscontribuinteNIF)
+						print ('referenciaANO ',referenciaANO)
+						print ('referenciaPERIODO ', referenciaPERIODO)
+						print ('BeneficiarioNIF ', BeneficiarioNIF)
+						print ('descricaoRECEITA ',descricaoRECEITA)
+						print ('tmpvalorPagar ', tmpvalorPagar)
+						print ('tmpTAXA ', tmpTAXA)
+						print ('Tmpvalortributavel ', Tmpvalortributavel)
+						print ('valorPAGO ',valorPAGO)
+						print ('datadePAGAMENTO ',datadePAGAMENTO)
+						print ('dataEMISSAO ', dataEMISSAO)
 
 					elif "Modelo 6 de IVA" in ocr_tesserac:
 						print ('AINDA POR FAZER.... Modelo 6 de IVA')
