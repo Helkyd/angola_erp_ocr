@@ -1,5 +1,5 @@
 #Extracted from https://www.thepythoncode.com/article/extract-text-from-images-or-scanned-pdf-python
-#Last Modifed by HELKYD 02-04-2022
+#Last Modifed by HELKYD 05-04-2022
 
 from __future__ import unicode_literals
 import sys
@@ -1329,7 +1329,7 @@ def ocr_pdf(**kwargs):
 					linguasinstaladas.remove('3')
 					linguasinstaladas.remove('4')
 					print ('REMOVED 1 and 2')
-					Removedlinguasinstaladas = true
+					Removedlinguasinstaladas = True
 
 				for linginst in linguasinstaladas:
 					#Skip linginst 1 and 2 from the wordlist_langs
@@ -1969,9 +1969,9 @@ def ocr_pdf(**kwargs):
 										if val0.split('"')[1].upper().find('LDA') != -1 or val0.split('"')[1].upper().find('LIMITADA') != -1:
 											empresaOrigem1 = val0[0:val0.split('"')[1].upper().find('LDA')] or val0[0:val0.split('"')[1].upper().find('LIMITADA')]
 										else:
-											empresaOrigem1 = dados.replace('"','')
+											empresaOrigem1 = val0.replace('"','')
 									else:
-										empresaOrigem1 = dados.replace('"','')
+										empresaOrigem1 = val0.replace('"','')
 									print ('TEM empresaOrigem0 ',empresaOrigem0)
 									print ('TEM empresaOrigem1 ',empresaOrigem1)
 
