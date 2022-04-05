@@ -374,6 +374,10 @@ def ocr_pytesseract (filefinal):
 		mcexpress = False
 		bfatransferencia = False
 
+		temreferenciaDar = False
+
+		nextlinha = False
+
 		dadoscontribuinte = ""
 		dadoscontribuinteNIF = ""
 		descricaoRECEITA = ""
@@ -391,6 +395,7 @@ def ocr_pytesseract (filefinal):
 		contaOrigem = ""
 		contaCreditada = ""
 		numeroOperacao = ""
+		referenciaDAR = ""
 
 		if "MCX DEBIT" in ocr_tesserac:
 			#Redo the OCR with eng, 200
@@ -400,7 +405,10 @@ def ocr_pytesseract (filefinal):
 		#print ('CASH ',re.match(cash_pattern,b[0]))
 
 		for dd in ocr_tesserac.split('\n'):
-			if dd !='':
+			print ('size dd ',len(dd))
+			print (dd == "")
+			print (dd == " ")
+			if dd !='' and dd != ' ':
 				print ('-----')
 				print ('dd ', dd)
 				print ('ddsplit ', dd.split(' '))
@@ -568,6 +576,17 @@ def ocr_pytesseract (filefinal):
 					if len(dd.split(' ')) == 5:
 						valorPAGO = dd.split(' ')[3]
 						print ('valorPAGO ', valorPAGO)
+				elif "VALOR PAGO" in dd:
+					#next line will have paidvalue
+					nextlinha = True
+				elif nextlinha:
+					print ('qqqq', dd)
+					if "," in dd.strip() and "." in dd.strip():
+						print ('VALOR PAGO. ',re.match(cash_pattern,dd.strip()))
+						if not valorPAGO:
+							valorPAGO = dd.strip()
+					nextlinha = False
+
 				elif "N.CAIXA:" in dd:
 					print ('N. Caixa e Num Transacao')
 					mcexpress = True
@@ -602,8 +621,25 @@ def ocr_pytesseract (filefinal):
 						ibanDestino = dd.strip()
 						print ('ibanDestino ',ibanDestino)
 					#frappe.throw(porra)
+				elif temreferenciaDar:
+					tmprefedar = dd
+					print ('tmprefedar ',tmprefedar)
+					if len(tmprefedar) == 13:
+						#remove T
+						print ('remove T ')
+						tmprefedar1 = tmprefedar.replace('T','')
+						print ('tmprefedar1 ',tmprefedar1)
+						if tmprefedar1.isnumeric():
+							if not referenciaDAR:
+								referenciaDAR = tmprefedar1.strip()
+								print ('referenciaDAR ',referenciaDAR)
+						#frappe.throw(porra)
+
+
 				elif re.match(cash_pattern,dd.strip()):
 					print ('VALOR PAGO. ',re.match(cash_pattern,dd.strip()))
+					#if len(re.match(cash_pattern,dd.strip())) > 3:
+
 					if mcexpress:
 						#IBAN Destinatario
 						valorPAGO = dd.strip()
@@ -611,9 +647,11 @@ def ocr_pytesseract (filefinal):
 					elif bfatransferencia:
 						valorPAGO = dd.strip()
 						print ('valorPAGO ',valorPAGO)
-					elif not valorPAGO:
-						valorPAGO = dd.strip()
-						print ('valorPAGO ',valorPAGO)
+					#elif not valorPAGO:
+					#	valorPAGO = dd.strip()
+					#	print ('valorPAGO ',valorPAGO)
+					#	frappe.throw(porra)
+
 
 					#frappe.throw(porra)
 
@@ -633,12 +671,14 @@ def ocr_pytesseract (filefinal):
 							if bfatransferencia and not valorPAGO:
 								valorPAGO = ff.strip()
 
+				elif "Nº REFERÊNCIA DO PAGAMENTO" in dd:
+					temreferenciaDar = True
 
 
 
 				#frappe.throw(porra)
 
-		if referenciadocumento and valorPAGO and BeneficiarioNIF:
+		if referenciaDAR and valorPAGO: # and BeneficiarioNIF:
 			return {
 				'referenciadocumento':referenciadocumento,
 				'dadoscontribuinte':dadoscontribuinte,
@@ -652,7 +692,8 @@ def ocr_pytesseract (filefinal):
 				'Tmpvalortributavel': Tmpvalortributavel,
 				'valorPAGO': valorPAGO,
 				'datadePAGAMENTO': datadePAGAMENTO,
-				'dataEMISSAO': dataEMISSAO
+				'dataEMISSAO': dataEMISSAO,
+				'referenciaDAR': referenciaDAR
 			}
 		elif mcexpress and valorPAGO and ibanDestino:
 			#Multicaixa EXPRESS
@@ -704,6 +745,7 @@ def ocr_pytesseract (filefinal):
 		print ('valorPAGO ',valorPAGO)
 		print ('datadePAGAMENTO ',datadePAGAMENTO)
 		print ('dataEMISSAO ', dataEMISSAO)
+		print ('referenciaDAR ', referenciaDAR)
 
 	elif "Modelo 6 de IVA" in ocr_tesserac:
 		print ('AINDA POR FAZER.... Modelo 6 de IVA')
