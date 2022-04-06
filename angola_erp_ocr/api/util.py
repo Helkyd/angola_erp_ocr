@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 05/04/2022
+#Date Changed: 06/04/2022
 
 
 from __future__ import unicode_literals
@@ -30,6 +30,12 @@ def lepdfocr(data,action = "SCRAPE"):
 
 		if os.path.isfile(frappe.get_site_path('public','files') + data.replace('/files','')):
 			filefinal = frappe.get_site_path('public','files') + data.replace('/files','')
+			print ('filefinal ',filefinal)
+			if filefinal.startswith('.'):
+				filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+				filefinal = filefinal1
+			print ('filefinal1 ',filefinal)
+
 		else:
 			filefinal = data
 
