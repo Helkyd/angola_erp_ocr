@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 16/04/2022
+#Date Changed: 22/04/2022
 
 
 from __future__ import unicode_literals
@@ -353,8 +353,25 @@ def lepdfocr(data,action = "SCRAPE"):
 
 
 	elif action == "OCR":
-		print ('OCR PDF')
-		return ocr_pdf.ocr_pdf(input_path=data)
+		print ('OCR IMAGE/PDF...')
+		if os.path.isfile(frappe.get_site_path('public','files') + data.replace('/files','')):
+			filefinal = frappe.get_site_path('public','files') + data.replace('/files','')
+			print ('filefinal ',filefinal)
+			if filefinal.startswith('.'):
+				filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+				filefinal = filefinal1
+			print ('filefinal1 ',filefinal)
+
+		else:
+			filefinal = data
+
+		print ('IMAGE FILE')
+		print ('IMAGE FILE')
+		print ('DO OCR_READ and OCR_PDF')
+		return ocr_pytesseract (filefinal)
+
+		#Might use after if no results from above..
+		#return ocr_pdf.ocr_pdf(input_path=data)
 
 def find_second_last(text, pattern):
 	return text.rfind(pattern, 0, text.rfind(pattern))
@@ -385,7 +402,7 @@ def ocr_pytesseract (filefinal):
 
 	referenciadocumento = ""
 
-	if "RECIBO DE PAGAMENTO" in ocr_tesserac or "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac or "EMITIDO EM: RF PORTAL BO CONTRIBUINTE" in ocr_tesserac or "MCX DEBIT" in ocr_tesserac or "COMPROVATIVO DA OPERACAO" in ocr_tesserac or "COMPROVATIVO DA OPERAÇÃO" in ocr_tesserac:
+	if "RECIBO DE PAGAMENTO" in ocr_tesserac or "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac or "EMITIDO EM: RF PORTAL BO CONTRIBUINTE" in ocr_tesserac or "MCX DEBIT" in ocr_tesserac or "COMPROVATIVO DA OPERACAO" in ocr_tesserac or "COMPROVATIVO DA OPERAÇÃO" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac or "MULTICAIXA Express." in ocr_tesserac:
 		#MCX DEBIT -> Multicaixa Express
 		#COMPROVATIVO DA OPERACAO BFA
 
@@ -419,7 +436,11 @@ def ocr_pytesseract (filefinal):
 		numeroOperacao = ""
 		referenciaDAR = ""
 
-		if "MCX DEBIT" in ocr_tesserac:
+		ibanOrigem = ""
+
+		multiexpress = False
+
+		if "MCX DEBIT" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac:
 			#Redo the OCR with eng, 200
 			print ('Redo the OCR with eng, 200')
 			ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'eng',False,200)
@@ -464,6 +485,36 @@ def ocr_pytesseract (filefinal):
 					#frappe.throw(porra)
 				elif "COMPROVATIVO DA OPERACAO" in dd or "COMPROVATIVO DA OPERAÇÃO" in dd:
 					bfatransferencia = True
+				elif "Comprovativo Digital" in dd or "MULTICAIXA Express." in dd:
+					multiexpress = True
+				elif "Data-Hora" in dd:
+					if multiexpress:
+						datadePAGAMENTO = str(dd.split(' ')[2]) + " " + str(dd.split(' ')[3])
+						print ('datadePAGAMENTO ',datadePAGAMENTO)
+				elif "Destinatário" in dd or "Destinatario" in dd:
+					if multiexpress:
+						nomeDestinatario = dd[dd.find('|')+1:len(dd)].strip()
+						print ('nomeDestinatario ',nomeDestinatario)
+				elif "IBAN" in dd and multiexpress:
+					print ('IBAN DEST. ',re.match(iban_pattern,dd.split(' ')[2].strip()))
+					if not ibanDestino:
+						if re.match(iban_pattern,dd.split(' ')[2].strip()):
+							ibanDestino = dd.split(' ')[2].strip()
+							print ('ibanDestino ',ibanDestino)
+				elif "Montante" in dd and multiexpress:
+					print ('Montante ',re.match(cash_pattern,dd.split(' ')[2].strip()))
+					if not valorPAGO:
+						valorPAGO = dd.split(' ')[2].strip()
+						print ('valorPAGO ',valorPAGO)
+				elif ("Transacção" in dd or "Transacgao" in dd) and multiexpress:
+					if not numeroOperacao:
+						numeroOperacao = dd.split(' ')[2]
+						print ('numeroTransacao ',numeroOperacao)
+				elif ("IBAN:" in dd or "BAN:" in dd) and multiexpress:
+					if not ibanOrigem:
+						ibanOrigem = dd.split(' ')[1]
+						print ('ibanOrigem ',ibanOrigem)
+
 				elif "Net Empresas por" in dd and bfatransferencia:
 					empresaOrigem0 = dd.strip()[dd.strip().find('Net Empresas por')+16:]
 					print ('empresaOrigem0 ',empresaOrigem0)
@@ -764,6 +815,17 @@ def ocr_pytesseract (filefinal):
 				"valorPAGO": valorPAGO,
 				"descricaoPagamento": descricaoPagamento
 			}
+		elif multiexpress and valorPAGO and ibanDestino:
+			#Multicaixa EXPRESS PHONE; IMAGEM
+			return {
+				"multiexpress": multiexpress,
+				"numeroTransacao": numeroOperacao,
+				"datadePAGAMENTO": datadePAGAMENTO,
+				"contaOrigem": ibanOrigem,
+				"ibanDestino": ibanDestino,
+				"valorPAGO": valorPAGO
+			}
+
 
 
 		#Resumo dos DADOS
