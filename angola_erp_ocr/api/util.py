@@ -892,6 +892,12 @@ def ocr_pytesseract (filefinal):
 
 
 	if not ocr_tesserac or not ocr_tesserac1 or not referenciadocumento:
+		print ('Redo the OCR with eng, 200')
+		print ('Redo the OCR with eng, 200')
+		print ('Redo the OCR with eng, 200')
+		ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'eng',False,250)
+		print (ocr_tesserac)
+
 		print ('TERA DE FAZER O OCR......')
 		print ('TERA DE FAZER O OCR......')
 		print ('TERA DE FAZER O OCR......')
