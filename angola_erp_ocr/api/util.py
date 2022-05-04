@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 22/04/2022
+#Date Changed: 04/05/2022
 
 
 from __future__ import unicode_literals
@@ -666,14 +666,43 @@ def ocr_pytesseract (filefinal):
 					numeroTransacao = dd[dd.rfind(' '):].strip()
 					if not numeroTransacao.strip().isnumeric():
 						numeroTransacao = ""
+					if not numeroTransacao:
+						#get NCaixa instead...
+						if len(dd.split(' ')) == 4:
+							numeroTransacao = dd.split(' ')[1].strip()
+
 					print ('numeroTransacao ',numeroTransacao)
 					#frappe.throw(porra)
 				elif "CONTA:" in dd:
 					print ('mcexpress', mcexpress)
 					print ('Conta e Data')
 					contaOrigem = dd[dd.find(' '):find_second_last(dd, ' ')].strip()
+					if not contaOrigem:
+						#try again...
+						print ('try again...')
+						if len(dd.split(' ')) == 3:
+							print (dd.split(' ')[1].strip())
+							if dd.split(' ')[1].strip().startswith('OO'):
+								contaOrigem = dd.split(' ')[1].strip().replace('OO','00')
+								print ('contaOrigem0 ',contaOrigem)
+								print (contaOrigem.isnumeric())
+							elif dd.split(' ')[1].strip().isnumeric():
+								contaOrigem = dd.split(' ')[1].strip()
+
+							if "2q22/" in dd.split(' ')[2]:
+								#for sure is 2022
+								datadePAGAMENTO = dd.split(' ')[2].strip().replace('2q22','2022')
+
 					print ('contaOrigem ',contaOrigem)
-					datadePAGAMENTO = dd[find_second_last(dd, ' '):len(dd)].strip()
+					if not datadePAGAMENTO:
+						datadePAGAMENTO = dd[find_second_last(dd, ' '):len(dd)].strip()
+					if not datadePAGAMENTO:
+						#try again...
+						if len(dd.split(' ')) == 3:
+							if "2q22/" in dd.split(' ')[2]:
+								#for sure is 2022
+								datadePAGAMENTO = dd.split(' ')[2].strip().replace('2q22','2022')
+
 					print ('datadePAGAMENTO ',datadePAGAMENTO)
 
 
@@ -746,12 +775,26 @@ def ocr_pytesseract (filefinal):
 
 				elif "Nº REFERÊNCIA DO PAGAMENTO" in dd:
 					temreferenciaDar = True
-				elif dd.startswith("AO06") or dd.startswith("A006"):
+				elif dd.startswith("AO06") or dd.startswith("A006") or dd.startswith("AONE"):
 					print ('IBAN....')
 					print (len(dd))
 					print (dd)
 					print (dd.replace(',','.').replace(' ','').strip())
-					tmpiban = dd.replace(',','.').replace(' ','').strip()
+					tmpiban = dd.replace(',','.').replace(' ','').replace('AONE','AO06').strip()
+					#Check if all have 4 digits minus the last one.... if missing a ZERO just add
+					novotmpiban = ""
+					for a in tmpiban.split('.'):
+						if len(a.strip()) > 1 and len(a.strip()) < 4:
+							#just add a ZERO
+							novotmpiban = str(novotmpiban) + "0" + str(a.strip())  + "."
+						elif len(a.strip()) == 4:
+							novotmpiban = str(novotmpiban) + str(a.strip()) + "."
+						elif len(a.strip()) == 1:
+							#last Digit
+							novotmpiban = str(novotmpiban) + str(a.strip())
+					if novotmpiban:
+						tmpiban = novotmpiban
+					print ("novotmpiban ",novotmpiban)
 					print ('IBAN DEST. ',re.match(iban_pattern,tmpiban.strip()))
 					if re.match(iban_pattern,tmpiban.strip()):
 						if mcexpress and not ibanDestino:
