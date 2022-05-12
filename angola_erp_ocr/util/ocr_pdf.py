@@ -1,5 +1,5 @@
 #Extracted from https://www.thepythoncode.com/article/extract-text-from-images-or-scanned-pdf-python
-#Last Modifed by HELKYD 05-04-2022
+#Last Modifed by HELKYD 12-05-2022
 
 from __future__ import unicode_literals
 import sys
@@ -1770,7 +1770,7 @@ def ocr_pdf(**kwargs):
 								#NIF EMPRESA...
 								print ('NIF EMPRESA...')
 								nifempresaTEMP.append(val.split(',')[2].strip())
-								frappe.throw(porra)
+								#frappe.throw(porra)
 							elif "RECIBO DE PAGAMENTO" in val or "3º REPARTIÇÃO FISCAL" in val:
 								print ('Pagamento Retencao na FONTE...')
 								if "RECIBO DE PAGAMENTO" in val:

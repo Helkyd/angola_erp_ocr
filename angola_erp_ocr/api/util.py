@@ -58,6 +58,7 @@ def lepdfocr(data,action = "SCRAPE"):
 							podeterminar = True
 							return temScrape
 						else:
+							print ('CORRER ocr_pytesseract....')
 							return ocr_pytesseract (filefinal)
 
 				elif 'dataEMISSAO' in temScrape or 'datadePAGAMENTO' in temScrape:
@@ -445,6 +446,13 @@ def ocr_pytesseract (filefinal):
 			print ('Redo the OCR with eng, 200')
 			ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'eng',False,200)
 
+			print ('=====================')
+			print (ocr_tesserac)
+			print (type(ocr_tesserac))
+			print (ocr_tesserac.split('\n'))
+			print ('=====================')
+			#frappe.throw(porra)
+
 		#print ('CASH ',re.match(cash_pattern,b[0]))
 
 		for dd in ocr_tesserac.split('\n'):
@@ -501,6 +509,7 @@ def ocr_pytesseract (filefinal):
 						if re.match(iban_pattern,dd.split(' ')[2].strip()):
 							ibanDestino = dd.split(' ')[2].strip()
 							print ('ibanDestino ',ibanDestino)
+					#frappe.throw(porra)
 				elif "Montante" in dd and multiexpress:
 					print ('Montante ',re.match(cash_pattern,dd.split(' ')[2].strip()))
 					if not valorPAGO:
@@ -659,25 +668,53 @@ def ocr_pytesseract (filefinal):
 						if not valorPAGO:
 							valorPAGO = dd.strip()
 					nextlinha = False
+				elif "TRANSACCAI" in dd and len(dd.split(' ')) == 2:
+					#Caso unico where N.CAIXA numbers are first and TEXT Will be after...
+					ncaixa_pattern = r'^([0-9][0-9][0-9][0-9])\/([0-9][0-9][0-9][0-9])\/([0-9][0-9])'
+					print (len(dd.split(' ')[0].strip()))
+					print (len(dd.split(' ')[0]))
+					print (dd.split(' ')[0].strip())
+					if len(dd.split(' ')[0].strip()) == 12:
+						ncaixa_tmp = dd.split(' ')[0].strip()
+						print ('N.Caixa. ',re.match(ncaixa_pattern,ncaixa_tmp))
+						mcexpress = True
+						numeroTransacao = ncaixa_tmp
 
 				elif "N.CAIXA:" in dd or "N.CATXA:" in dd:
 					print ('N. Caixa e Num Transacao')
-					mcexpress = True
-					numeroTransacao = dd[dd.rfind(' '):].strip()
-					if not numeroTransacao.strip().isnumeric():
-						numeroTransacao = ""
 					if not numeroTransacao:
-						#get NCaixa instead...
-						if len(dd.split(' ')) == 4:
-							numeroTransacao = dd.split(' ')[1].strip()
+						mcexpress = True
+						numeroTransacao = dd[dd.rfind(' '):].strip()
+						if not numeroTransacao.strip().isnumeric():
+							numeroTransacao = ""
+						if not numeroTransacao:
+							#get NCaixa instead...
+							if len(dd.split(' ')) == 4:
+								numeroTransacao = dd.split(' ')[1].strip()
 
-					print ('numeroTransacao ',numeroTransacao)
-					#frappe.throw(porra)
+						print ('numeroTransacao ',numeroTransacao)
+						#frappe.throw(porra)
 				elif "CONTA:" in dd:
 					print ('mcexpress', mcexpress)
 					print ('Conta e Data')
 					contaOrigem = dd[dd.find(' '):find_second_last(dd, ' ')].strip()
-					if not contaOrigem:
+
+					if len(dd.split(' ')) == 9:
+						#User might Scanned the payment together with main INVOICE sent to him... mixed numbers from FT and payment done when scanned.
+						print (dd.split(' ')[3].strip())
+						if dd.split(' ')[3].strip().startswith('OO'):
+							contaOrigem = dd.split(' ')[3].strip().replace('OO','00')
+							print ('contaOrigem0 ',contaOrigem)
+							print (contaOrigem.isnumeric())
+						else:
+							contaOrigem = dd.split(' ')[3].strip()
+							print ('contaOrigem0 ',contaOrigem)
+							print (contaOrigem.isnumeric())
+
+						#Data pagamento
+						datadePAGAMENTO = str(dd.split(' ')[4].strip()) + ' ' + str(dd.split(' ')[5].strip())
+
+					elif not contaOrigem:
 						#try again...
 						print ('try again...')
 						if len(dd.split(' ')) == 3:
@@ -692,6 +729,8 @@ def ocr_pytesseract (filefinal):
 							if "2q22/" in dd.split(' ')[2]:
 								#for sure is 2022
 								datadePAGAMENTO = dd.split(' ')[2].strip().replace('2q22','2022')
+
+
 
 					print ('contaOrigem ',contaOrigem)
 					if not datadePAGAMENTO:
@@ -722,7 +761,7 @@ def ocr_pytesseract (filefinal):
 						#IBAN Destinatario
 						ibanDestino = dd.strip()
 						print ('ibanDestino ',ibanDestino)
-					#frappe.throw(porra)
+					frappe.throw(porra)
 				elif temreferenciaDar:
 					tmprefedar = dd
 					print ('tmprefedar ',tmprefedar)
@@ -744,11 +783,13 @@ def ocr_pytesseract (filefinal):
 
 					if mcexpress:
 						#IBAN Destinatario
-						valorPAGO = dd.replace(' ,',',').strip()
-						print ('valorPAGO ',valorPAGO)
+						if not valorPAGO:
+							valorPAGO = dd.replace(' ,',',').strip()
+							print ('valorPAGO mcexpress ',valorPAGO)
 					elif bfatransferencia:
-						valorPAGO = dd.strip()
-						print ('valorPAGO ',valorPAGO)
+						if not valorPAGO:						
+							valorPAGO = dd.strip()
+							print ('valorPAGO bfatransferencia ',valorPAGO)
 					#elif not valorPAGO:
 					#	valorPAGO = dd.strip()
 					#	print ('valorPAGO ',valorPAGO)
@@ -780,7 +821,7 @@ def ocr_pytesseract (filefinal):
 					print (len(dd))
 					print (dd)
 					print (dd.replace(',','.').replace(' ','').strip())
-					tmpiban = dd.replace(',','.').replace(' ','').replace('AONE','AO06').strip()
+					tmpiban = dd.replace(',','.').replace(' ','').replace('AONE','AO06').replace('C006','0006').strip()
 					#Check if all have 4 digits minus the last one.... if missing a ZERO just add
 					novotmpiban = ""
 					for a in tmpiban.split('.'):
