@@ -1379,7 +1379,22 @@ def ocr_pdf(**kwargs):
 										#Verifica se tem numeros....
 										print ('Numero ', len(b))
 										print ('Numero b0 ', b[0])
-										if len(b) >1:
+
+										#Caso unico; starts with A006/AO006 and has len 2 if split by ,
+										if len(b) == 2 and b[0].startswith('A006') or b[0].startswith('A006'):
+											tmpb = b[0] + b[1]
+											tmpb1 = tmpb.replace('A006','AO06').replace("AO0G",'AO06').replace(',','.')
+
+											iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
+											print ('IBAN DEST.0 ',re.match(iban_pattern,tmpb1))
+											if re.match(iban_pattern,tmpb1):
+												#IBAN
+												ibanDestino = tmpb1
+												mustIBANDestinatario = True
+												ibansDestino.append(tmpb1)
+
+
+										elif len(b) >1:
 											text_file.write("Dados B " + str(b) + "\n" )
 											text_file.write("Dados B1 " + str(b[1]) + "\n" )
 											text_file.write("======= \n" )
@@ -1402,7 +1417,7 @@ def ocr_pdf(**kwargs):
 													tmpiban1 = tmpiban.replace("A006",'AO06').replace("AO0G",'AO06')
 													tmpiban = tmpiban1
 													iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
-													print ('IBAN DEST. ',re.match(iban_pattern,tmpiban))
+													print ('IBAN DEST.0 ',re.match(iban_pattern,tmpiban))
 													if re.match(iban_pattern,tmpiban):
 														#IBAN
 														ibanDestino = tmpiban
@@ -1430,11 +1445,14 @@ def ocr_pdf(**kwargs):
 											print ('LEN ', len(b))
 											print ('Numero1 ', b[1])
 											print ('Numeros so ',b[0].isnumeric())
+											print ('Numeros so ',len(b[0]))
 											print ('Numeros so ',b[1].isnumeric())
+											print ('Numeros so ',len(b[1]))
+
 
 
 											iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
-											print ('IBAN DEST. ',re.match(iban_pattern,b[1]))
+											print ('IBAN DEST.1 ',re.match(iban_pattern,b[1]))
 											if re.match(iban_pattern,b[1]):
 												#IBAN
 												if not ibanDestino:
@@ -1499,8 +1517,9 @@ def ocr_pdf(**kwargs):
 
 											if "KZ" in b[1]:
 												#Valor transferencia
-												frappe.throw(porra)
-												valorTransferencia = b[0]
+												print ('valorTransferencia ',valorTransferencia)
+												#frappe.throw(porra)
+												#valorTransferencia = b[0]
 
 											cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
 											print ('CASH ',re.match(cash_pattern,b[0]))

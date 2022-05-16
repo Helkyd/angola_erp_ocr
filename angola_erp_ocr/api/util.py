@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 04/05/2022
+#Date Changed: 16/05/2022
 
 
 from __future__ import unicode_literals
@@ -441,10 +441,19 @@ def ocr_pytesseract (filefinal):
 
 		multiexpress = False
 
+		numeroTransacao = ""
+
 		if "MCX DEBIT" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac:
-			#Redo the OCR with eng, 200
-			print ('Redo the OCR with eng, 200')
-			ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'eng',False,200)
+			#Check if TRANSACÇÃO
+			if "TRANSACÇÃO:" in ocr_tesserac:
+				print ('Transacao MCX DEBIT')
+				print ('Transacao MCX DEBIT')
+
+
+			else:
+				#Redo the OCR with eng, 200
+				print ('Redo the OCR with eng, 200')
+				ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'eng',False,200)
 
 			print ('=====================')
 			print (ocr_tesserac)
@@ -476,12 +485,14 @@ def ocr_pytesseract (filefinal):
 				print (len(dd.strip()[dd.strip().rfind(' '):].strip()) == 14)
 				print (dd.strip()[dd.strip().rfind(' '):].strip())
 
-				print ('cash')
+				print ('CASH')
 				print (re.match(cash_pattern,dd.strip()))
 				#print ('.' in dd and ',' in dd)
 				#for ff in dd.split(' '):
 				#	print (re.match(cash_pattern,ff.strip()))
-
+				print ('IBAns CHECK')
+				print (dd.startswith("ACO6"))
+				print (dd.startswith("ACO6.0006.0000.6671.9425"))
 				#frappe.throw(porra)
 
 				if "LIQUIDAÇÃO GENÉRICA DE TRIBUTO" in dd.strip():
@@ -515,10 +526,11 @@ def ocr_pytesseract (filefinal):
 					if not valorPAGO:
 						valorPAGO = dd.split(' ')[2].strip()
 						print ('valorPAGO ',valorPAGO)
-				elif ("Transacção" in dd or "Transacgao" in dd) and multiexpress:
+				elif ("Transacção".upper() in dd.upper() or "Transacgao".upper() in dd.upper()) and multiexpress:
 					if not numeroOperacao:
 						numeroOperacao = dd.split(' ')[2]
 						print ('numeroTransacao ',numeroOperacao)
+					frappe.throw(porra)
 				elif ("IBAN:" in dd or "BAN:" in dd) and multiexpress:
 					if not ibanOrigem:
 						ibanOrigem = dd.split(' ')[1]
@@ -604,6 +616,7 @@ def ocr_pytesseract (filefinal):
 
 				elif Temdadoscontribuinte and not dadoscontribuinte:
 					dadoscontribuinte = dd.strip()
+					print ('dadoscontribuinte')
 					print (dadoscontribuinte)
 					#frappe.throw(porra)
 				elif "LUANDA - ANGOLA" in dd:
@@ -654,6 +667,7 @@ def ocr_pytesseract (filefinal):
 					frappe.throw(porra)
 
 				elif "VALOR TOTAL PAGO" in dd:
+					print ("VALOR TOTAL PAGO")
 					print (dd.split(' ')[3])
 					if len(dd.split(' ')) == 5:
 						valorPAGO = dd.split(' ')[3]
@@ -787,7 +801,7 @@ def ocr_pytesseract (filefinal):
 							valorPAGO = dd.replace(' ,',',').strip()
 							print ('valorPAGO mcexpress ',valorPAGO)
 					elif bfatransferencia:
-						if not valorPAGO:						
+						if not valorPAGO:
 							valorPAGO = dd.strip()
 							print ('valorPAGO bfatransferencia ',valorPAGO)
 					#elif not valorPAGO:
@@ -807,21 +821,14 @@ def ocr_pytesseract (filefinal):
 						print ('dataEMISSAO ', dataEMISSAO)
 						print ('datadePAGAMENTO ', datadePAGAMENTO)
 
-				elif '.' in dd and ',' in dd:
-					for ff in dd.split(' '):
-						print (re.match(cash_pattern,ff.strip()))
-						if re.match(cash_pattern,ff.strip()):
-							if bfatransferencia and not valorPAGO:
-								valorPAGO = ff.strip()
-
 				elif "Nº REFERÊNCIA DO PAGAMENTO" in dd:
 					temreferenciaDar = True
-				elif dd.startswith("AO06") or dd.startswith("A006") or dd.startswith("AONE"):
+				elif dd.startswith("AO06") or dd.startswith("A006") or dd.startswith("AONE") or dd.startswith("ACO6"):
 					print ('IBAN....')
 					print (len(dd))
 					print (dd)
 					print (dd.replace(',','.').replace(' ','').strip())
-					tmpiban = dd.replace(',','.').replace(' ','').replace('AONE','AO06').replace('C006','0006').strip()
+					tmpiban = dd.replace(',','.').replace(' ','').replace('AONE','AO06').replace('C006','0006').replace('ACO6','AO06').strip()
 					#Check if all have 4 digits minus the last one.... if missing a ZERO just add
 					novotmpiban = ""
 					for a in tmpiban.split('.'):
@@ -844,6 +851,13 @@ def ocr_pytesseract (filefinal):
 							print ('ibanDestino ',ibanDestino)
 
 					#frappe.throw(porra)
+
+				elif '.' in dd and ',' in dd:
+					for ff in dd.split(' '):
+						print (re.match(cash_pattern,ff.strip()))
+						if re.match(cash_pattern,ff.strip()):
+							if bfatransferencia and not valorPAGO:
+								valorPAGO = ff.strip()
 
 
 
@@ -878,6 +892,8 @@ def ocr_pytesseract (filefinal):
 			}
 		elif bfatransferencia and valorPAGO and contaCreditada:
 			#Multicaixa EXPRESS
+			print ('#Multicaixa EXPRESS')
+			#frappe.throw(porra)
 			#missing Numero Operacao .. do OCR again por por,300
 			if not numeroOperacao:
 				ocr_tesserac1 = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'por',False,300)
@@ -976,6 +992,7 @@ def ocr_pytesseract (filefinal):
 
 
 	if not ocr_tesserac or not ocr_tesserac1 or not referenciadocumento:
+		#frappe.throw(porra)
 		print ('Redo the OCR with eng, 200')
 		print ('Redo the OCR with eng, 200')
 		print ('Redo the OCR with eng, 200')
