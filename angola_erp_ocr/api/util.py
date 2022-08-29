@@ -50,17 +50,18 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 
 		#If no results... than change to OCR
 		if ".pdf" in filefinal:
-			temScrape = pdf_scrape.pdfscrape(filefinal,None,'COMPRAS')
-			print ('RESULTADO COMPRAS')
-			print (temScrape)
+			#temScrape = pdf_scrape.pdfscrape(filefinal,None,'COMPRAS')
+			#print ('RESULTADO COMPRAS')
+			#print (temScrape)
 
 
-			print ('Now check the TXT generated and return the info required for creating the Invoice...')
-			print ('Now check the TXT generated and return the info required for creating the Invoice...')
-			ficheiro = temScrape
+			#print ('Now check the TXT generated and return the info required for creating the Invoice...')
+			#print ('Now check the TXT generated and return the info required for creating the Invoice...')
+			#ficheiro = temScrape
 			#print ('ficheiro ', ficheiro)
+
 			print ('Verify if file exists ....')
-			print (frappe.get_site_path() + ficheiro)
+			#print (frappe.get_site_path() + ficheiro)
 
 			if os.path.isfile(filefinal):
 				#tree = ET.parse(ficheiro)
