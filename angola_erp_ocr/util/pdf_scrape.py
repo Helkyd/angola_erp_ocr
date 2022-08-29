@@ -1,5 +1,5 @@
 #Extracted from https://www.thepythoncode.com/article/extract-text-from-images-or-scanned-pdf-python
-#Last Modifed by HELKYD 29-03-2022
+#Last Modifed by HELKYD 28-08-2022
 
 from __future__ import unicode_literals
 
@@ -383,7 +383,7 @@ def pdf_scrape(pdf):
 	return(page)
 
 @frappe.whitelist(allow_guest=True)
-def pdfscrape(ficheiropdf = None, empresa = None):
+def pdfscrape(ficheiropdf = None, empresa = None, tipodoctype = None):
 	#Can be used to read any PDF and extract TEXT from it...
 	#Read a PDF from Multicaixa EXPRESS payment and extract
 	#Date of Payment, Company paid to, IBAN paid to, Amount paid, Transaction number and IBAN from
@@ -412,8 +412,19 @@ def pdfscrape(ficheiropdf = None, empresa = None):
 	pdf.load()
 	print ('load completed')
 
-	#This can be removed... this was used to learn where fields are and get extract the TEXT
-	pdf.tree.write('/tmp/pdfXML.txt',pretty_print=True)
+	#For creating Purchase Order or Invoice based on PDF from Supplier...
+	#Generates the TXT file and after run through
+	if tipodoctype.upper() == "COMPRAS":
+		print ('Generate the file TXT based on ficheiropdf file..')
+		print ('Ficheiropdf ', ficheiropdf[ficheiropdf.find('/files/')+7:len(ficheiropdf)-3])
+		filetmp = ficheiropdf[ficheiropdf.find('/files/')+7:len(ficheiropdf)-3] + 'txt'
+		pdf.tree.write('/tmp/' + filetmp,pretty_print=True)
+
+		print ('ficheiro ', filetmp)
+		return '/tmp/' + filetmp
+	else:
+		#This can be removed... this was used to learn where fields are and get extract the TEXT
+		pdf.tree.write('/tmp/pdfXML.txt',pretty_print=True)
 	print ('generate tree')
 
 	#Needs to know if is PDF from  MULTICAIXA Express

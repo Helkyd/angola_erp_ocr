@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 16/05/2022
+#Date Changed: 28/08/2022
 
 
 from __future__ import unicode_literals
@@ -17,13 +17,170 @@ import os
 from angola_erp_ocr.angola_erp_ocr.doctype.ocr_read import ocr_read
 import re
 
+import xml.etree.ElementTree as ET
+
 @frappe.whitelist(allow_guest=True)
-def lepdfocr(data,action = "SCRAPE"):
-	#TODO: add action SCRAPE or OCR
-	#default will SCRAPE
+def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
+	#default is SCRAPE
+	#tipodoctype if Compras means will create a Purchase Order or Invoice.
 
 
-	if action == "SCRAPE":
+	if tipodoctype.upper() == "COMPRAS":
+		print ('Gerar TXT from PDF file to Purchase Order or Invoice...')
+		print ('Gerar TXT from PDF file to Purchase Order or Invoice...')
+
+		if os.path.isfile(frappe.get_site_path('public','files') + data.replace('/files','')):
+			filefinal = frappe.get_site_path('public','files') + data.replace('/files','')
+			print ('filefinal ',filefinal)
+			if filefinal.startswith('.'):
+				filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+				filefinal = filefinal1
+			print ('filefinal1 ',filefinal)
+
+		else:
+			filefinal = data
+
+		#If no results... than change to OCR
+		if ".pdf" in filefinal:
+			temScrape = pdf_scrape.pdfscrape(filefinal,None,'COMPRAS')
+			print ('RESULTADO COMPRAS')
+			print (temScrape)
+
+
+			print ('Now check the TXT generated and return the info required for creating the Invoice...')
+			print ('Now check the TXT generated and return the info required for creating the Invoice...')
+			ficheiro = temScrape
+			#print ('ficheiro ', ficheiro)
+			print ('Verify if file exists ....')
+			print (frappe.get_site_path() + ficheiro)
+			if os.path.isfile(ficheiro):
+				tree = ET.parse(ficheiro)
+			else:
+				print ('Ficheiro nao existe.. ' + ficheiro)
+				return ('Ficheiro nao existe.. ' + ficheiro)
+
+			root = tree.getroot()
+
+
+			facturanumero = ""
+			datafactura = ""
+			Cliente_Empresa = ""
+			Cliente_EmpresaNIF = ""
+
+			listadeItems = []
+			listaitem = {}
+
+			itemdescricao = ""
+			itemquantidade = ""
+			itempreco = ""
+			itemtotal = ""
+
+			proximalinha = False
+			proximalinhaDate = False
+			proximalinhaNIF = False
+
+			proximalinhaDESCRIPTION = False
+
+			cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
+			date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
+			iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
+
+			#Gets Date from Invoice...
+			label = pdf.pq('LTTextLineHorizontal:contains("Date")')
+			left_corner = float(label.attr('x0'))
+			bottom_corner = float(label.attr('y0'))
+			datafactura = pdf.pq('LTTextLineHorizontal:in_bbox("%s, %s, %s, %s")' % (
+        left_corner, bottom_corner - 12, left_corner + 350, bottom_corner)).text()
+
+			print ('excuting import.....')
+			for elem in root:
+				print (elem)
+				print ('elem.tag ',elem.tag)
+				for ltpage in elem:
+					print ('ltpage.tag ',ltpage.tag)
+					for ltrect in ltpage:
+						print ('ltrect.tag ',ltrect.tag)
+						for lttextlinehor in ltrect:
+							print ('linha LTTextLineHorizontal')
+							print ('lttextlinehor.tag ',lttextlinehor.tag)
+							print (lttextlinehor.text)
+							for lttextboxhor in lttextlinehor:
+								print ('linha LTTextBoxHorizontal')
+								print ('lttextboxhor.tag ',lttextboxhor.tag)
+								print (lttextboxhor.text.strip())
+
+			return
+
+			print ('excuting import.....')
+			for elem in root:
+				print (elem)
+				print ('elem.tag ',elem.tag)
+				for ltpage in elem:
+					print ('ltpage.tag ',ltpage.tag)
+					for ltrect in ltpage:
+						print ('ltrect.tag ',ltrect.tag)
+						for lttextlinehor in ltrect:
+							print ('lttextlinehor.tag ',lttextlinehor.tag)
+							print (lttextlinehor.text.strip())
+							#print ('CASH ',re.match(cash_pattern,lttextlinehor.text))
+							#print ('Date ',re.match(date_pattern,lttextlinehor.text))
+
+							#Check what Text...
+							#Invoice Number on this specific case
+							if "INVOICE NO:" in lttextlinehor.text:
+								facturanumero = lttextlinehor.text[lttextlinehor.text.find('INVOICE NO:')+11:]
+								print ('facturanumero ',facturanumero)
+
+							elif "Date" in lttextlinehor.text:
+								proximalinhaDate = True
+							elif proximalinhaDate == True:
+								proximalinhaDate = False
+								#Still need to check if is DATE format...
+								if re.match(date_pattern,lttextlinehor.text):
+									datafactura = lttextlinehor.text
+									print ('datafactura ',datafactura)
+							elif "CONSIGNEE NAME:" in lttextlinehor.text:
+								proximalinha = True
+							elif proximalinha == True:
+								proximalinha = False
+								Cliente_Empresa = lttextlinehor.text
+								print ('Cliente_Empresa ',Cliente_Empresa)
+							elif "NIF:" in lttextlinehor.text:
+								Cliente_EmpresaNIF = lttextlinehor.text[lttextlinehor.text.find('NIF:')+4:]
+								print ('Cliente_EmpresaNIF ',Cliente_EmpresaNIF)
+							elif "ITEM" in lttextlinehor.text:
+								#Next line will be order number...
+								print ('Next line will be order number...')
+							elif "DESCRIPTION" in lttextlinehor.text:
+								#Next line description of the Item
+								print ('Next line description of the Item...')
+								proximalinhaDESCRIPTION = True
+							elif proximalinhaDESCRIPTION == True:
+								proximalinhaDESCRIPTION = False
+								itemdescricao = lttextlinehor.text
+								print ('itemdescricao ',itemdescricao)
+
+							if lttextlinehor.tag == "LTFigure":
+								#Pode ter Quantidade, precos,...
+								print ('Pode ter Quantidade, precos,...')
+								for ltfigure in lttextlinehor:
+									print ('ltfigure.tag ',ltfigure.tag)
+									if ltfigure.tag == "LTTextLineHorizontal":
+										for lttextlinehor_figure in ltfigure:
+											print ('lttextlinehor_figure.tag ',lttextlinehor_figure.tag)
+											print (lttextlinehor_figure.text.strip())
+
+
+
+
+
+
+				#if 'LTTextLineHorizontal' in elem.tag:
+				#	print (elem.name)
+				#	print (elem.name)
+
+
+	elif action == "SCRAPE":
 		print ('SCRAPE PDF')
 		#print (dict(data))
 		#return data.replace('/files','')
