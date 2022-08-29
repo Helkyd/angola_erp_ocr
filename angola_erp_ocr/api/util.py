@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 28/08/2022
+#Date Changed: 29/08/2022
 
 
 from __future__ import unicode_literals
@@ -18,6 +18,14 @@ from angola_erp_ocr.angola_erp_ocr.doctype.ocr_read import ocr_read
 import re
 
 import xml.etree.ElementTree as ET
+
+from pprint import pprint
+from io import StringIO
+
+from pdfminer.high_level import extract_text_to_fp
+from pdfminer.layout import LAParams
+from lxml import html
+
 
 @frappe.whitelist(allow_guest=True)
 def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
@@ -53,14 +61,19 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 			#print ('ficheiro ', ficheiro)
 			print ('Verify if file exists ....')
 			print (frappe.get_site_path() + ficheiro)
-			if os.path.isfile(ficheiro):
-				tree = ET.parse(ficheiro)
+
+			if os.path.isfile(filefinal):
+				#tree = ET.parse(ficheiro)
+				print ('Running pdf_scrape_txt....')
+				return pdf_scrape_txt(filefinal)
+
 			else:
-				print ('Ficheiro nao existe.. ' + ficheiro)
-				return ('Ficheiro nao existe.. ' + ficheiro)
+				print ('Ficheiro nao existe.. ' + filefinal)
+				return ('Ficheiro nao existe.. ' + filefinal)
 
-			root = tree.getroot()
-
+			'''
+			NOT NEEDED ANY MORE.....
+			'''
 
 			facturanumero = ""
 			datafactura = ""
@@ -1160,3 +1173,134 @@ def ocr_pytesseract (filefinal):
 		print ('TERA DE FAZER O OCR......')
 		print ('TERA DE FAZER O OCR......')
 		return ocr_pdf.ocr_pdf(input_path=filefinal)
+
+@frappe.whitelist(allow_guest=True)
+def pdf_scrape_txt(ficheiro):
+	'''
+		Initially created to scrape item from Sales Invoice of a Supplier and create as Purchase Order or Invoice
+		Format used is from TMJ for other suppliers might need some changes...
+	'''
+
+	ID_LEFT_BORDER = 40 #56
+	ID_RIGHT_BORDER = 50 #156
+
+	DESC_LEFT_BORDER = 70 #56
+	DESC_RIGHT_BORDER = 80 #156
+
+	INVNUM_LEFT_BORDER = 210
+	INVNUM_RIGHT_BORDER = 215
+
+	INVDATE_LEFT_BORDER = 310
+	INVDATE_RIGHT_BORDER = 315
+
+	QTY_LEFT_BORDER = 320
+	QTY_RIGHT_BORDER = 350
+
+	RATE_LEFT_BORDER = 400
+	RATE_RIGHT_BORDER = 450
+
+	TOTAL_LEFT_BORDER = 500
+	TOTAL_RIGHT_BORDER = 550
+
+	empresaSupplier = ""
+	invoicenumber = ""
+	invoicedate = ""
+
+	# Read PDF file and convert it to HTML
+	output = StringIO()
+	#with open('/tmp/SINV-2022-00021-1.pdf', 'rb') as pdf_file:
+	with open(ficheiro, 'rb') as pdf_file:
+	    extract_text_to_fp(pdf_file, output, laparams=LAParams(), output_type='html', codec=None)
+	raw_html = output.getvalue()
+	# Extract all DIV tags
+	tree = html.fromstring(raw_html)
+	divs = tree.xpath('.//div')
+	# Sort and filter DIV tags
+	filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': []}
+	temitems = False
+	for div in divs:
+	    # extract styles from a tag
+	    div_style = div.get('style')
+	    print(div_style)
+	    # position:absolute; border: textbox 1px solid; writing-mode:lr-tb; left:292px; top:1157px; width:27px; height:12px;
+	# get left position
+	    try:
+	        left = re.findall(r'left:([0-9]+)px', div_style)[0]
+	    except IndexError:
+	        continue
+
+	    if INVNUM_LEFT_BORDER < int(left) < INVNUM_RIGHT_BORDER:
+	        #Invoice Number
+	        #print (div.text_content().strip('\n').upper())
+	        if 'INVOICE NO:' in div.text_content().strip('\n').upper():
+	            #print (div.text_content().split('\n'))
+	            tmpinv = div.text_content().strip('\n').upper()
+	            invoicenumber = tmpinv[tmpinv.find('INVOICE NO:')+12:]
+	            #print ('invoicenumber ',invoicenumber)
+
+	    if INVDATE_LEFT_BORDER < int(left) < INVDATE_RIGHT_BORDER:
+	        #Invoice DATE
+	        #print (div.text_content().strip('\n').upper())
+	        if 'DATE' in div.text_content().strip('\n').upper():
+	            #print (div.text_content().split('\n'))
+	            tmpinv = div.text_content().split('\n')[1]
+	            invoicedate = tmpinv
+	            #print ('invoicedate ',invoicedate)
+
+	    # div contains ID if div's left position between ID_LEFT_BORDER and ID_RIGHT_BORDER
+	    #print (div.text_content().strip('\n').upper())
+	    if ID_LEFT_BORDER < int(left) < ID_RIGHT_BORDER:
+	        if div.text_content().strip('\n') == 'ITEM':
+	            temitems = True
+	        elif 'AMOUNT IN WORDS' in div.text_content().strip('\n').upper():
+	            temitems = False
+	        if temitems and div.text_content().strip('\n') != 'ITEM'  and 'CONSIGNEE NAME:' not in div.text_content().strip('\n').upper() and div.text_content().strip('\n') != '':
+	            filtered_divs['ITEM'].append(div.text_content().strip('\n'))
+
+	        elif 'THANK YOU FOR YOUR BUSINESS' in div.text_content().strip('\n').upper():
+	            #For this specific case Company name is after Thank you for you...
+	            print ('Get Empresa/Supplier...')
+	            print (div.text_content().split('\n')[1].strip('\n').upper())
+	            empresaSupplier = div.text_content().split('\n')[1].strip('\n').upper()
+	            print (empresaSupplier)
+
+
+	    if DESC_LEFT_BORDER < int(left) < DESC_RIGHT_BORDER:
+	        #print ('descricao...')
+	        #print (div.text_content().strip('\n').upper())
+	        filtered_divs['DESCRIPTION'].append(div.text_content().strip('\n'))
+
+	    if QTY_LEFT_BORDER < int(left) < QTY_RIGHT_BORDER:
+	        #print ('QTY...')
+	        #print (div.text_content().strip('\n').upper())
+	        filtered_divs['QUANTITY'].append(div.text_content().strip('\n'))
+
+	    if RATE_LEFT_BORDER < int(left) < RATE_RIGHT_BORDER:
+	        #print ('RATE...')
+	        #print (div.text_content().strip('\n').upper())
+	        #print ('TRANSPORTED VALUE' not in div.text_content().strip('\n'))
+	        if 'TRANSPORTED VALUE' not in div.text_content().strip('\n').upper() and 'TRANSPORTING VALUE' not in div.text_content().strip('\n').upper():
+	            filtered_divs['RATE'].append(div.text_content().strip('\n'))
+
+	    if TOTAL_LEFT_BORDER < int(left) < TOTAL_RIGHT_BORDER:
+	        #print ('TOTAL...')
+	        #print (div.text_content().strip('\n').upper())
+	        filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
+
+
+
+	# Merge and clear lists with data
+	data = []
+	for row in zip(filtered_divs['ITEM'], filtered_divs['DESCRIPTION'], filtered_divs['QUANTITY'], filtered_divs['RATE'], filtered_divs['TOTAL']):
+	    if 'ITEM' in row[0]:
+	        continue
+
+	    data_row = {'ID': row[0].split(' ')[0], 'Description': row[1], 'Quantity': row[2], 'Rate': row[3], 'Total': row[4]}
+	    data.append(data_row)
+
+	print('Supplier ', empresaSupplier)
+	print('Invoice', invoicenumber)
+	print('Date ', invoicedate)
+	pprint(data)
+
+	return (empresaSupplier,invoicenumber,invoicedate,data)
