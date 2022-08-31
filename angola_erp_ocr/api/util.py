@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 30/08/2022
+#Date Changed: 31/08/2022
 
 
 from __future__ import unicode_literals
@@ -76,122 +76,6 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 			NOT NEEDED ANY MORE.....
 			'''
 
-			facturanumero = ""
-			datafactura = ""
-			Cliente_Empresa = ""
-			Cliente_EmpresaNIF = ""
-
-			listadeItems = []
-			listaitem = {}
-
-			itemdescricao = ""
-			itemquantidade = ""
-			itempreco = ""
-			itemtotal = ""
-
-			proximalinha = False
-			proximalinhaDate = False
-			proximalinhaNIF = False
-
-			proximalinhaDESCRIPTION = False
-
-			cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
-			date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
-			iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
-
-			#Gets Date from Invoice...
-			label = pdf.pq('LTTextLineHorizontal:contains("Date")')
-			left_corner = float(label.attr('x0'))
-			bottom_corner = float(label.attr('y0'))
-			datafactura = pdf.pq('LTTextLineHorizontal:in_bbox("%s, %s, %s, %s")' % (
-		left_corner, bottom_corner - 12, left_corner + 350, bottom_corner)).text()
-
-			print ('excuting import.....')
-			for elem in root:
-				print (elem)
-				print ('elem.tag ',elem.tag)
-				for ltpage in elem:
-					print ('ltpage.tag ',ltpage.tag)
-					for ltrect in ltpage:
-						print ('ltrect.tag ',ltrect.tag)
-						for lttextlinehor in ltrect:
-							print ('linha LTTextLineHorizontal')
-							print ('lttextlinehor.tag ',lttextlinehor.tag)
-							print (lttextlinehor.text)
-							for lttextboxhor in lttextlinehor:
-								print ('linha LTTextBoxHorizontal')
-								print ('lttextboxhor.tag ',lttextboxhor.tag)
-								print (lttextboxhor.text.strip())
-
-			return
-
-			print ('excuting import.....')
-			for elem in root:
-				print (elem)
-				print ('elem.tag ',elem.tag)
-				for ltpage in elem:
-					print ('ltpage.tag ',ltpage.tag)
-					for ltrect in ltpage:
-						print ('ltrect.tag ',ltrect.tag)
-						for lttextlinehor in ltrect:
-							print ('lttextlinehor.tag ',lttextlinehor.tag)
-							print (lttextlinehor.text.strip())
-							#print ('CASH ',re.match(cash_pattern,lttextlinehor.text))
-							#print ('Date ',re.match(date_pattern,lttextlinehor.text))
-
-							#Check what Text...
-							#Invoice Number on this specific case
-							if "INVOICE NO:" in lttextlinehor.text:
-								facturanumero = lttextlinehor.text[lttextlinehor.text.find('INVOICE NO:')+11:]
-								print ('facturanumero ',facturanumero)
-
-							elif "Date" in lttextlinehor.text:
-								proximalinhaDate = True
-							elif proximalinhaDate == True:
-								proximalinhaDate = False
-								#Still need to check if is DATE format...
-								if re.match(date_pattern,lttextlinehor.text):
-									datafactura = lttextlinehor.text
-									print ('datafactura ',datafactura)
-							elif "CONSIGNEE NAME:" in lttextlinehor.text:
-								proximalinha = True
-							elif proximalinha == True:
-								proximalinha = False
-								Cliente_Empresa = lttextlinehor.text
-								print ('Cliente_Empresa ',Cliente_Empresa)
-							elif "NIF:" in lttextlinehor.text:
-								Cliente_EmpresaNIF = lttextlinehor.text[lttextlinehor.text.find('NIF:')+4:]
-								print ('Cliente_EmpresaNIF ',Cliente_EmpresaNIF)
-							elif "ITEM" in lttextlinehor.text:
-								#Next line will be order number...
-								print ('Next line will be order number...')
-							elif "DESCRIPTION" in lttextlinehor.text:
-								#Next line description of the Item
-								print ('Next line description of the Item...')
-								proximalinhaDESCRIPTION = True
-							elif proximalinhaDESCRIPTION == True:
-								proximalinhaDESCRIPTION = False
-								itemdescricao = lttextlinehor.text
-								print ('itemdescricao ',itemdescricao)
-
-							if lttextlinehor.tag == "LTFigure":
-								#Pode ter Quantidade, precos,...
-								print ('Pode ter Quantidade, precos,...')
-								for ltfigure in lttextlinehor:
-									print ('ltfigure.tag ',ltfigure.tag)
-									if ltfigure.tag == "LTTextLineHorizontal":
-										for lttextlinehor_figure in ltfigure:
-											print ('lttextlinehor_figure.tag ',lttextlinehor_figure.tag)
-											print (lttextlinehor_figure.text.strip())
-
-
-
-
-
-
-				#if 'LTTextLineHorizontal' in elem.tag:
-				#	print (elem.name)
-				#	print (elem.name)
 
 
 	elif action == "SCRAPE":
@@ -1206,6 +1090,7 @@ def pdf_scrape_txt(ficheiro):
 	empresaSupplier = ""
 	invoicenumber = ""
 	invoicedate = ""
+	moedainvoice = ""
 
 	# Read PDF file and convert it to HTML
 	output = StringIO()
@@ -1283,11 +1168,31 @@ def pdf_scrape_txt(ficheiro):
 				#print ('TRANSPORTED VALUE' not in div.text_content().strip('\n'))
 				if 'TRANSPORTED VALUE' not in div.text_content().strip('\n').upper() and 'TRANSPORTING VALUE' not in div.text_content().strip('\n').upper():
 					filtered_divs['RATE'].append(div.text_content().strip('\n'))
+				elif 'TRANSPORTING VALUE' in div.text_content().strip('\n').upper():
+					#Get the Currency of the PDF....
+					if not moedainvoice:
+						#Check if has $ €
+						if "€" in div.text_content().strip('\n'):
+							moedainvoice = "Eur"
+						elif "$" in div.text_content().strip('\n'):
+							moedainvoice = "Usd"
+
+						#print (div.text_content().strip('\n').upper())
+						#moedainvoice = div.text_content().strip('\n').upper()
+						#print (moedainvoice)
+						#frappe.throw(porra)
 
 			if TOTAL_LEFT_BORDER < int(left) < TOTAL_RIGHT_BORDER:
 				#print ('TOTAL...')
 				#print (div.text_content().strip('\n').upper())
 				filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
+
+				#Check if has $ €
+				if "€" in div.text_content().strip('\n'):
+					moedainvoice = "Eur"
+				elif "$" in div.text_content().strip('\n'):
+					moedainvoice = "Usd"
+
 
 	# Merge and clear lists with data
 	data = []
@@ -1301,6 +1206,8 @@ def pdf_scrape_txt(ficheiro):
 	print('Supplier ', empresaSupplier)
 	print('Invoice', invoicenumber)
 	print('Date ', invoicedate)
+	print('Moeda ', moedainvoice)
+
 	pprint(data)
 
-	return (empresaSupplier,invoicenumber,invoicedate,data)
+	return (empresaSupplier,invoicenumber,invoicedate,moedainvoice,data)
