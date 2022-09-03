@@ -78,7 +78,7 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 
 
 
-	elif action == "SCRAPE":
+	elif action != None and action.upper() == "SCRAPE":
 		print ('SCRAPE PDF')
 		#print (dict(data))
 		#return data.replace('/files','')
