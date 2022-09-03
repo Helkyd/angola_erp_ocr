@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 31/08/2022
+#Date Changed: 03/09/2022
 
 
 from __future__ import unicode_literals
@@ -33,7 +33,7 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 	#tipodoctype if Compras means will create a Purchase Order or Invoice.
 
 
-	if tipodoctype.upper() == "COMPRAS":
+	if tipodoctype != None and tipodoctype.upper() == "COMPRAS":
 		print ('Gerar TXT from PDF file to Purchase Order or Invoice...')
 		print ('Gerar TXT from PDF file to Purchase Order or Invoice...')
 
