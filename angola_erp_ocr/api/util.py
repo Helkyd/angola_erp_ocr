@@ -1126,10 +1126,19 @@ def pdf_scrape_txt(ficheiro):
 	# Sort and filter DIV tags
 	filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': []}
 	temitems = False
+
 	contador = 1
+
+	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|^([0-9][0-9])\-([0-9][0-9])\-([1-9][0-9][0-9][0-9])'
+	iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
+	cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
+
 	for div in divs:
 		# extract styles from a tag
 		div_style = div.get('style')
+		print(div_style)
+		print (div.text_content().strip('\n').upper())
+
 		#if div.text_content().strip('\n').upper().endswith('AOA'):
 		#	print ('contador ', contador)
 		#	print(div_style)
@@ -1173,13 +1182,16 @@ def pdf_scrape_txt(ficheiro):
 		# div contains ID if div's left position between ID_LEFT_BORDER and ID_RIGHT_BORDER
 		#print (div.text_content().strip('\n').upper())
 		if div.text_content().strip('\n') != '':
+			print ('ID_LEFT_BORDER ',ID_LEFT_BORDER)
+			print ('temitems ',temitems)
 			if ID_LEFT_BORDER < int(left) < ID_RIGHT_BORDER:
 				if div.text_content().strip('\n') == 'ITEM':
 					temitems = True
 				elif 'AMOUNT IN WORDS' in div.text_content().strip('\n').upper():
 					temitems = False
-				if temitems and div.text_content().strip('\n') != 'ITEM'  and 'CONSIGNEE NAME:' not in div.text_content().strip('\n').upper() and div.text_content().strip('\n') != '':
-					filtered_divs['ITEM'].append(div.text_content().strip('\n'))
+				if temitems and div.text_content().strip('\n') != 'ITEM'  and 'CONSIGNEE NAME:' not in div.text_content().strip('\n').upper(): # and div.text_content().strip('\n') != '':
+					if div.text_content().strip('\n').isnumeric():
+						filtered_divs['ITEM'].append(div.text_content().strip('\n'))
 
 				elif 'THANK YOU FOR YOUR BUSINESS' in div.text_content().strip('\n').upper():
 					#For this specific case Company name is after Thank you for you...
@@ -1239,8 +1251,15 @@ def pdf_scrape_txt(ficheiro):
 				#print (div.text_content().strip('\n').upper())
 				#print ('TRANSPORTED VALUE' not in div.text_content().strip('\n'))
 				if 'TRANSPORTED VALUE' not in div.text_content().strip('\n').upper() and 'TRANSPORTING VALUE' not in div.text_content().strip('\n').upper():
+					print ('preco ',div.text_content().strip('\n'))
+					print (div.text_content().strip('\n').isnumeric())
+					print (re.match(cash_pattern,div.text_content().strip('\n').replace(',','')))
+
 					if div.text_content().strip('\n').isnumeric():
 						filtered_divs['RATE'].append(div.text_content().strip('\n'))
+					elif re.match(cash_pattern,div.text_content().strip('\n').replace(',','')):
+						filtered_divs['RATE'].append(div.text_content().strip('\n'))
+
 				elif 'TRANSPORTING VALUE' in div.text_content().strip('\n').upper():
 					#Get the Currency of the PDF....
 					if not moedainvoice:
@@ -1275,6 +1294,9 @@ def pdf_scrape_txt(ficheiro):
 			if TOTAL_LEFT_BORDER < int(left) < TOTAL_RIGHT_BORDER:
 				#print ('TOTAL...')
 				#print (div.text_content().strip('\n').upper())
+				print (div.text_content().strip('\n').isnumeric())
+				print (re.match(cash_pattern,div.text_content().strip('\n').replace(',','')))
+
 				if div.text_content().strip('\n').isnumeric():
 					filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
 					print ('AQUI AQUI ', div.text_content().strip('\n'))
@@ -1283,6 +1305,9 @@ def pdf_scrape_txt(ficheiro):
 					filtered_divs['TOTAL'].append(tmptotal)
 					#print ('TOTAL TOTAL ', div.text_content().strip('\n'))
 					#print (tmptotal)
+				elif re.match(cash_pattern,div.text_content().strip('\n').replace(',','')):
+					filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
+					print ('AQUI AQUI1 ', div.text_content().strip('\n'))
 
 
 				#Check if has $ €
@@ -1293,10 +1318,10 @@ def pdf_scrape_txt(ficheiro):
 
 
 	# Merge and clear lists with data
-	'''
 	print ('ITEMs')
 	print (filtered_divs['ITEM'])
 	print (len(filtered_divs['ITEM']))
+
 	print ('DESCRIPTIONs')
 	print (filtered_divs['DESCRIPTION'])
 	print (len(filtered_divs['DESCRIPTION']))
@@ -1309,7 +1334,6 @@ def pdf_scrape_txt(ficheiro):
 	print ('TOTAL')
 	print (filtered_divs['TOTAL'])
 	print (len(filtered_divs['TOTAL']))
-	'''
 
 
 	data = []
