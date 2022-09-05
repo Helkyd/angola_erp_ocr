@@ -1106,6 +1106,11 @@ def pdf_scrape_txt(ficheiro):
 	TOTAL_LEFT_BORDER = 449 #500
 	TOTAL_RIGHT_BORDER = 550
 
+	#AO Modelo Factura
+	TOTALx_LEFT_BORDER = 500 #500
+	TOTALx_RIGHT_BORDER = 510
+
+
 	empresaSupplier = ""
 	empresaSupplierEndereco = ""
 	empresaSupplierNIF = ""
@@ -1146,7 +1151,7 @@ def pdf_scrape_txt(ficheiro):
 		#	contador +=1
 
 		# position:absolute; border: textbox 1px solid; writing-mode:lr-tb; left:292px; top:1157px; width:27px; height:12px;
-	# get left position
+		# get left position
 		try:
 			left = re.findall(r'left:([0-9]+)px', div_style)[0]
 		except IndexError:
@@ -1294,28 +1299,60 @@ def pdf_scrape_txt(ficheiro):
 			if TOTAL_LEFT_BORDER < int(left) < TOTAL_RIGHT_BORDER:
 				#print ('TOTAL...')
 				#print (div.text_content().strip('\n').upper())
-				print (div.text_content().strip('\n').isnumeric())
-				print (re.match(cash_pattern,div.text_content().strip('\n').replace(',','')))
+				if "14.0%" not in div.text_content().strip('\n'):
+					print (div.text_content().strip('\n').isnumeric())
+					print (re.match(cash_pattern,div.text_content().strip('\n').replace(',','')))
 
-				if div.text_content().strip('\n').isnumeric():
-					filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
-					print ('AQUI AQUI ', div.text_content().strip('\n'))
-				elif div.text_content().strip('\n').upper().endswith('AOA'):
-					tmptotal = div.text_content().split(' ')[0]
-					filtered_divs['TOTAL'].append(tmptotal)
-					#print ('TOTAL TOTAL ', div.text_content().strip('\n'))
-					#print (tmptotal)
-				elif re.match(cash_pattern,div.text_content().strip('\n').replace(',','')):
-					filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
-					print ('AQUI AQUI1 ', div.text_content().strip('\n'))
+					if div.text_content().strip('\n').isnumeric():
+						filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
+						print ('AQUI AQUI ', div.text_content().strip('\n'))
+					elif div.text_content().strip('\n').upper().endswith('AOA'):
+						tmptotal = div.text_content().split(' ')[0]
+						filtered_divs['TOTAL'].append(tmptotal)
+						#print ('TOTAL TOTAL ', div.text_content().strip('\n'))
+						#print (tmptotal)
+					elif re.match(cash_pattern,div.text_content().strip('\n').replace(',','')):
+						filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
+						print ('AQUI1 AQUI1 ', div.text_content().strip('\n'))
 
 
-				#Check if has $ €
-				if "€" in div.text_content().strip('\n'):
-					moedainvoice = "Eur"
-				elif "$" in div.text_content().strip('\n'):
-					moedainvoice = "Usd"
+					#Check if has $ €
+					if "€" in div.text_content().strip('\n'):
+						moedainvoice = "Eur"
+					elif "$" in div.text_content().strip('\n'):
+						moedainvoice = "Usd"
 
+				#if "149,719.53 AOA" in div.text_content().strip('\n'):
+				#	frappe.throw(porra)
+
+			if TOTALx_LEFT_BORDER < int(left) < TOTALx_RIGHT_BORDER:
+				#print ('TOTAL...')
+				#print (div.text_content().strip('\n').upper())
+				if "14.0%" not in div.text_content().strip('\n'):
+					print (div.text_content().strip('\n').isnumeric())
+					print (re.match(cash_pattern,div.text_content().strip('\n').replace(',','')))
+
+					if div.text_content().strip('\n').isnumeric():
+						filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
+						print ('AQUI AQUI ', div.text_content().strip('\n'))
+					elif div.text_content().strip('\n').upper().endswith('AOA'):
+						tmptotal = div.text_content().split(' ')[0]
+						filtered_divs['TOTAL'].append(tmptotal)
+						#print ('TOTAL TOTAL ', div.text_content().strip('\n'))
+						#print (tmptotal)
+					elif re.match(cash_pattern,div.text_content().strip('\n').replace(',','')):
+						filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
+						print ('AQUI2 AQUI2 ', div.text_content().strip('\n'))
+
+
+					#Check if has $ €
+					if "€" in div.text_content().strip('\n'):
+						moedainvoice = "Eur"
+					elif "$" in div.text_content().strip('\n'):
+						moedainvoice = "Usd"
+
+				#if "149,719.53 AOA" in div.text_content().strip('\n'):
+				#	frappe.throw(porra)
 
 	# Merge and clear lists with data
 	print ('ITEMs')
