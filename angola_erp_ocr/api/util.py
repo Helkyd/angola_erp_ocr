@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 03/09/2022
+#Date Changed: 05/09/2022
 
 
 from __future__ import unicode_literals
@@ -1069,11 +1069,20 @@ def pdf_scrape_txt(ficheiro):
 	ID_LEFT_BORDER = 40 #56
 	ID_RIGHT_BORDER = 50 #156
 
-	DESC_LEFT_BORDER = 70 #56
+	#AO Modelo Factura
+	IDx_LEFT_BORDER = 48 #56
+	IDx_RIGHT_BORDER = 54 #156
+
+	DESC_LEFT_BORDER = 69 #56
 	DESC_RIGHT_BORDER = 80 #156
 
+	#EN Invoices
 	INVNUM_LEFT_BORDER = 210
 	INVNUM_RIGHT_BORDER = 215
+
+	#AO Modelo Factura
+	INVNUMx_LEFT_BORDER = 497
+	INVNUMx_RIGHT_BORDER = 499
 
 	INVDATE_LEFT_BORDER = 310
 	INVDATE_RIGHT_BORDER = 315
@@ -1081,13 +1090,26 @@ def pdf_scrape_txt(ficheiro):
 	QTY_LEFT_BORDER = 320
 	QTY_RIGHT_BORDER = 350
 
+	#AO MODELO FACTURA
+	QTYx_LEFT_BORDER = 256
+	QTYx_RIGHT_BORDER = 261
+
+
 	RATE_LEFT_BORDER = 400
 	RATE_RIGHT_BORDER = 450
 
-	TOTAL_LEFT_BORDER = 500
+	#AO Modelo Factura
+	RATEx_LEFT_BORDER = 305
+	RATEx_RIGHT_BORDER = 318
+
+
+	TOTAL_LEFT_BORDER = 449 #500
 	TOTAL_RIGHT_BORDER = 550
 
 	empresaSupplier = ""
+	empresaSupplierEndereco = ""
+	empresaSupplierNIF = ""
+
 	invoicenumber = ""
 	invoicedate = ""
 	moedainvoice = ""
@@ -1104,10 +1126,16 @@ def pdf_scrape_txt(ficheiro):
 	# Sort and filter DIV tags
 	filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': []}
 	temitems = False
+	contador = 1
 	for div in divs:
 		# extract styles from a tag
 		div_style = div.get('style')
-		#print(div_style)
+		#if div.text_content().strip('\n').upper().endswith('AOA'):
+		#	print ('contador ', contador)
+		#	print(div_style)
+		#	print (div.text_content().strip('\n').upper())
+		#	contador +=1
+
 		# position:absolute; border: textbox 1px solid; writing-mode:lr-tb; left:292px; top:1157px; width:27px; height:12px;
 	# get left position
 		try:
@@ -1123,6 +1151,15 @@ def pdf_scrape_txt(ficheiro):
 				tmpinv = div.text_content().strip('\n').upper()
 				invoicenumber = tmpinv[tmpinv.find('INVOICE NO:')+12:]
 				#print ('invoicenumber ',invoicenumber)
+		elif INVNUMx_LEFT_BORDER < int(left) < INVNUMx_RIGHT_BORDER:
+			#AO Modelo Factura
+			if div.text_content().strip('\n') != '':
+				#Check if starts with FT
+				if div.text_content().strip('\n').startswith('FT'):
+					tmpinv = div.text_content().strip('\n').upper()
+					invoicenumber = tmpinv
+
+
 
 		if INVDATE_LEFT_BORDER < int(left) < INVDATE_RIGHT_BORDER:
 			#Invoice DATE
@@ -1146,10 +1183,37 @@ def pdf_scrape_txt(ficheiro):
 
 				elif 'THANK YOU FOR YOUR BUSINESS' in div.text_content().strip('\n').upper():
 					#For this specific case Company name is after Thank you for you...
-					print ('Get Empresa/Supplier...')
-					print (div.text_content().split('\n')[1].strip('\n').upper())
+					#print ('Get Empresa/Supplier...')
+					#print (div.text_content().split('\n')[1].strip('\n').upper())
 					empresaSupplier = div.text_content().split('\n')[1].strip('\n').upper()
-					print (empresaSupplier)
+					#print (empresaSupplier)
+				elif ', LDA' in div.text_content().strip('\n').upper() or ',LDA' in div.text_content().strip('\n').upper():
+					#Pode ser o Forneceodr/EMPRESA
+					#print ('Pode ser o Forneceodr/EMPRESA')
+					#print ('Get Empresa/Supplier...')
+					#print (div.text_content().strip('\n').upper())
+					empresaSupplier = div.text_content().strip('\n').upper()
+					#print (empresaSupplier)
+				elif div.text_content().strip('\n').upper().startswith('RUA'):
+					empresaSupplierEndereco = div.text_content().strip('\n').upper()
+				elif div.text_content().strip('\n').upper().startswith('NIF'):
+					#print ('Get Empresa/Supplier NIF...')
+					#print (div.text_content().split(' ')[1].strip('\n').upper())
+					empresaSupplierNIF = div.text_content().split(' ')[1].strip('\n').upper()
+				elif 'DATA:' in div.text_content().strip('\n').upper():
+					#print (div.text_content().split('\n'))
+					tmpinv = div.text_content().split(' ')[1]
+					invoicedate = tmpinv
+
+			#print ('IDx_LEFT_BORDER ',IDx_LEFT_BORDER)
+			#print ('IDx_RIGHT_BORDER ',IDx_RIGHT_BORDER)
+			#print ('left ', int(left))
+			#print (IDx_LEFT_BORDER < int(left) < IDx_RIGHT_BORDER)
+
+			if IDx_LEFT_BORDER < int(left) < IDx_RIGHT_BORDER:
+				#AO Modelo Factura
+				if div.text_content().strip('\n').isnumeric():
+					filtered_divs['ITEM'].append(div.text_content().strip('\n'))
 
 
 			if DESC_LEFT_BORDER < int(left) < DESC_RIGHT_BORDER:
@@ -1160,14 +1224,23 @@ def pdf_scrape_txt(ficheiro):
 			if QTY_LEFT_BORDER < int(left) < QTY_RIGHT_BORDER:
 				#print ('QTY...')
 				#print (div.text_content().strip('\n').upper())
-				filtered_divs['QUANTITY'].append(div.text_content().strip('\n'))
+				if div.text_content().strip('\n').isnumeric():
+					filtered_divs['QUANTITY'].append(div.text_content().strip('\n'))
+			elif QTYx_LEFT_BORDER < int(left) < QTYx_RIGHT_BORDER:
+				#print ('QTY...')
+				#print (div.text_content().strip('\n').upper())
+				if div.text_content().strip('\n').upper().endswith('UNIDADE') or div.text_content().strip('\n').upper().endswith('UNIT'):
+					if div.text_content().split(' ')[0].strip('\n').isnumeric():
+						filtered_divs['QUANTITY'].append(div.text_content().split(' ')[0].strip('\n'))
+
 
 			if RATE_LEFT_BORDER < int(left) < RATE_RIGHT_BORDER:
 				#print ('RATE...')
 				#print (div.text_content().strip('\n').upper())
 				#print ('TRANSPORTED VALUE' not in div.text_content().strip('\n'))
 				if 'TRANSPORTED VALUE' not in div.text_content().strip('\n').upper() and 'TRANSPORTING VALUE' not in div.text_content().strip('\n').upper():
-					filtered_divs['RATE'].append(div.text_content().strip('\n'))
+					if div.text_content().strip('\n').isnumeric():
+						filtered_divs['RATE'].append(div.text_content().strip('\n'))
 				elif 'TRANSPORTING VALUE' in div.text_content().strip('\n').upper():
 					#Get the Currency of the PDF....
 					if not moedainvoice:
@@ -1181,11 +1254,36 @@ def pdf_scrape_txt(ficheiro):
 						#moedainvoice = div.text_content().strip('\n').upper()
 						#print (moedainvoice)
 						#frappe.throw(porra)
+			if RATEx_LEFT_BORDER < int(left) < RATEx_RIGHT_BORDER:
+				#AO Modelo Factura
+				if div.text_content().strip('\n').upper().startswith('AOA'):
+					tmprate = div.text_content().split(' ')[1]
+					filtered_divs['RATE'].append(tmprate)
+					#print ('NAO ADDED RATEX ',div.text_content().strip('\n'))
+					#print (tmprate)
+
+				if not moedainvoice:
+					#Check if has $ €
+					if "€" in div.text_content().strip('\n'):
+						moedainvoice = "Eur"
+					elif "$" in div.text_content().strip('\n'):
+						moedainvoice = "Usd"
+					elif "AOA" in div.text_content().strip('\n') or "KZ" in div.text_content().strip('\n'):
+						moedainvoice = "AOA"
+
 
 			if TOTAL_LEFT_BORDER < int(left) < TOTAL_RIGHT_BORDER:
 				#print ('TOTAL...')
 				#print (div.text_content().strip('\n').upper())
-				filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
+				if div.text_content().strip('\n').isnumeric():
+					filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
+					print ('AQUI AQUI ', div.text_content().strip('\n'))
+				elif div.text_content().strip('\n').upper().endswith('AOA'):
+					tmptotal = div.text_content().split(' ')[0]
+					filtered_divs['TOTAL'].append(tmptotal)
+					#print ('TOTAL TOTAL ', div.text_content().strip('\n'))
+					#print (tmptotal)
+
 
 				#Check if has $ €
 				if "€" in div.text_content().strip('\n'):
@@ -1195,6 +1293,25 @@ def pdf_scrape_txt(ficheiro):
 
 
 	# Merge and clear lists with data
+	'''
+	print ('ITEMs')
+	print (filtered_divs['ITEM'])
+	print (len(filtered_divs['ITEM']))
+	print ('DESCRIPTIONs')
+	print (filtered_divs['DESCRIPTION'])
+	print (len(filtered_divs['DESCRIPTION']))
+	print ('QUANTITY')
+	print (filtered_divs['QUANTITY'])
+	print (len(filtered_divs['QUANTITY']))
+	print ('RATE')
+	print (filtered_divs['RATE'])
+	print (len(filtered_divs['RATE']))
+	print ('TOTAL')
+	print (filtered_divs['TOTAL'])
+	print (len(filtered_divs['TOTAL']))
+	'''
+
+
 	data = []
 	for row in zip(filtered_divs['ITEM'], filtered_divs['DESCRIPTION'], filtered_divs['QUANTITY'], filtered_divs['RATE'], filtered_divs['TOTAL']):
 		if 'ITEM' in row[0]:
@@ -1204,9 +1321,13 @@ def pdf_scrape_txt(ficheiro):
 		data.append(data_row)
 
 	print('Supplier ', empresaSupplier)
+	print ('supplieraddre ', empresaSupplierEndereco)
+	print ('supplierNIF ', empresaSupplierNIF)
+
 	print('Invoice', invoicenumber)
 	print('Date ', invoicedate)
 	print('Moeda ', moedainvoice)
+
 
 	pprint(data)
 
