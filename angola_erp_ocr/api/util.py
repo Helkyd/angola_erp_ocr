@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 05/09/2022
+#Date Changed: 06/09/2022
 
 
 from __future__ import unicode_literals
@@ -1114,6 +1114,7 @@ def pdf_scrape_txt(ficheiro):
 	empresaSupplier = ""
 	empresaSupplierEndereco = ""
 	empresaSupplierNIF = ""
+	empresaPais = ""
 
 	invoicenumber = ""
 	invoicedate = ""
@@ -1221,6 +1222,8 @@ def pdf_scrape_txt(ficheiro):
 					#print (div.text_content().split('\n'))
 					tmpinv = div.text_content().split(' ')[1]
 					invoicedate = tmpinv
+				elif ('LUANDA' in div.text_content().strip('\n').upper() or 'ANGOLA' in div.text_content().strip('\n').upper()) and 'CONSIGNEE NAME:' not in div.text_content().strip('\n').upper():
+					empresaPais = 'Angola'
 
 			#print ('IDx_LEFT_BORDER ',IDx_LEFT_BORDER)
 			#print ('IDx_RIGHT_BORDER ',IDx_RIGHT_BORDER)
@@ -1355,6 +1358,7 @@ def pdf_scrape_txt(ficheiro):
 				#	frappe.throw(porra)
 
 	# Merge and clear lists with data
+	'''
 	print ('ITEMs')
 	print (filtered_divs['ITEM'])
 	print (len(filtered_divs['ITEM']))
@@ -1371,7 +1375,7 @@ def pdf_scrape_txt(ficheiro):
 	print ('TOTAL')
 	print (filtered_divs['TOTAL'])
 	print (len(filtered_divs['TOTAL']))
-
+	'''
 
 	data = []
 	for row in zip(filtered_divs['ITEM'], filtered_divs['DESCRIPTION'], filtered_divs['QUANTITY'], filtered_divs['RATE'], filtered_divs['TOTAL']):
@@ -1384,6 +1388,7 @@ def pdf_scrape_txt(ficheiro):
 	print('Supplier ', empresaSupplier)
 	print ('supplieraddre ', empresaSupplierEndereco)
 	print ('supplierNIF ', empresaSupplierNIF)
+	print ('supplierPais ', empresaPais)
 
 	print('Invoice', invoicenumber)
 	print('Date ', invoicedate)
@@ -1392,4 +1397,4 @@ def pdf_scrape_txt(ficheiro):
 
 	pprint(data)
 
-	return (empresaSupplier,invoicenumber,invoicedate,moedainvoice,data)
+	return (empresaSupplier,invoicenumber,invoicedate,moedainvoice,empresaSupplierEndereco,empresaSupplierNIF,empresaPais,data)
