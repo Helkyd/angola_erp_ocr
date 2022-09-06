@@ -1073,7 +1073,7 @@ def pdf_scrape_txt(ficheiro):
 	IDx_LEFT_BORDER = 48 #56
 	IDx_RIGHT_BORDER = 54 #156
 
-	DESC_LEFT_BORDER = 69 #56
+	DESC_LEFT_BORDER = 65 #69 #56
 	DESC_RIGHT_BORDER = 80 #156
 
 	#EN Invoices
@@ -1091,7 +1091,7 @@ def pdf_scrape_txt(ficheiro):
 	QTY_RIGHT_BORDER = 350
 
 	#AO MODELO FACTURA
-	QTYx_LEFT_BORDER = 256
+	QTYx_LEFT_BORDER = 254 #256
 	QTYx_RIGHT_BORDER = 261
 
 
@@ -1099,7 +1099,7 @@ def pdf_scrape_txt(ficheiro):
 	RATE_RIGHT_BORDER = 450
 
 	#AO Modelo Factura
-	RATEx_LEFT_BORDER = 305
+	RATEx_LEFT_BORDER = 303 #305
 	RATEx_RIGHT_BORDER = 318
 
 
@@ -1107,7 +1107,7 @@ def pdf_scrape_txt(ficheiro):
 	TOTAL_RIGHT_BORDER = 550
 
 	#AO Modelo Factura
-	TOTALx_LEFT_BORDER = 500 #500
+	TOTALx_LEFT_BORDER = 449 #500
 	TOTALx_RIGHT_BORDER = 510
 
 
@@ -1142,14 +1142,17 @@ def pdf_scrape_txt(ficheiro):
 	for div in divs:
 		# extract styles from a tag
 		div_style = div.get('style')
-		print(div_style)
+		#print(div_style)
 		print (div.text_content().strip('\n').upper())
 
 		#if div.text_content().strip('\n').upper().endswith('AOA'):
-		#	print ('contador ', contador)
-		#	print(div_style)
-		#	print (div.text_content().strip('\n').upper())
-		#	contador +=1
+		if div.text_content().strip('\n').upper().endswith('AOA'):
+			print ('contador ', contador)
+			print(div_style)
+			print (div.text_content().strip('\n').upper())
+			print ('rate_LEFT_BORDER ',TOTAL_LEFT_BORDER)
+			print ('ratex_LEFT_BORDER ',TOTALx_LEFT_BORDER)
+			contador +=1
 
 		# position:absolute; border: textbox 1px solid; writing-mode:lr-tb; left:292px; top:1157px; width:27px; height:12px;
 		# get left position
@@ -1311,7 +1314,10 @@ def pdf_scrape_txt(ficheiro):
 						print ('AQUI AQUI ', div.text_content().strip('\n'))
 					elif div.text_content().strip('\n').upper().endswith('AOA'):
 						tmptotal = div.text_content().split(' ')[0]
-						filtered_divs['TOTAL'].append(tmptotal)
+						print ('total ', re.match(cash_pattern,tmptotal.replace(',','')))
+						if re.match(cash_pattern,tmptotal.replace(',','')):
+							filtered_divs['TOTAL'].append(tmptotal)
+
 						#print ('TOTAL TOTAL ', div.text_content().strip('\n'))
 						#print (tmptotal)
 					elif re.match(cash_pattern,div.text_content().strip('\n').replace(',','')):
@@ -1327,7 +1333,7 @@ def pdf_scrape_txt(ficheiro):
 
 				#if "149,719.53 AOA" in div.text_content().strip('\n'):
 				#	frappe.throw(porra)
-
+			'''
 			if TOTALx_LEFT_BORDER < int(left) < TOTALx_RIGHT_BORDER:
 				#print ('TOTAL...')
 				#print (div.text_content().strip('\n').upper())
@@ -1340,7 +1346,9 @@ def pdf_scrape_txt(ficheiro):
 						print ('AQUI AQUI ', div.text_content().strip('\n'))
 					elif div.text_content().strip('\n').upper().endswith('AOA'):
 						tmptotal = div.text_content().split(' ')[0]
-						filtered_divs['TOTAL'].append(tmptotal)
+						print ('total ', re.match(cash_pattern,tmptotal.replace(',','')))
+						if re.match(cash_pattern,tmptotal.replace(',','')):
+							filtered_divs['TOTAL'].append(tmptotal)
 						#print ('TOTAL TOTAL ', div.text_content().strip('\n'))
 						#print (tmptotal)
 					elif re.match(cash_pattern,div.text_content().strip('\n').replace(',','')):
@@ -1353,12 +1361,11 @@ def pdf_scrape_txt(ficheiro):
 						moedainvoice = "Eur"
 					elif "$" in div.text_content().strip('\n'):
 						moedainvoice = "Usd"
-
+			'''
 				#if "149,719.53 AOA" in div.text_content().strip('\n'):
 				#	frappe.throw(porra)
 
 	# Merge and clear lists with data
-	'''
 	print ('ITEMs')
 	print (filtered_divs['ITEM'])
 	print (len(filtered_divs['ITEM']))
@@ -1375,7 +1382,6 @@ def pdf_scrape_txt(ficheiro):
 	print ('TOTAL')
 	print (filtered_divs['TOTAL'])
 	print (len(filtered_divs['TOTAL']))
-	'''
 
 	data = []
 	for row in zip(filtered_divs['ITEM'], filtered_divs['DESCRIPTION'], filtered_divs['QUANTITY'], filtered_divs['RATE'], filtered_divs['TOTAL']):
