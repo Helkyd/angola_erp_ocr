@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 06/09/2022
+#Date Changed: 15/09/2022
 
 
 from __future__ import unicode_literals
@@ -1139,10 +1139,13 @@ def pdf_scrape_txt(ficheiro):
 	iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
 	cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
 
+	oldIDXDescription = 0;
+
 	for div in divs:
 		# extract styles from a tag
 		div_style = div.get('style')
-		#print(div_style)
+		print ('+++++++++')
+		print(div_style)
 		print (div.text_content().strip('\n').upper())
 
 		#if div.text_content().strip('\n').upper().endswith('AOA'):
@@ -1333,6 +1336,157 @@ def pdf_scrape_txt(ficheiro):
 
 				#if "149,719.53 AOA" in div.text_content().strip('\n'):
 				#	frappe.throw(porra)
+			if empresaSupplier == "":
+				if "PAGE" not in div.text_content().strip('\n').upper():
+					empresaSupplier = div.text_content().strip('\n').upper()
+
+			if "INVOICE DATE:" in div.text_content().strip('\n').upper():
+				if invoicedate == "":
+					print('INVOICE DATE:')
+					print (div.text_content().upper())
+					print (div.text_content().upper().split('\n'))
+					for ii in div.text_content().upper().split('\n'):
+						print (ii)
+						print (len(ii))
+						if "INVOICE DATE:" in ii.upper():
+							if len(ii) > 13:
+								invoicedate = ii[ii.find('INVOICE DATE:')+13:].strip()
+						if "INVOICE NO:" in ii.upper():
+							if len(ii) > 11:
+								invoicenumber = ii[ii.find('INVOICE NO:')+11:].strip()
+
+			if "P.O BOX:" in div.text_content().strip('\n').upper():
+				#Address Supplier
+				if empresaSupplierEndereco == "":
+					empresaSupplierEndereco = div.text_content().strip('\n').upper()
+
+			if "SL" in div.text_content().strip('\n').upper():
+				#Some Suppliers; Order Number
+				print ('TEM SL')
+				print (div.text_content().strip('\n'))
+				if 85 < int(left) < 87:
+					#Check if has split
+					print (div.text_content().split('\n'))
+					print (len(div.text_content().split('\n')))
+					if div.text_content().split('\n')[1].isnumeric():
+						filtered_divs['ITEM'].append(div.text_content().split('\n')[1])
+					#temitems = True
+			if "DESCRIPTION" in div.text_content().strip('\n').upper():
+				#Supplier Description + Item name + Serial Number if has...
+				print ('TEM Description + Item name + Serial Number if has')
+				print (div.text_content().strip('\n'))
+				if 100 < int(left) < 102:
+					#Check if has split
+					print (div.text_content().split('\n'))
+					print (len(div.text_content().split('\n')))
+					print ('STILL NEED TO CHECK IF MORE THAN 1 SERIAL NUMBER...')
+					if len(div.text_content().split('\n')) >= 3:
+						if div.text_content().split('\n')[2] != "":
+							filtered_divs['DESCRIPTION'].append(div.text_content().split('\n')[1] + " SN: " + div.text_content().split('\n')[2])
+						else:
+							filtered_divs['DESCRIPTION'].append(div.text_content().split('\n')[1])
+						oldIDXDescription = len(filtered_divs['DESCRIPTION'])
+			if temitems == False and div.text_content().strip('\n')[:2].strip().isdigit():
+				#Starts with a Number... might be OrderNumber + Item Description
+				if 86 < int(left) < 88:
+					print (div.text_content().split('\n'))
+					print (div.text_content()[:div.text_content().find(' ')].strip())
+					print (div.text_content()[div.text_content().find(' '):].strip())
+
+					filtered_divs['ITEM'].append(div.text_content()[:div.text_content().find(' ')].strip())
+					filtered_divs['DESCRIPTION'].append(div.text_content()[div.text_content().find(' '):].strip())
+					print (len(filtered_divs['DESCRIPTION']))
+					oldIDXDescription = len(filtered_divs['DESCRIPTION'])
+					#frappe.throw(porra)
+
+
+			if "Y/M COLOR" in div.text_content().strip('\n').upper():
+				#print ('TO DO LATER')
+				#will or might contain Y COLOR and FUEL: 2022 black Petrol
+				print (div.text_content().split('\n'))
+				if filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:') == -1:
+					#Append at the end
+					filtered_divs['DESCRIPTION'][oldIDXDescription-1] = filtered_divs['DESCRIPTION'][oldIDXDescription-1] + ' ' + div.text_content().split('\n')[1]
+				else:
+					print (filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:'))
+					print (filtered_divs['DESCRIPTION'][oldIDXDescription-1][:filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:')])
+					tmpdesc = filtered_divs['DESCRIPTION'][oldIDXDescription-1]
+					filtered_divs['DESCRIPTION'][oldIDXDescription-1] = tmpdesc.replace('SN:', div.text_content().split('\n')[1] + ' SN:')
+					#print (filtered_divs['DESCRIPTION'])
+
+
+			if "FUEL QTY" in div.text_content().strip('\n').upper():
+				print ('GET QTY FUEL WILL BE LATER...')
+				print (div.text_content().split('\n'))
+				#frappe.throw(porra)
+
+
+			if 360 < int(left) < 362:
+				#Qty Column
+				print ('Qty Column')
+				if div.text_content().strip('\n').isnumeric():
+					filtered_divs['QUANTITY'].append(div.text_content().strip('\n'))
+
+			if 394 < int(left) < 396:
+				#RATE Column
+				print ('RATE Column')
+				print (div.text_content().strip('\n'))
+				if re.match(cash_pattern,div.text_content().strip('\n').replace(',','')):
+					filtered_divs['RATE'].append(div.text_content().strip('\n'))
+
+
+			if 469 < int(left) < 471:
+				#TOTAL Column
+				print ('TOTAL Column')
+				print (div.text_content().split('\n'))
+				if "TOTAL" in div.text_content().strip('\n'):
+					print (len(div.text_content().split('\n')))
+					if len(div.text_content().split('\n')) >= 2:
+						print (div.text_content().split('\n')[1])
+						print (re.match(cash_pattern,div.text_content().split('\n')[1].replace(',','')))
+						if re.match(cash_pattern,div.text_content().split('\n')[1].replace(',','')):
+							filtered_divs['TOTAL'].append(div.text_content().split('\n')[1])
+			if 100 < int(left) < 102:
+				#Serial Numbers....
+				#JTGCBAB8906725029
+				print ('Serial Numbers.... ')
+				print (div.text_content().strip('\n').replace(' ',''))
+				print (len(div.text_content().strip('\n').replace(' ','')))
+				if len(div.text_content().strip('\n')) >= 17:
+					if div.text_content().strip('\n').find(' ') == -1:
+						print ('PODE SER Serial Numbers.... ')
+						print (oldIDXDescription)
+						print (filtered_divs['DESCRIPTION'][oldIDXDescription-1])
+						if filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:') == -1:
+							filtered_divs['DESCRIPTION'][oldIDXDescription-1] = filtered_divs['DESCRIPTION'][oldIDXDescription-1] + " SN: " + div.text_content().strip('\n')
+						else:
+							filtered_divs['DESCRIPTION'][oldIDXDescription-1] = filtered_divs['DESCRIPTION'][oldIDXDescription-1] + div.text_content().strip('\n')
+
+						print ('ADDICIONOU SERIAL ')
+						print (filtered_divs['DESCRIPTION'][oldIDXDescription-1])
+
+			if 252 < int(left) < 254:
+				#will or might contain Y COLOR and FUEL: 2022 black Petrol
+				print (div.text_content().split('\n'))
+				print (div.text_content().strip('\n'))
+				#check if starts with 4 digits for YEAR
+				if div.text_content().strip('\n')[:5].strip().isdigit():
+					if filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:') == -1:
+						#Append at the end
+						filtered_divs['DESCRIPTION'][oldIDXDescription-1] = filtered_divs['DESCRIPTION'][oldIDXDescription-1] + ' ' + div.text_content().strip('\n')
+					else:
+						print (filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:'))
+						print (filtered_divs['DESCRIPTION'][oldIDXDescription-1][:filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:')])
+						tmpdesc = filtered_divs['DESCRIPTION'][oldIDXDescription-1]
+						filtered_divs['DESCRIPTION'][oldIDXDescription-1] = tmpdesc.replace('SN:', div.text_content().strip('\n') + ' SN:')
+						#print (filtered_divs['DESCRIPTION'])
+
+
+			if "AED" in div.text_content().strip('\n'):
+				if moedainvoice == "":
+					moedainvoice = "AED"
+
+
 			'''
 			if TOTALx_LEFT_BORDER < int(left) < TOTALx_RIGHT_BORDER:
 				#print ('TOTAL...')
