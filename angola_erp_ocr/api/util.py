@@ -581,6 +581,7 @@ def ocr_pytesseract (filefinal):
 					if not valorPAGO:
 						valorPAGO = dd.split(' ')[2].strip()
 						print ('valorPAGO ',valorPAGO)
+						frappe.throw(porra)
 				elif ("Transacção".upper() in dd.upper() or "Transacgao".upper() in dd.upper()) and multiexpress:
 					if not numeroOperacao:
 						numeroOperacao = dd.split(' ')[2]
@@ -591,8 +592,13 @@ def ocr_pytesseract (filefinal):
 						ibanOrigem = dd.split(' ')[1]
 						print ('ibanOrigem ',ibanOrigem)
 
-				elif "Net Empresas por" in dd and bfatransferencia:
+				elif "Net Empresas por" in dd and bfatransferencia or "Nect Empresas por" in dd and bfatransferencia:
+					print ('dd ', dd)
+					print (dd.strip()[dd.strip().find('Net Empresas por')+16:])
+					print ('find ', dd.strip().find('Net Empresas por'))
 					empresaOrigem0 = dd.strip()[dd.strip().find('Net Empresas por')+16:]
+					if dd.strip().find('Net Empresas por') == -1:
+						empresaOrigem0 = dd.strip()[dd.strip().find('Nect Empresas por')+17:]
 					print ('empresaOrigem0 ',empresaOrigem0)
 
 					Datapagamento = dd[0:dd.find('foi realizada')].strip()
@@ -605,7 +611,7 @@ def ocr_pytesseract (filefinal):
 					print ('mes ', mes)
 					print ('ano ', ano)
 					mes0 = mes.strip().replace('janeiro','01').replace('fevereiro','02').replace('margo','03').replace('março','03').replace('marco','03').replace('abril','04').replace('maio','05') \
-					.replace('junho','06').replace('julho','07').replace('agosto','08').replace('setembro','09').replace('outubro','10').replace('novembro','11').replace('dezembro','12')
+					.replace('junho','06').replace('julho','07').replace('agosto','08').replace('setembro','09').replace('serembro','09').replace('outubro','10').replace('novembro','11').replace('dezembro','12')
 
 					mes = mes0
 
@@ -624,6 +630,9 @@ def ocr_pytesseract (filefinal):
 						tmpconta =  dd.strip()[dd.strip().find(', sobre a conta n°')+18:]
 					#print ('empresaOrigem0 ',empresaOrigem0)
 					print ('empresaOrigem1 ',empresaOrigem1)
+					if empresaOrigem0:
+						if empresaOrigem1:
+							empresaOrigem0 = empresaOrigem0 + empresaOrigem1
 
 					#tmpconta =  dd.strip()[dd.strip().find(', sobre a conta n°')+18:]
 					print ('tmpconta ',tmpconta)
@@ -662,8 +671,10 @@ def ocr_pytesseract (filefinal):
 					descricaoPagamento = tmpdescricao.strip()
 					print ('descricaoPagamento ',descricaoPagamento)
 				elif "N.º da Operação" in dd and bfatransferencia:
-					numeroOperacao = dd.strip()[dd.strip().rfind(' '):].strip()
+					if dd.strip()[dd.strip().rfind(' '):].strip().isnumeric():
+						numeroOperacao = dd.strip()[dd.strip().rfind(' '):].strip()
 					print ('numeroOperacao ',numeroOperacao)
+					#frappe.throw(porra)
 
 				elif "DADOS DO CONTRIBUINTE:" in dd:
 					Temdadoscontribuinte = True
@@ -727,6 +738,7 @@ def ocr_pytesseract (filefinal):
 					if len(dd.split(' ')) == 5:
 						valorPAGO = dd.split(' ')[3]
 						print ('valorPAGO ', valorPAGO)
+						frappe.throw(porra)
 				elif "VALOR PAGO" in dd:
 					#next line will have paidvalue
 					nextlinha = True
@@ -737,6 +749,8 @@ def ocr_pytesseract (filefinal):
 						if not valorPAGO:
 							valorPAGO = dd.strip()
 					nextlinha = False
+					frappe.throw(porra)
+
 				elif "TRANSACCAI" in dd and len(dd.split(' ')) == 2:
 					#Caso unico where N.CAIXA numbers are first and TEXT Will be after...
 					ncaixa_pattern = r'^([0-9][0-9][0-9][0-9])\/([0-9][0-9][0-9][0-9])\/([0-9][0-9])'
@@ -819,6 +833,41 @@ def ocr_pytesseract (filefinal):
 				elif dd[0:dd.find(' ')].strip().isnumeric():
 					#Can be NIF for Benificiario...
 					#5417537802 TEOR LOGICO-PRESTACAO DE SERVICOS LDA.
+
+					print ('contaOrigem ',contaOrigem)
+					print (dd.strip())
+					print ('ibanDestino ',ibanDestino)
+					print ('ibanDestino ',ibanDestino == None)
+					print ('ibanDestino ',ibanDestino == '')
+					print (dd[0:dd.find(' ')].strip())
+					print (dd.find(' '))
+					print (len(dd[0:dd.find(' ')].strip()))
+
+					#Check for Numeroperacao...
+					if not numeroOperacao:
+						if dd.find(' ') == -1:
+							if len(dd.strip()) == 9:
+								numeroOperacao = dd.strip()
+
+						elif len(dd[0:dd.find(' ')].strip()) == 9:
+							numeroOperacao = dd.strip()
+					if not contaOrigem:
+						if len(dd[0:dd.find(' ')].strip()) == 14:
+							contaOrigem = dd.strip()
+					if contaOrigem and ibanDestino == '':
+						#To prevent removing last digit...
+						if contaOrigem.strip() != dd.strip():
+							if dd.find(' ') == -1:
+								if len(dd.strip()) == 14:
+									ibanDestino = dd.strip()
+									print ('ibanDestino1 ', ibanDestino)
+
+							elif len(dd[0:dd.find(' ')].strip()) == 14:
+								ibanDestino = dd.strip()
+								print ('ibanDestino ', ibanDestino)
+							contaCreditada = ibanDestino
+
+
 					if len(dd[0:dd.find(' ')].strip()) == 10:
 						#NIF
 						BeneficiarioNIF = dd[0:dd.find(' ')].strip()
@@ -847,8 +896,11 @@ def ocr_pytesseract (filefinal):
 
 
 				elif re.match(cash_pattern,dd.strip()):
-					print ('VALOR PAGO. ',re.match(cash_pattern,dd.strip()))
+					print ('VALOR PAGO3 . ',re.match(cash_pattern,dd.strip()))
 					#if len(re.match(cash_pattern,dd.strip())) > 3:
+					print (mcexpress)
+					print (bfatransferencia)
+					print ('valorPAGO ',valorPAGO)
 
 					if mcexpress:
 						#IBAN Destinatario
@@ -857,7 +909,7 @@ def ocr_pytesseract (filefinal):
 							print ('valorPAGO mcexpress ',valorPAGO)
 					elif bfatransferencia:
 						if not valorPAGO:
-							valorPAGO = dd.strip()
+							valorPAGO = dd.strip().replace('AKRZ','AKZ')
 							print ('valorPAGO bfatransferencia ',valorPAGO)
 					#elif not valorPAGO:
 					#	valorPAGO = dd.strip()
@@ -909,10 +961,15 @@ def ocr_pytesseract (filefinal):
 
 				elif '.' in dd and ',' in dd:
 					for ff in dd.split(' '):
+						print ('ff ', ff)
 						print (re.match(cash_pattern,ff.strip()))
 						if re.match(cash_pattern,ff.strip()):
-							if bfatransferencia and not valorPAGO:
-								valorPAGO = ff.strip()
+							#if len(ff.strip()) > 1:
+							print ("Contribuínte" in dd)
+							if ff.strip().isnumeric() and "Contribuínte" not in dd:
+								if bfatransferencia and not valorPAGO:
+									valorPAGO = ff.strip()
+									frappe.throw(porra)
 
 
 
@@ -1047,7 +1104,7 @@ def ocr_pytesseract (filefinal):
 
 
 	if not ocr_tesserac or not ocr_tesserac1 or not referenciadocumento:
-		#frappe.throw(porra)
+		frappe.throw(porra)
 		print ('Redo the OCR with eng, 200')
 		print ('Redo the OCR with eng, 200')
 		print ('Redo the OCR with eng, 200')
