@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 15/09/2022
+#Date Changed: 28/09/2022
 
 
 from __future__ import unicode_literals
@@ -622,7 +622,7 @@ def ocr_pytesseract (filefinal):
 					else:
 						empresaOrigem1 = dd.strip()[0:dd.strip().find(', sobre a conta n°')]
 						tmpconta =  dd.strip()[dd.strip().find(', sobre a conta n°')+18:]
-					print ('empresaOrigem0 ',empresaOrigem0)
+					#print ('empresaOrigem0 ',empresaOrigem0)
 					print ('empresaOrigem1 ',empresaOrigem1)
 
 					#tmpconta =  dd.strip()[dd.strip().find(', sobre a conta n°')+18:]
