@@ -435,7 +435,8 @@ def find_second_last(text, pattern):
 def ocr_pytesseract (filefinal):
 	#Podemos fazer OCR with tesseract before trying with pytesseract
 	# File, Language, DPI
-	cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
+	#cash to include . and , ex. 44.123,00 / 44.123,97
+	cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)' #r'^[-+]?(?:\d*\.\d+|\d+)'
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
 	iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
 
@@ -497,6 +498,8 @@ def ocr_pytesseract (filefinal):
 		multiexpress = False
 
 		numeroTransacao = ""
+
+		descricaoPagamento = ""
 
 		if "MCX DEBIT" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac:
 			#Check if TRANSACÇÃO
@@ -668,8 +671,9 @@ def ocr_pytesseract (filefinal):
 				elif "Descritivo da Operacdo" in dd or "Descritivo da " in dd and bfatransferencia:
 					#descricao da Operacao...
 					tmpdescricao = dd[23:]
-					descricaoPagamento = tmpdescricao.strip()
-					print ('descricaoPagamento ',descricaoPagamento)
+					if not descricaoPagamento:
+						descricaoPagamento = tmpdescricao.strip()
+						print ('descricaoPagamento ',descricaoPagamento)
 				elif "N.º da Operação" in dd and bfatransferencia:
 					if dd.strip()[dd.strip().rfind(' '):].strip().isnumeric():
 						numeroOperacao = dd.strip()[dd.strip().rfind(' '):].strip()
@@ -892,7 +896,7 @@ def ocr_pytesseract (filefinal):
 							if not referenciaDAR:
 								referenciaDAR = tmprefedar1.strip()
 								print ('referenciaDAR ',referenciaDAR)
-						#frappe.throw(porra)
+					frappe.throw(porra)
 
 
 				elif re.match(cash_pattern,dd.strip()):
@@ -961,16 +965,37 @@ def ocr_pytesseract (filefinal):
 
 				elif '.' in dd and ',' in dd:
 					for ff in dd.split(' '):
-						print ('ff ', ff)
+						print ('ff ', ff.strip())
 						print (re.match(cash_pattern,ff.strip()))
+						print ('bfatransferencia ', bfatransferencia)
+						print (re.match(cash_pattern,ff.strip()))
+						print ('Numerico ', ff.strip().isnumeric())
+						print ('Numerico ', ff.strip().replace('.','').replace(',','').isnumeric())
+						print ('valorPAGO ',valorPAGO)
+
 						if re.match(cash_pattern,ff.strip()):
 							#if len(ff.strip()) > 1:
+							print ("Contribuínte")
 							print ("Contribuínte" in dd)
 							if ff.strip().isnumeric() and "Contribuínte" not in dd:
 								if bfatransferencia and not valorPAGO:
 									valorPAGO = ff.strip()
 									frappe.throw(porra)
+							elif ff.strip().replace('.','').replace(',','').isnumeric() and "Contribuínte" not in dd:
+								if bfatransferencia and not valorPAGO:
+									valorPAGO = ff.strip()
 
+				elif 'FT ' in dd or 'PP ' in dd:
+					#Tem Factura ou Proforma como descricao...
+					print (dd)
+					if 'FT ' in dd:
+						print ('Descricao do Pagamento...')
+						print (descricaoPagamento)
+						if descricaoPagamento == "":
+							descricaoPagamento = dd[dd.find('FT '):]
+
+					elif 'PP ' in dd:
+						print (' POR FAZER PARA PROFORMAS....')
 
 
 				#frappe.throw(porra)
@@ -1110,6 +1135,64 @@ def ocr_pytesseract (filefinal):
 		print ('Redo the OCR with eng, 200')
 		ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'eng',False,250)
 		print (ocr_tesserac)
+		print (ocr_tesserac1.split('\n'))
+		for aa in ocr_tesserac1.split('\n'):
+			#271462936
+			print ('=======')
+			print ('aa ', aa)
+
+			if aa.find(' foi realizada Transferéncia Interna no BFA Net') != -1:
+				#Get DATA EMISSAO
+				print (aa)
+				datatmp = aa[0:aa.find(' foi realizada Transferéncia Interna no BFA Net')]
+				print ('datatmp ', datatmp)
+				#TODO: Format DATA to YYYY-MM-DD
+
+			if aa.find(', sobre a conta n° ') != -1:
+				#IBAN Origem
+				print (aa)
+				tmpcontaOrigem = aa[aa.find(', sobre a conta n° ')+20:]
+				tmpconta = tmpcontaOrigem[0:tmpcontaOrigem.find(', ')]
+				print ('tmpconta ',tmpconta)
+				contaOrigem = tmpconta
+
+			if aa.find('REG') != -1 and len(aa) == 15:
+				#Pode ser o Numero de Declaracao... if has 11 numbers
+				print ('REGNumbers ', aa[3:len(aa)-1])
+				referenciadocumento = aa.strip()
+				temREG = True
+			elif re.match(date_pattern,aa.strip()):
+				if not datasubmissaoTEMP:
+					datasubmissaoTEMP = aa.strip()
+					print ('datasubmissaoTEMP ', datasubmissaoTEMP)
+			elif len(aa.strip()) == 10:
+				#Might be NIF
+				if aa.strip().isnumeric() and not NIFContribuinte:
+					NIFContribuinte = aa.strip()
+					print ('NIFContribuinte ', NIFContribuinte)
+		if referenciadocumento and datasubmissaoTEMP and NIFContribuinte:
+			#Still missing to find what REGIME is it on....
+			'''
+			return {
+				'referenciadocumento': referenciadocumento,
+				'datasubmissaoTEMP': datasubmissaoTEMP,
+				'NIFContribuinte': NIFContribuinte
+			}
+			'''
+			return {
+				'dataEMISSAO': dataEMISSAO,
+				'ibanDestino': ibanDestino,
+				'valorPAGO': valorPAGO,
+				'contaOrigem': contaOrigem,
+				'numeroTransacao': numeroTransacao
+			}
+
+		frappe.throw(porra)
+		print ('Tentar FRA')
+		ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'fra',False,250)
+		print (ocr_tesserac)
+
+		frappe.throw(porra)
 
 		print ('TERA DE FAZER O OCR......')
 		print ('TERA DE FAZER O OCR......')
@@ -1194,7 +1277,7 @@ def pdf_scrape_txt(ficheiro):
 
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|^([0-9][0-9])\-([0-9][0-9])\-([1-9][0-9][0-9][0-9])'
 	iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
-	cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)'
+	cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)' #r'^[-+]?(?:\d*\.\d+|\d+)'
 
 	oldIDXDescription = 0;
 

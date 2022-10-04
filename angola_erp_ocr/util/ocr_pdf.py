@@ -342,6 +342,8 @@ def ocr_img(
 		#config_param = r'--oem 3 --psm 4 -l eng' #GETs IBAN correct relacing 1st and 2nd numbers..
 
 		config_param = r'--oem 3 --psm 4 -l fra+por'
+		#--dpi 73
+		#config_param = r'--dpi 73 --oem 3 --psm 4 -l fra+por'
 
 
 	elif linguas == 2:
@@ -360,6 +362,8 @@ def ocr_img(
 		if linguas_set != None:
 			#config_param = r'--oem 3 --psm 4 -l ' + linguas_set #fra+eng+spa' # fra+spa' # spa+fra' #fra+por' #fra+eng'
 			config_param = r'--oem 3 --psm ' + str(psmmode) + ' -l ' + linguas_set #fra+eng+spa' # fra+spa' # spa+fra' #fra+por' #fra+eng'
+			#--dpi 73
+			#config_param = r'--dpi 73 --oem 3 --psm ' + str(psmmode) + ' -l ' + linguas_set #fra+eng+spa' # fra+spa' # spa+fra' #fra+por' #fra+eng'
 
 			#frappe.throw(porra)
 		else:
@@ -368,7 +372,7 @@ def ocr_img(
 			#frappe.throw(porra)
 		#frappe.throw(porra)
 	#config_param = r'--oem 3 --psm 6 -l fra+eng' #fra+eng'
-
+	print ('config_param ', config_param)
 	# Feeding image to tesseract
 	details = pytesseract.image_to_data(
 		bin_img, output_type=Output.DICT, config=config_param) #lang='eng')
