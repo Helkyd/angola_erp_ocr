@@ -1174,6 +1174,8 @@ def ocr_pytesseract (filefinal):
 					if len(aa.split(' ')) == 4:
 						dataEMISSAO = aa.split(' ')[2]
 						print ('dataEMISSAO ', dataEMISSAO)
+				elif aa.find('TRANSFERENCIA BANCARTA')
+
 				elif re.match(cash_pattern,aa.strip()):
 					print ('PAGAMENTO....')
 					print (re.match(cash_pattern,aa.strip()).string.replace('ka',''))
@@ -1220,11 +1222,12 @@ def ocr_pytesseract (filefinal):
 
 		if dataEMISSAO and contaOrigem and valorPAGO:
 			return {
-				'dataEMISSAO': dataEMISSAO,
-				'ibanDestino': ibanDestino,
-				'valorPAGO': valorPAGO,
-				'contaOrigem': contaOrigem,
-				'numeroTransacao': numeroTransacao
+				"mcexpress": True,
+				"numeroTransacao": numeroTransacao,
+				"datadePAGAMENTO": dataEMISSAO,
+				"contaOrigem": contaOrigem,
+				"ibanDestino": ibanDestino,
+				"valorPAGO": valorPAGO
 			}
 
 		return "403 Forbidden"	#Because if IMAGE.... FOR NOW 04-10-2022
