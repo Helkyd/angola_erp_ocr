@@ -1169,7 +1169,7 @@ def ocr_pytesseract (filefinal):
 					print (aa[aa.find('CONTA: ')+7:])
 					tmpconta = aa.split(' ')[1] # aa[aa.find('CONTA: ')+7:]
 					if contaOrigem == '':
-						contaOrigem = tmpconta
+						contaOrigem = tmpconta.replace('OO','00')
 					print ('tmpconta ', tmpconta)
 					if len(aa.split(' ')) == 4:
 						dataEMISSAO = aa.split(' ')[2]
@@ -1222,6 +1222,10 @@ def ocr_pytesseract (filefinal):
 						print ('NIFContribuinte ', NIFContribuinte)
 
 		if dataEMISSAO and contaOrigem and valorPAGO:
+			print ('Tentar POR')
+			ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'fra',False,250)
+			print (ocr_tesserac)
+
 			return {
 				"mcexpress": mcexpress,
 				"numeroTransacao": numeroTransacao,
