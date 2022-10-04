@@ -1187,6 +1187,7 @@ def ocr_pytesseract (filefinal):
 				'numeroTransacao': numeroTransacao
 			}
 
+		return "403 Forbidden"	#Because if IMAGE.... FOR NOW 04-10-2022
 		frappe.throw(porra)
 		print ('Tentar FRA')
 		ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'fra',False,250)
