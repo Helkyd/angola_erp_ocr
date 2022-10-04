@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 28/09/2022
+#Date Changed: 04/10/2022
 
 
 from __future__ import unicode_literals
@@ -1104,7 +1104,7 @@ def ocr_pytesseract (filefinal):
 
 
 	if not ocr_tesserac or not ocr_tesserac1 or not referenciadocumento:
-		frappe.throw(porra)
+		#frappe.throw(porra)
 		print ('Redo the OCR with eng, 200')
 		print ('Redo the OCR with eng, 200')
 		print ('Redo the OCR with eng, 200')
