@@ -1130,55 +1130,95 @@ def ocr_pytesseract (filefinal):
 
 	if not ocr_tesserac or not ocr_tesserac1 or not referenciadocumento:
 		#frappe.throw(porra)
+		print ('///////////////////////////')
 		print ('Redo the OCR with eng, 200')
 		print ('Redo the OCR with eng, 200')
 		print ('Redo the OCR with eng, 200')
+		print ('///////////////////////////')
+
+		contaOrigem = ''
+		ibanDestino = ''
+		numeroTransacao = ''
+		dataEMISSAO = ''
+		valorPAGO = ''
+
+
 		ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'eng',False,250)
 		print (ocr_tesserac)
-		print (ocr_tesserac1.split('\n'))
-		for aa in ocr_tesserac1.split('\n'):
+		print (ocr_tesserac.split('\n'))
+		for aa in ocr_tesserac.split('\n'):
 			#271462936
 			print ('=======')
 			print ('aa ', aa)
+			if aa != "" and aa != None:
+				print (re.match(cash_pattern,aa.strip()))
 
-			if aa.find(' foi realizada Transferéncia Interna no BFA Net') != -1:
-				#Get DATA EMISSAO
-				print (aa)
-				datatmp = aa[0:aa.find(' foi realizada Transferéncia Interna no BFA Net')]
-				print ('datatmp ', datatmp)
-				#TODO: Format DATA to YYYY-MM-DD
+				#Cliente anexou Nossa Factura + Pagamento via ATM MULTICAIXA
+				if (aa.find('TRANSACGAO: ') != -1 or aa.find('TRANSACGAD: ') != -1 or aa.find('TRANSACÇÃO: ') != -1) and aa.find('Exmo(s) Senhor(es)') != -1 :
+					if aa.find('TRANSACGAO:') != -1:
+						tmpnumeroTrans = aa[aa.find('TRANSACGAO:')+12:aa.find('Exmo(s) Senhor(es)')]
+					elif aa.find('TRANSACGAD:') != -1:
+						tmpnumeroTrans = aa[aa.find('TRANSACGAD:')+12:aa.find('Exmo(s) Senhor(es)')]
+					elif aa.find('TRANSACÇÃO:') != -1:
+						tmpnumeroTrans = aa[aa.find('TRANSACÇÃO:')+12:aa.find('Exmo(s) Senhor(es)')]
 
-			if aa.find(', sobre a conta n° ') != -1:
-				#IBAN Origem
-				print (aa)
-				tmpcontaOrigem = aa[aa.find(', sobre a conta n° ')+20:]
-				tmpconta = tmpcontaOrigem[0:tmpcontaOrigem.find(', ')]
-				print ('tmpconta ',tmpconta)
-				contaOrigem = tmpconta
+					print ('tmpnumeroTrans ',tmpnumeroTrans)
+					numeroTransacao = tmpnumeroTrans
+				elif aa.find('CONTA: ') != -1:
+					#assuming Conta and Date of payment...
+					print (aa[aa.find('CONTA: ')+7:])
+					tmpconta = aa.split(' ')[1] # aa[aa.find('CONTA: ')+7:]
+					if contaOrigem == '':
+						contaOrigem = tmpconta
+					print ('tmpconta ', tmpconta)
+					if len(aa.split(' ')) == 4:
+						dataEMISSAO = aa.split(' ')[2]
+						print ('dataEMISSAO ', dataEMISSAO)
+				elif re.match(cash_pattern,aa.strip()):
+					print ('PAGAMENTO....')
+					print (re.match(cash_pattern,aa.strip()).string.replace('ka',''))
+					if valorPAGO == '':
+						valorPAGO1 = re.match(cash_pattern,aa.strip()).string
+						print (valorPAGO1)
+						print (valorPAGO1.split(' '))
+						#print (' Ka' in valorPAGO1)
+						valorPAGO = valorPAGO1.replace(' Ka','')
+						print ('valor Pago ', valorPAGO)
+					#frappe.throw(porra)
 
-			if aa.find('REG') != -1 and len(aa) == 15:
-				#Pode ser o Numero de Declaracao... if has 11 numbers
-				print ('REGNumbers ', aa[3:len(aa)-1])
-				referenciadocumento = aa.strip()
-				temREG = True
-			elif re.match(date_pattern,aa.strip()):
-				if not datasubmissaoTEMP:
-					datasubmissaoTEMP = aa.strip()
-					print ('datasubmissaoTEMP ', datasubmissaoTEMP)
-			elif len(aa.strip()) == 10:
-				#Might be NIF
-				if aa.strip().isnumeric() and not NIFContribuinte:
-					NIFContribuinte = aa.strip()
-					print ('NIFContribuinte ', NIFContribuinte)
-		if referenciadocumento and datasubmissaoTEMP and NIFContribuinte:
-			#Still missing to find what REGIME is it on....
-			'''
-			return {
-				'referenciadocumento': referenciadocumento,
-				'datasubmissaoTEMP': datasubmissaoTEMP,
-				'NIFContribuinte': NIFContribuinte
-			}
-			'''
+				# +++++  FIM Cliente anexou Nossa Factura + Pagamento via ATM MULTICAIXA
+
+				if aa.find(' foi realizada Transferéncia Interna no BFA Net') != -1:
+					#Get DATA EMISSAO
+					print (aa)
+					datatmp = aa[0:aa.find(' foi realizada Transferéncia Interna no BFA Net')]
+					print ('datatmp ', datatmp)
+					#TODO: Format DATA to YYYY-MM-DD
+
+				if aa.find(', sobre a conta n° ') != -1:
+					#IBAN Origem
+					print (aa)
+					tmpcontaOrigem = aa[aa.find(', sobre a conta n° ')+20:]
+					tmpconta = tmpcontaOrigem[0:tmpcontaOrigem.find(', ')]
+					print ('tmpconta ',tmpconta)
+					contaOrigem = tmpconta
+
+				if aa.find('REG') != -1 and len(aa) == 15:
+					#Pode ser o Numero de Declaracao... if has 11 numbers
+					print ('REGNumbers ', aa[3:len(aa)-1])
+					referenciadocumento = aa.strip()
+					temREG = True
+				elif re.match(date_pattern,aa.strip()):
+					if not datasubmissaoTEMP:
+						datasubmissaoTEMP = aa.strip()
+						print ('datasubmissaoTEMP ', datasubmissaoTEMP)
+				elif len(aa.strip()) == 10:
+					#Might be NIF
+					if aa.strip().isnumeric() and not NIFContribuinte:
+						NIFContribuinte = aa.strip()
+						print ('NIFContribuinte ', NIFContribuinte)
+
+		if dataEMISSAO and contaOrigem and valorPAGO:
 			return {
 				'dataEMISSAO': dataEMISSAO,
 				'ibanDestino': ibanDestino,
