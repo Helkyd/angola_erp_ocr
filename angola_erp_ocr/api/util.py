@@ -1145,6 +1145,18 @@ def ocr_pytesseract (filefinal):
 
 		ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'eng',False,250)
 		print (ocr_tesserac)
+		print ('CALL lerdocumento 1111111....')
+		mcexpress,numeroTransacao,dataEMISSAO,contaOrigem,ibanDestino,valorPAGO = lerdocumento(ocr_tesserac)
+
+		print (mcexpress)
+		print (numeroTransacao)
+		print (dataEMISSAO)
+		print (contaOrigem)
+		print (ibanDestino)
+		print (valorPAGO)
+
+		#frappe.throw(porra)
+		'''
 		print (ocr_tesserac.split('\n'))
 		for aa in ocr_tesserac.split('\n'):
 			#271462936
@@ -1220,20 +1232,42 @@ def ocr_pytesseract (filefinal):
 					if aa.strip().isnumeric() and not NIFContribuinte:
 						NIFContribuinte = aa.strip()
 						print ('NIFContribuinte ', NIFContribuinte)
-
-		if dataEMISSAO and contaOrigem and valorPAGO:
-			print ('Tentar POR')
+		'''
+		#Check if contaOrigem is only Numbers....
+		if len(contaOrigem) == 15 and contaOrigem.isnumeric():
+			if dataEMISSAO and contaOrigem and valorPAGO:
+				return {
+					"mcexpress": mcexpress,
+					"numeroTransacao": numeroTransacao,
+					"datadePAGAMENTO": dataEMISSAO,
+					"contaOrigem": contaOrigem,
+					"ibanDestino": ibanDestino,
+					"valorPAGO": valorPAGO
+				}
+		else:
+			#Try scan again FRA
+			print ('Tentar FRA')
 			ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'fra',False,250)
 			print (ocr_tesserac)
+			print ('CALL lerdocumento....')
+			#print (lerdocumento(ocr_tesserac))
+			mcexpress,numeroTransacao,dataEMISSAO,contaOrigem,ibanDestino,valorPAGO = lerdocumento(ocr_tesserac)
 
-			return {
-				"mcexpress": mcexpress,
-				"numeroTransacao": numeroTransacao,
-				"datadePAGAMENTO": dataEMISSAO,
-				"contaOrigem": contaOrigem,
-				"ibanDestino": ibanDestino,
-				"valorPAGO": valorPAGO
-			}
+		if len(contaOrigem) == 15 and contaOrigem.isnumeric():
+			print ('Segunda Tentativa.....!!!!!!')
+			print (dataEMISSAO)
+			print (contaOrigem)
+			print (valorPAGO)
+
+			if dataEMISSAO and contaOrigem and valorPAGO:
+				return {
+					"mcexpress": mcexpress,
+					"numeroTransacao": numeroTransacao,
+					"datadePAGAMENTO": dataEMISSAO,
+					"contaOrigem": contaOrigem,
+					"ibanDestino": ibanDestino,
+					"valorPAGO": valorPAGO
+				}
 
 		return "403 Forbidden"	#Because if IMAGE.... FOR NOW 04-10-2022
 		frappe.throw(porra)
@@ -1247,6 +1281,144 @@ def ocr_pytesseract (filefinal):
 		print ('TERA DE FAZER O OCR......')
 		print ('TERA DE FAZER O OCR......')
 		return ocr_pdf.ocr_pdf(input_path=filefinal)
+
+def lerdocumento(dados):
+	print ('===== lerdocumento ======= ')
+	print ('===== lerdocumento ======= ')
+	print ('===== lerdocumento ======= ')
+
+	cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)' #r'^[-+]?(?:\d*\.\d+|\d+)'
+	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
+	iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
+
+	contaOrigem = ''
+	ibanDestino = ''
+	numeroTransacao = ''
+	dataEMISSAO = ''
+	valorPAGO = ''
+	mcexpress = False
+
+	if dados:
+		print (dados.split('\n'))
+		for aa in dados.split('\n'):
+			#271462936
+			print ('=======')
+			print ('aa ', aa)
+			if aa != "" and aa != None:
+				print (re.match(cash_pattern,aa.strip()))
+				print ('IBAN')
+				print (re.match(iban_pattern,aa.strip()))
+
+				#Cliente anexou Nossa Factura + Pagamento via ATM MULTICAIXA
+				if (aa.find('TRANSACGAO: ') != -1 or aa.find('TRANSACGAD: ') != -1 or aa.find('TRANSACÇÃO: ') != -1) and aa.find('Exmo(s) Senhor(es)') != -1 :
+					if aa.find('TRANSACGAO:') != -1:
+						tmpnumeroTrans = aa[aa.find('TRANSACGAO:')+12:aa.find('Exmo(s) Senhor(es)')]
+					elif aa.find('TRANSACGAD:') != -1:
+						tmpnumeroTrans = aa[aa.find('TRANSACGAD:')+12:aa.find('Exmo(s) Senhor(es)')]
+					elif aa.find('TRANSACÇÃO:') != -1:
+						tmpnumeroTrans = aa[aa.find('TRANSACÇÃO:')+12:aa.find('Exmo(s) Senhor(es)')]
+
+					print ('tmpnumeroTrans ',tmpnumeroTrans)
+					numeroTransacao = tmpnumeroTrans
+				elif aa.find('N.CATXA: ') != -1 and aa.find('TRANSACCAO: ') != -1:
+					if numeroTransacao == '':
+						tmpnumeroTrans = aa[aa.find('TRANSACCAO: ')+12:]
+						print ('tmpnumeroTrans ',tmpnumeroTrans)
+						numeroTransacao = tmpnumeroTrans
+
+				elif aa.find('CONTA: ') != -1 or aa.find('CONTA : ') != -1:
+					#assuming Conta and Date of payment...
+					print (aa[aa.find('CONTA: ')+7:])
+					tmpconta = aa.split(' ')[1] # aa[aa.find('CONTA: ')+7:]
+					if contaOrigem == '':
+						if len(tmpconta) == 15 and tmpconta.replace('OO','00').isnumeric():
+							contaOrigem = tmpconta.replace('OO','00')
+					print ('tmpconta ', tmpconta)
+					if len(aa.split(' ')) == 4:
+						dataEMISSAO = aa.split(' ')[2]
+						print ('dataEMISSAO ', dataEMISSAO)
+					if aa.find('CONTA : ') != -1:
+						print ('Conta SPLIT')
+						print (aa.split(' '))
+						print (len(aa.split(' ')))
+						print (contaOrigem)
+						if len(aa.split(' ')) == 6 and contaOrigem == '':
+							tmpconta = aa.split(' ')[2] + aa.split(' ')[3]
+							contaOrigem = tmpconta[0:15]
+							print ('contaOrigem ',contaOrigem)
+
+							dataEMISSAO = aa.split(' ')[4]
+							print ('dataEMISSAO ', dataEMISSAO)
+
+				elif aa.find('TRANSFERENCIA BANCARTA') != -1 or aa.find('TRANSFERENCIA BANCARIA') != -1 or aa.find('TRANSFERÈNCIA BANCÁRIA') != -1 or aa.find('TRENSFERENCTA BANCARTA') != -1:
+					mcexpress = True
+
+				elif re.match(cash_pattern,aa.strip()):
+					print ('PAGAMENTO....')
+					print (re.match(cash_pattern,aa.strip()).string.replace('ka',''))
+					if valorPAGO == '':
+						valorPAGO1 = re.match(cash_pattern,aa.strip()).string
+						print (valorPAGO1)
+						print (valorPAGO1.split(' '))
+						if len(valorPAGO1.split(' ')) >=2:
+							valorPAGO = valorPAGO1.split(' ')[0]
+						else:
+							valorPAGO = valorPAGO1.replace(' Ka','')
+						print ('valor Pago ', valorPAGO)
+					#frappe.throw(porra)
+				elif aa.startswith('AD06. 0606') or aa.startswith('AO06.0006'):
+					tmpiban = aa.strip().replace('AD06. 0606','AO06.0006').replace(',','.').replace(' ','.')
+					print ('tmpiban ',tmpiban)
+					print (re.match(iban_pattern,tmpiban.strip()))
+					if re.match(iban_pattern,tmpiban.strip()):
+						ibanDestino = tmpiban.strip()
+				elif re.match(iban_pattern,aa.strip()):
+					print ('IBAN DESTINO....')
+					frappe.throw(porra)
+
+				# +++++  FIM Cliente anexou Nossa Factura + Pagamento via ATM MULTICAIXA
+
+				if aa.find(' foi realizada Transferéncia Interna no BFA Net') != -1:
+					#Get DATA EMISSAO
+					print (aa)
+					datatmp = aa[0:aa.find(' foi realizada Transferéncia Interna no BFA Net')]
+					print ('datatmp ', datatmp)
+					#TODO: Format DATA to YYYY-MM-DD
+
+				if aa.find(', sobre a conta n° ') != -1:
+					#IBAN Origem
+					print (aa)
+					tmpcontaOrigem = aa[aa.find(', sobre a conta n° ')+20:]
+					tmpconta = tmpcontaOrigem[0:tmpcontaOrigem.find(', ')]
+					print ('tmpconta ',tmpconta)
+					contaOrigem = tmpconta
+
+				if aa.find('REG') != -1 and len(aa) == 15:
+					#Pode ser o Numero de Declaracao... if has 11 numbers
+					print ('REGNumbers ', aa[3:len(aa)-1])
+					referenciadocumento = aa.strip()
+					temREG = True
+				elif re.match(date_pattern,aa.strip()):
+					if not datasubmissaoTEMP:
+						datasubmissaoTEMP = aa.strip()
+						print ('datasubmissaoTEMP ', datasubmissaoTEMP)
+				elif len(aa.strip()) == 10:
+					#Might be NIF
+					if aa.strip().isnumeric() and not NIFContribuinte:
+						NIFContribuinte = aa.strip()
+						print ('NIFContribuinte ', NIFContribuinte)
+		'''
+		return {
+			"mcexpress": mcexpress,
+			"numeroTransacao": numeroTransacao,
+			"datadePAGAMENTO": dataEMISSAO,
+			"contaOrigem": contaOrigem,
+			"ibanDestino": ibanDestino,
+			"valorPAGO": valorPAGO
+		}
+		'''
+		return mcexpress,numeroTransacao,dataEMISSAO,contaOrigem,ibanDestino,valorPAGO
+
 
 @frappe.whitelist(allow_guest=True)
 def pdf_scrape_txt(ficheiro):
