@@ -1,5 +1,5 @@
 #Extracted from https://www.thepythoncode.com/article/extract-text-from-images-or-scanned-pdf-python
-#Last Modifed by HELKYD 28-08-2022
+#Last Modifed by HELKYD 05-10-2022
 
 from __future__ import unicode_literals
 
@@ -226,7 +226,8 @@ def pdf_scrape(pdf):
 
 		origemCONTA = pdf.pq('LTTextBoxHorizontal:overlaps_bbox("193.0, 630.447, 255.55, 637.947")').text()
 		print ('tem origemCONTA')
-		origemIBAN = pdf.pq('LTTextBoxHorizontal:overlaps_bbox("193.0, 613.447, 301.833, 620.947")').text()
+		#05-10-2022
+		origemIBAN = pdf.pq('LTTextBoxHorizontal:overlaps_bbox("193.0, 613.447, 301.833, 620.947")').text().replace(' ','')
 		print ('tem origemIBAN')
 
 		empresa = pdf.pq('LTTextBoxHorizontal:overlaps_bbox("193.0, 546.947, 232.6, 554.447")').text()
