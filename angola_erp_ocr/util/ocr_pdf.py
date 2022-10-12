@@ -2495,7 +2495,11 @@ def lerPdf_ocr(ficheiro,psmm = 4,lingua = 'fra'):
 		p = BytesIO(b)
 		ppdf = PdfFileReader(p)
 		'''
+		print ('ficheor ',ficheiro)
+
 		if ficheiro.startswith('/tmp/'):
+			ff = ficheiro
+		elif ficheiro.startswith('/home/frappe/'):
 			ff = ficheiro
 		else:
 			ff = frappe.get_site_path('public','files') + ficheiro.replace('/files','')
