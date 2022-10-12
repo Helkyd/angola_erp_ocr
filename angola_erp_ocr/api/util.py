@@ -26,6 +26,7 @@ from pdfminer.high_level import extract_text_to_fp
 from pdfminer.layout import LAParams
 from lxml import html
 
+import csv
 
 @frappe.whitelist(allow_guest=True)
 def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
@@ -1269,13 +1270,74 @@ def ocr_pytesseract (filefinal):
 					"valorPAGO": valorPAGO
 				}
 
-		return "403 Forbidden"	#Because if IMAGE.... FOR NOW 04-10-2022
-		frappe.throw(porra)
+		#return "403 Forbidden"	#Because if IMAGE.... FOR NOW 04-10-2022
+		#frappe.throw(porra)
 		print ('Tentar FRA')
 		ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'fra',False,250)
 		print (ocr_tesserac)
 
-		frappe.throw(porra)
+		#Try to lerPdf_ocr as CSV to extract TEXT
+		lerpdfocr = ocr_pdf.lerPdf_ocr(filefinal,6,'por')
+		print ('lerpdfocr')
+		print (lerpdfocr)
+		if lerpdfocr:
+			bancoBic = False
+			contaOrigem = ''
+			dataEMISSAO = ''
+			numeroDocumento = ''
+			numeroOperacao = ''
+			descricaoPagamento = ''
+			valorPAGO = ''
+			ibanDestino = ''
+
+			print ('-------')
+			with open(lerpdfocr, "rb") as fileobj:
+				filedata = fileobj.read()
+
+			for row in csv.reader(ocr_pdf.ang_read_csv_content(filedata),delimiter=','):
+				r = []
+				for val in row:
+					val = val.strip()
+					#print (val)
+					#print ("val", val.split(','))
+					#print (len(val.split(',')))
+
+					#Check IF Designaçäo: Conta BIC Empresas - Moeda Nacional
+					#Check fo Conta de Origem:
+					if "Conta de Origem:" in val:
+						contaOrigem = val[val.find('Conta de Origem:')+17:].strip()
+					if "Data do movimento" in val:
+						dataEMISSAO = val[val.find('Data do movimento')+18:].strip()
+					if "Designaçäo: Conta BIC Empresas - Moeda Nacional" in val or "Designação: Conta BIC Empresas - Moeda Nacional" in val:
+						#BANCO BIC TRANSFERENCIA
+						bancoBic = True
+					if "Número do documento" in val:
+						numeroDocumento =  val[val.find('Número do documento')+20:].strip()
+					if "Nümero de operaçäo" in val or "Número de operaçäo" in val:
+						if not numeroOperacao:
+							if "Nümero de operaçäo" in val:
+								numeroOperacao = val[val.find('Nümero de operaçäo')+19:].strip()
+							else:
+								numeroOperacao = val[val.find('Número de operaçäo')+19:].strip()
+					if "Descrição do movimento" in val:
+						descricaoPagamento = val[val.find('Descrição do movimento')+23:].strip()
+
+					if "Valor a debitar" in val:
+						valorPAGO = val[val.find('Valor a debitar')+16:].strip()
+
+			#Return values if
+			if dataEMISSAO and contaOrigem and valorPAGO:
+				return {
+					"bancoBic": bancoBic,
+					"numeroTransacao": numeroDocumento or numeroOperacao,
+					"datadePAGAMENTO": dataEMISSAO,
+					"contaOrigem": contaOrigem,
+					"ibanDestino": ibanDestino,
+					"valorPAGO": valorPAGO
+				}
+
+		return "403 Forbidden"	#Because if IMAGE.... FOR NOW 12-10-2022
+		#frappe.throw(porra)
 
 		print ('TERA DE FAZER O OCR......')
 		print ('TERA DE FAZER O OCR......')

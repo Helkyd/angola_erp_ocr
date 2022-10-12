@@ -1,5 +1,5 @@
 #Extracted from https://www.thepythoncode.com/article/extract-text-from-images-or-scanned-pdf-python
-#Last Modifed by HELKYD 12-05-2022
+#Last Modifed by HELKYD 12-10-2022
 
 from __future__ import unicode_literals
 import sys
@@ -2471,8 +2471,8 @@ def ocr_pdf(**kwargs):
 		)
 
 @frappe.whitelist(allow_guest=True)
-def lerPdf_ocr(ficheiro):
-
+def lerPdf_ocr(ficheiro,psmm = 4,lingua = 'fra'):
+	#Added psmm and lingua as default so can be called with diff numbers... ; 11-10-2022
 	# importing required modules
 	import PyPDF2
 
@@ -2495,7 +2495,10 @@ def lerPdf_ocr(ficheiro):
 		p = BytesIO(b)
 		ppdf = PdfFileReader(p)
 		'''
-		ff = frappe.get_site_path('public','files') + ficheiro.replace('/files','')
+		if ficheiro.startswith('/tmp/'):
+			ff = ficheiro
+		else:
+			ff = frappe.get_site_path('public','files') + ficheiro.replace('/files','')
 		ficheiro = ff
 
 		output_file = None
@@ -2506,10 +2509,10 @@ def lerPdf_ocr(ficheiro):
 		generate_output = 1
 		linguas_set = None
 		linguas = 0
-		psmmode = 4	#Default
+		psmmode = psmm #6 #4	#Default
 		search_str = None
 		highlight_readable_text = 0
-		linginst = 'fra'
+		linginst = lingua #'por' #'por' #'fra'
 
 		'''
 		ggg = ocr_img(
@@ -2527,7 +2530,7 @@ def lerPdf_ocr(ficheiro):
 		#ocr_pdf(input_path=b)
 
 
-		return
+		return ficheiro.replace('.pdf','.csv')
 
 
 		# creating a pdf reader object

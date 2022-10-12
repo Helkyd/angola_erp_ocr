@@ -1,5 +1,5 @@
 #Extracted from https://www.thepythoncode.com/article/extract-text-from-images-or-scanned-pdf-python
-#Last Modifed by HELKYD 05-10-2022
+#Last Modifed by HELKYD 12-10-2022
 
 from __future__ import unicode_literals
 
@@ -415,7 +415,7 @@ def pdfscrape(ficheiropdf = None, empresa = None, tipodoctype = None):
 
 	#For creating Purchase Order or Invoice based on PDF from Supplier...
 	#Generates the TXT file and after run through
-	if tipodoctype.upper() == "COMPRAS":
+	if tipodoctype and tipodoctype.upper() == "COMPRAS":
 		print ('Generate the file TXT based on ficheiropdf file..')
 		print ('Ficheiropdf ', ficheiropdf[ficheiropdf.find('/files/')+7:len(ficheiropdf)-3])
 		filetmp = ficheiropdf[ficheiropdf.find('/files/')+7:len(ficheiropdf)-3] + 'txt'
