@@ -29,6 +29,7 @@ from lxml import html
 import csv
 
 import ast
+import json
 
 @frappe.whitelist(allow_guest=True)
 def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
@@ -94,8 +95,11 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 						invoiceDate = ''
 						moedaInvoice = ''
 						supplierAddress = ''
+						supplierEmail = ''
 						supplierNIF = ''
 						supplierCountry = ''
+						supplierMoeda = ''
+
 						#Items
 						itemsSupplierInvoice = []
 						itemCode = ''
@@ -103,10 +107,294 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 						itemRate = ''
 						itemQtd = ''
 						itemTotal = ''
+						itemIVA = ''
 
-						for fsup in facturaSupplier:
+						cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)'
+						filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
+
+
+						print ("facturaSupplier")
+						#print (facturaSupplier)
+						#print (type(facturaSupplier))
+						#print (json.loads(facturaSupplier))
+						print (facturaSupplier.split('\n'))
+						#frappe.throw(porra)
+
+						palavrasexiste_header = False
+
+						for fsup in facturaSupplier.split('\n'):
 							print ('=====')
 							print (fsup)
+
+							if fsup.strip() != None and fsup.strip() != "":
+								if not empresaSupplier:
+									'''
+									EVITA palavras:
+										Original
+										2!Via
+										2ºVia
+									'''
+									evitapalavras =['Original','2!Via','2ºVia']
+									palavraexiste = False
+									for ff in fsup.split(' '):
+										#print (ff)
+										if ff in evitapalavras:
+											#print ('TEM palavra ', ff)
+											palavraexiste = True
+									if palavraexiste == False:
+										#print (fsup)
+										#print ('Pode ser NOME DA EMPRESA')
+										#Remove if startswith /
+										if fsup.strip().startswith('/'):
+											empresaSupplier = fsup.strip()[1:]
+										else:
+											empresaSupplier = fsup.strip()
+
+								if not supplierAddress:
+									'''
+									TER palavras:
+										RUA, AVENIDA
+									'''
+									terpalavras = ['RUA', 'AVENIDA']
+									ADDRpalavraexiste = False
+									for ff in fsup.split(' '):
+										#print (ff)
+										if ff in terpalavras:
+											#print ('TEM palavra ', ff)
+											ADDRpalavraexiste = True
+									if ADDRpalavraexiste:
+										supplierAddress = fsup.strip()
+
+								if not supplierEmail:
+									if "EMAIL:" in fsup.upper():
+										#print ('Ainda por fazer....')
+										supplierEmail = 'Ainda por fazer....'
+								if not supplierNIF:
+									if "NIF" in fsup.upper() or "NIF:" in fsup.upper():
+										supplierNIF = fsup.replace('NIF','').replace('NIF:','').strip()
+								if not supplierMoeda:
+									terpalavras = ['Moeda','AOA','AKZ']
+									Moedapalavraexiste = False
+									for ff in terpalavras:
+										if ff in fsup.strip():
+											Moedapalavraexiste = True
+									if Moedapalavraexiste:
+										#Check for AOA and AKZ first...
+										if "AOA" in fsup.strip():
+											supplierMoeda = 'AOA'
+										elif "AKZ" in fsup.strip():
+											supplierMoeda = 'AKZ'
+										else:
+											supplierMoeda = fsup.strip().replace('Moeda','')
+											#TODO: Remove CAMBIO and Numbers if exist on the same line...
+
+								if not invoiceDate:
+									terpalavras = ['Data Doc.','Data Doc']
+									Datepalavraexiste = False
+									for ff in fsup.split(' '):
+										#print (ff)
+										if ff in terpalavras:
+											#print ('TEM palavra ', ff)
+											Datepalavraexiste = True
+									if Datepalavraexiste:
+										invoiceDate = fsup.replace('Data Doc.','').replace('Data Doc','').strip()
+								if not invoiceNumber:
+									#Search for PP FT FR
+									seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
+									#print (re.match(seriesDocs_pattern,fsup.upper().strip()))
+									if re.match(seriesDocs_pattern,fsup.upper().strip()):
+										invoiceNumber = fsup.upper().strip()
+									else:
+										if "FT" in fsup.upper().strip() or "PP" in fsup.upper().strip() or "FR" in fsup.upper().strip():
+											if "FT" in fsup.upper().strip():
+												tmpseries = fsup.upper().strip()[fsup.upper().strip().find('FT'):]
+											elif "PP" in fsup.upper().strip():
+												tmpseries = fsup.upper().strip()[fsup.upper().strip().find('PP'):]
+											elif "FR" in fsup.upper().strip():
+												tmpseries = fsup.upper().strip()[fsup.upper().strip().find('FR'):]
+
+											#print ('tmpseries ',tmpseries)
+											#print (re.match(seriesDocs_pattern,tmpseries))
+											if re.match(seriesDocs_pattern,tmpseries):
+												#Match series
+												invoiceNumber = tmpseries
+											#frappe.throw(porra)
+
+								if not itemsSupplierInvoice:
+									#Items
+									itemsSupplierInvoice = []
+									itemCode = ''
+									itemDescription = ''
+									itemRate = ''
+									itemQtd = ''
+									itemTotal = ''
+									itemIVA = ''
+
+									tmprate = ''
+
+									'''
+									TER palavras Para saber que ITEM TABLES DESCRIPTION:
+										UN, UNIDADE, CAIXA, CX, Artigo, Descrição, Qtd., Pr.Unit, Cód. Artigo, V.Líquido
+									'''
+									contapalavras_header = 0
+									terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
+
+
+
+									#palavrasexiste_header = False
+									for pp in terpalavras_header:
+										if pp.upper() in fsup.strip().upper():
+											contapalavras_header += 1
+
+									'''
+									TER palavras Para saber que ITEM TABLES:
+										UN, UNIDADE, CAIXA, CX
+									'''
+
+									terpalavras_item = ['UN', 'UNIDADE', 'CAIXA', 'CX']
+									palavraexiste_item = False
+									if palavrasexiste_header:
+										#Tem HEADER entao ve os ITENS...
+										for pp in terpalavras_item:
+											if pp in fsup.strip():
+												#IS an ITEMS so add
+												palavraexiste_item = True
+										if palavraexiste_item:
+											for ii in fsup.split(' '):
+												print ('----')
+												print ('ii ', ii)
+												print (re.match(cash_pattern,ii))
+												print (ii.strip().isnumeric())
+												#Itemcode
+												if not itemCode:
+													itemCode = ii.strip()
+												elif not itemDescription:
+													itemDescription = ii.strip()
+												elif itemCode and itemDescription and not ii.strip().isnumeric():
+													#Deal with Numbers
+													if not ii.find(',') != -1: #re.match(cash_pattern,ii): # and ii.find(',') != -1:
+														#Deal with Unit
+														if not ii.strip() in terpalavras_item:
+															itemDescription = itemDescription + " " + ii.strip()
+												if ii.strip().isnumeric():
+													print ('number')
+													if not itemQtd:
+														itemQtd = ii.strip()
+													elif not itemRate:
+														print ('tamanho')
+														print (len(ii))
+
+														if len(ii) == 2:
+															tmprate = ii.strip()
+														else:
+															if tmprate != '':
+																itemRate = str(tmprate) + str(ii.strip())
+																print ('aqui0 ',itemRate)
+															else:
+																itemRate = ii.strip()
+																tmprate = ''
+																print ('OUaqui1 ',itemRate)
+													elif not itemTotal:
+														print ('aqui total')
+														itemTotal = ii.strip()
+													elif not itemIVA:
+														itemIVA = ii.strip()
+												elif re.match(cash_pattern,ii) and ii.find(',') != -1:
+													#Tem Decimais...
+													if not itemQtd:
+														itemQtd = ii.strip()
+													elif not itemRate:
+														if tmprate != '':
+															itemRate = str(tmprate) + str(ii.strip())
+															tmprate = ''
+															print ('aqui ',itemRate)
+														else:
+															itemRate = ii.strip()
+															tmprate = ''
+															print ('OUaqui ',itemRate)
+
+														#itemRate = ii.strip()
+													elif not itemTotal:
+														print ('OUaqui total')
+														if ii.strip() != '0,00':
+															itemTotal = ii.strip()
+													elif not itemIVA:
+														itemIVA = ii.strip()
+
+											print ('Items')
+											print ('itemCode ',itemCode)
+											print ('itemDescription ',itemDescription)
+											print ('itemQtd ',itemQtd)
+											print ('itemRate ',itemRate)
+											print ('itemTotal ',itemTotal)
+											print ('itemIVA ',itemIVA)
+
+											filtered_divs['ITEM'].append(itemCode)
+											filtered_divs['DESCRIPTION'].append(itemDescription)
+											filtered_divs['QUANTITY'].append(itemQtd)
+											filtered_divs['RATE'].append(itemRate)
+											filtered_divs['TOTAL'].append(itemTotal)
+											filtered_divs['IVA'].append(itemIVA)
+
+										#frappe.throw(porra)
+
+
+
+									if contapalavras_header >= 5:
+										palavrasexiste_header = True
+
+								#if itemsSupplierInvoice:
+								#Already has list of list... to Append
+
+								if "aaaaaPROFORMA" in fsup:
+									print ('empresaSupplier ',empresaSupplier)
+									print ('supplierAddress ',supplierAddress)
+									print ('email ', supplierEmail)
+									print ('supplierNIF ', supplierNIF)
+									print ('invoiceNumber ', invoiceNumber)
+
+									frappe.throw(porra)
+								#print ('///////////')
+								#print (filtered_divs)
+								#print ('///////////')
+						print ('empresaSupplier ',empresaSupplier)
+						print ('supplierAddress ',supplierAddress)
+						print ('email ', supplierEmail)
+						print ('supplierNIF ', supplierNIF)
+						print ('invoiceNumber ', invoiceNumber)
+
+						print ('!!!!!!!!!!')
+						print (filtered_divs)
+						print ('!!!!!!!!!!')
+						data = []
+						for row in zip(filtered_divs['ITEM'], filtered_divs['DESCRIPTION'], filtered_divs['QUANTITY'], filtered_divs['RATE'], filtered_divs['TOTAL'], filtered_divs['IVA']):
+							if 'ITEM' in row[0]:
+								continue
+
+							data_row = {'ID': row[0].split(' ')[0], 'Description': row[1], 'Quantity': row[2], 'Rate': row[3], 'Total': row[4], 'Iva': row[5]}
+							data.append(data_row)
+
+						print('Supplier ', empresaSupplier)
+						print ('supplieraddre ', supplierAddress)
+						print ('supplierNIF ', supplierNIF)
+						if supplierMoeda == 'AOA' or supplierMoeda == 'AKZ':
+							empresaPais = 'Angola'
+						else:
+							empresaPais = 'DESCONHECIDO'
+							#TODO: GET COUNTRY FROM INVOICE...
+							print ('TODO: GET COUNTRY FROM INVOICE...')
+
+						print ('supplierPais ', empresaPais)
+
+						print('Invoice', invoiceNumber)
+						print('Date ', invoiceDate)
+						print('Moeda ', supplierMoeda)
+
+
+						pprint(data)
+
+						return (empresaSupplier,invoiceNumber,invoiceDate,supplierMoeda,supplierAddress,supplierNIF,empresaPais,data)
+
 
 				else:
 					return scrapeTXT
@@ -509,7 +797,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None):
 	#Added to OCR COMPRAS...; 14-10-2022
 	if tipodoctype != None and tipodoctype.upper() == "COMPRAS":
 		print ('Tenta ocr_pytesseract.... but reading all Lines and checking for the required fields...')
-		return ocr_tesserac
+		return angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'por',False,250) #ocr_tesserac
 		#frappe.throw(porra)
 
 	if "RECIBO DE PAGAMENTO" in ocr_tesserac or "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac or "EMITIDO EM: RF PORTAL BO CONTRIBUINTE" in ocr_tesserac or "MCX DEBIT" in ocr_tesserac or "COMPROVATIVO DA OPERACAO" in ocr_tesserac or "COMPROVATIVO DA OPERAÇÃO" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac or "MULTICAIXA Express." in ocr_tesserac:
