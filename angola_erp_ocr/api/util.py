@@ -191,13 +191,18 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 								if not invoiceDate:
 									terpalavras = ['Data Doc.','Data Doc']
 									Datepalavraexiste = False
-									for ff in fsup.split(' '):
-										#print (ff)
-										if ff in terpalavras:
-											#print ('TEM palavra ', ff)
+									for ff in terpalavras:
+										if ff in fsup.strip():
 											Datepalavraexiste = True
 									if Datepalavraexiste:
-										invoiceDate = fsup.replace('Data Doc.','').replace('Data Doc','').strip()
+										invoiceDate1 = fsup.strip()[fsup.strip().find('Data Doc'):] #fsup.replace('Data Doc.','').replace('Data Doc','').strip()
+										invoiceDate = invoiceDate1.replace('Data Doc.','').replace('Data Doc','').strip()
+										print (invoiceDate)
+										print (fsup.replace('Data Doc.','').replace('Data Doc','').strip())
+
+									#if "ESTE DOCUMENTO NÃO SERVE DE FACTURA" in fsup:
+									#	frappe.throw(porra)
+
 								if not invoiceNumber:
 									#Search for PP FT FR
 									seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
@@ -778,6 +783,12 @@ def ocr_pytesseract (filefinal,tipodoctype = None):
 	ocr_tesserac = ""
 	ocr_tesserac1 = ""
 
+	#Added to OCR COMPRAS...; 14-10-2022
+	if tipodoctype != None and tipodoctype.upper() == "COMPRAS":
+		print ('Tenta ocr_pytesseract.... but reading all Lines and checking for the required fields...')
+		return angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'por',False,250) #ocr_tesserac
+		#frappe.throw(porra)
+
 	ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'por',False,200) #180) #200)
 	print ('OCR TESSERACT')
 	print ('OCR TESSERACT')
@@ -794,11 +805,6 @@ def ocr_pytesseract (filefinal,tipodoctype = None):
 
 	referenciadocumento = ""
 
-	#Added to OCR COMPRAS...; 14-10-2022
-	if tipodoctype != None and tipodoctype.upper() == "COMPRAS":
-		print ('Tenta ocr_pytesseract.... but reading all Lines and checking for the required fields...')
-		return angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'por',False,250) #ocr_tesserac
-		#frappe.throw(porra)
 
 	if "RECIBO DE PAGAMENTO" in ocr_tesserac or "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac or "EMITIDO EM: RF PORTAL BO CONTRIBUINTE" in ocr_tesserac or "MCX DEBIT" in ocr_tesserac or "COMPROVATIVO DA OPERACAO" in ocr_tesserac or "COMPROVATIVO DA OPERAÇÃO" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac or "MULTICAIXA Express." in ocr_tesserac:
 		#MCX DEBIT -> Multicaixa Express
