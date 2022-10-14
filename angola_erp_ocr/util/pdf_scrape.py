@@ -1,5 +1,5 @@
 #Extracted from https://www.thepythoncode.com/article/extract-text-from-images-or-scanned-pdf-python
-#Last Modifed by HELKYD 12-10-2022
+#Last Modifed by HELKYD 14-10-2022
 
 from __future__ import unicode_literals
 
@@ -59,6 +59,10 @@ def pdfscrape_perpage(ficheiropdf = None, empresa = None):
 
 
 	pdf  = pdfquery.PDFQuery(ficheiropdf)
+	#FIX 14-10-2022
+	if not pdf.doc.catalog:
+		print ('NOT PDF but an IMAGE PDF file...')
+		return
 
 
 	#we can get the number of pages using “pdf.doc.catalog[‘Pages’].resolve()[‘Count’]”. To extract data from a specific page, we can use “pdf.load(#)”.

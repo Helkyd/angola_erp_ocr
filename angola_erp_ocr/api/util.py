@@ -143,6 +143,9 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 			temScrape = pdf_scrape.pdfscrape_perpage(filefinal)
 			print ('RESULTADO temScrape')
 			print (temScrape)
+			if temScrape == None:
+				return
+
 			print ('datahora' in temScrape)
 
 			if 'datahora' in temScrape or 'dataEMISSAO' in temScrape or 'datadePAGAMENTO' in temScrape:
