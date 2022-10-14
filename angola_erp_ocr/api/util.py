@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 04/10/2022
+#Date Changed: 14/10/2022
 
 
 from __future__ import unicode_literals
@@ -27,6 +27,8 @@ from pdfminer.layout import LAParams
 from lxml import html
 
 import csv
+
+import ast
 
 @frappe.whitelist(allow_guest=True)
 def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
@@ -67,7 +69,48 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 			if os.path.isfile(filefinal):
 				#tree = ET.parse(ficheiro)
 				print ('Running pdf_scrape_txt....')
-				return pdf_scrape_txt(filefinal)
+				#To check if returned ITems... 14-10-2022
+				scrapeTXT = pdf_scrape_txt(filefinal)
+				print ('scrapeTXT')
+				print (scrapeTXT)
+				print (len(scrapeTXT))
+				if scrapeTXT and len(scrapeTXT) >= 6:
+					#Check if Items created...
+					print (scrapeTXT[7])
+					if scrapeTXT[7]:
+						print (scrapeTXT[7][0])
+						return scrapeTXT
+					else:
+						print ('FAZ OCR COMPRAS')
+						print ('FAZ OCR COMPRAS')
+						print ('=================')
+						facturaSupplier = ocr_pytesseract (filefinal,"COMPRAS")
+
+						'''
+							TODO: Get MUST fields from OCR
+						'''
+						empresaSupplier = ''
+						invoiceNumber = ''
+						invoiceDate = ''
+						moedaInvoice = ''
+						supplierAddress = ''
+						supplierNIF = ''
+						supplierCountry = ''
+						#Items
+						itemsSupplierInvoice = []
+						itemCode = ''
+						itemDescription = ''
+						itemRate = ''
+						itemQtd = ''
+						itemTotal = ''
+
+						for fsup in facturaSupplier:
+							print ('=====')
+							print (fsup)
+
+				else:
+					return scrapeTXT
+				#return pdf_scrape_txt(filefinal)
 
 			else:
 				print ('Ficheiro nao existe.. ' + filefinal)
@@ -433,7 +476,7 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 def find_second_last(text, pattern):
 	return text.rfind(pattern, 0, text.rfind(pattern))
 
-def ocr_pytesseract (filefinal):
+def ocr_pytesseract (filefinal,tipodoctype = None):
 	#Podemos fazer OCR with tesseract before trying with pytesseract
 	# File, Language, DPI
 	#cash to include . and , ex. 44.123,00 / 44.123,97
@@ -459,6 +502,12 @@ def ocr_pytesseract (filefinal):
 	print ("EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac)
 
 	referenciadocumento = ""
+
+	#Added to OCR COMPRAS...; 14-10-2022
+	if tipodoctype != None and tipodoctype.upper() == "COMPRAS":
+		print ('Tenta ocr_pytesseract.... but reading all Lines and checking for the required fields...')
+		return ocr_tesserac
+		#frappe.throw(porra)
 
 	if "RECIBO DE PAGAMENTO" in ocr_tesserac or "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac or "EMITIDO EM: RF PORTAL BO CONTRIBUINTE" in ocr_tesserac or "MCX DEBIT" in ocr_tesserac or "COMPROVATIVO DA OPERACAO" in ocr_tesserac or "COMPROVATIVO DA OPERAÇÃO" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac or "MULTICAIXA Express." in ocr_tesserac:
 		#MCX DEBIT -> Multicaixa Express
@@ -1127,8 +1176,6 @@ def ocr_pytesseract (filefinal):
 					'NIFContribuinte': NIFContribuinte
 				}
 
-
-
 	if not ocr_tesserac or not ocr_tesserac1 or not referenciadocumento:
 		#frappe.throw(porra)
 		print ('///////////////////////////')
@@ -1290,6 +1337,15 @@ def ocr_pytesseract (filefinal):
 			valorPAGO = ''
 			ibanDestino = ''
 
+			'''
+				TODO:
+				After running below if nothing returns...
+				Trying to read any PDF and apply the following rules
+					From lines 1 to 10
+						Get Company/Supplier name, Address, NIF
+							if got NIF can get Original companyname
+					From lines 11 to
+			'''
 			print ('-------')
 			with open(lerpdfocr, "rb") as fileobj:
 				filedata = fileobj.read()
@@ -1335,6 +1391,13 @@ def ocr_pytesseract (filefinal):
 					"ibanDestino": ibanDestino,
 					"valorPAGO": valorPAGO
 				}
+
+		print ('TODO: Tenta ocr_pytesseract.... but reading all Lines and checking for the required fields...')
+		#TODO:Tenta ocr_pytesseract.... but reading all Lines and checking for the required fields...
+		#if tipodoctype != None and tipodoctype.upper() == "COMPRAS":
+		#	print ('Tenta ocr_pytesseract.... but reading all Lines and checking for the required fields...')
+		#	print (ocr_tesserac)
+		#	frappe.throw(porra)
 
 		return "403 Forbidden"	#Because if IMAGE.... FOR NOW 12-10-2022
 		#frappe.throw(porra)
