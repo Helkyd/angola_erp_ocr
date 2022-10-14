@@ -1327,7 +1327,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None):
 		lerpdfocr = ocr_pdf.lerPdf_ocr(filefinal,6,'por')
 		print ('lerpdfocr')
 		print (lerpdfocr)
-		if lerpdfocr:
+		if lerpdfocr and ".pdf" in lerpdfocr:
 			bancoBic = False
 			contaOrigem = ''
 			dataEMISSAO = ''
