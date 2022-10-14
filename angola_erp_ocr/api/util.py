@@ -181,9 +181,9 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 									if Moedapalavraexiste:
 										#Check for AOA and AKZ first...
 										if "AOA" in fsup.strip():
-											supplierMoeda = 'AOA'
+											supplierMoeda = 'KZ'
 										elif "AKZ" in fsup.strip():
-											supplierMoeda = 'AKZ'
+											supplierMoeda = 'KZ'
 										else:
 											supplierMoeda = fsup.strip().replace('Moeda','')
 											#TODO: Remove CAMBIO and Numbers if exist on the same line...
@@ -382,7 +382,7 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 						print('Supplier ', empresaSupplier)
 						print ('supplieraddre ', supplierAddress)
 						print ('supplierNIF ', supplierNIF)
-						if supplierMoeda == 'AOA' or supplierMoeda == 'AKZ':
+						if supplierMoeda == 'AOA' or supplierMoeda == 'AKZ' or supplierMoeda == 'KZ':
 							empresaPais = 'Angola'
 						else:
 							empresaPais = 'DESCONHECIDO'
