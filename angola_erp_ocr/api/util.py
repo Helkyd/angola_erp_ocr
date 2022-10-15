@@ -2508,7 +2508,6 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								print ('tmpmoeda ',tmpmoeda.upper())
 								print (fsup.strip().upper())
 								supplierMoeda = tmpmoeda.upper().strip()
-								#frappe.throw(porra)
 
 				if not invoiceDate:
 					terpalavras = ['Data Doc.','Data Doc','Invoice Date:','Invoice Date']
@@ -2842,8 +2841,6 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 			empresaPais = 'Angola'
 		else:
 			empresaPais = 'DESCONHECIDO'
-			#TODO: GET COUNTRY FROM INVOICE...
-			print ('TODO: GET COUNTRY FROM INVOICE...')
 			if supplierMoeda:
 				tmppais =pycountry.countries.get(numeric=pycountry.currencies.get(alpha_3=supplierMoeda).numeric)
 				print ('tmppais ',tmppais.name)
