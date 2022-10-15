@@ -2416,7 +2416,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 		#System Currencies ...
 		moedassystem = []
-		listamoedas = frappe.get_list("Currency",fields=['name'])
+		listamoedas = frappe.get_list("Currency",fields=['name'],ignore_permissions=True)
 		for ll in listamoedas:
 			moedassystem.append(ll.name)
 
