@@ -86,6 +86,9 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 						print (scrapeTXT[7][0])
 						return scrapeTXT
 					else:
+						#TESTING....15-10-2022
+						return aprender_OCR (filefinal,"COMPRAS")
+
 						print ('FAZ OCR COMPRAS')
 						print ('FAZ OCR COMPRAS')
 						print ('=================')
