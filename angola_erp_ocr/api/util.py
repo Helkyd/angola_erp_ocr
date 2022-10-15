@@ -2664,9 +2664,10 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									else:
 										#String...
 										tmpdescricao = cc.strip() + ' ' + tmpdescricao
-									if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 0:
+									if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1:
 										#Add SN JSTJPB7CX5N4008215 to Description
-										tmpdescricao = tmpdescricao + 'SN: ' + cc
+										#tmpdescricao = tmpdescricao + 'SN: ' + cc
+										tmpdescricao = ' SN: ' + cc
 										palavraexiste_item = False
 
 									print ('tmpdescricao ', tmpdescricao)
@@ -2674,9 +2675,12 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									print (len(fsup.split()))
 									if idx == len(fsup.split())-1:
 										print ('para')
-										if not re.match(cash_pattern,cc):
+										if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1:
+											print('continua')
+										elif not re.match(cash_pattern,cc):
 											tmpdescricao = ''
 											avoidADDING = True
+											print ('FEZ BREAK')
 											break
 
 							#frappe.throw(porra)
@@ -2691,7 +2695,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									print (filtered_divs['DESCRIPTION'])
 									print (len(filtered_divs['DESCRIPTION']))
 									print (filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1])
-									filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += ' SN: '  + tmpdescricao
+									filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += tmpdescricao
 
 									tmpdescricao = ''
 									print ('----')
