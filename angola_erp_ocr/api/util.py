@@ -779,7 +779,7 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 def find_second_last(text, pattern):
 	return text.rfind(pattern, 0, text.rfind(pattern))
 
-def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por'):
+def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200):
 	#Podemos fazer OCR with tesseract before trying with pytesseract
 	# File, Language, DPI
 	#cash to include . and , ex. 44.123,00 / 44.123,97
@@ -793,10 +793,10 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por'):
 	#Added to OCR COMPRAS...; 14-10-2022
 	if tipodoctype != None and tipodoctype.upper() == "COMPRAS":
 		print ('Tenta ocr_pytesseract.... but reading all Lines and checking for the required fields...')
-		return angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,lingua,False,250) #ocr_tesserac
+		return angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,lingua,False,resolucao) #250) #ocr_tesserac
 		#frappe.throw(porra)
 
-	ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,lingua,False,200) #180) #200)
+	ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,lingua,False,resolucao) #200) #180) #200)
 	print ('OCR TESSERACT')
 	print ('OCR TESSERACT')
 	print ('OCR TESSERACT')
@@ -2373,7 +2373,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		print ('FAZ OCR COMPRAS')
 		print ('FAZ OCR COMPRAS')
 		print ('=================')
-		facturaSupplier = ocr_pytesseract (filefinal,"COMPRAS")
+		facturaSupplier = ocr_pytesseract (filefinal,"COMPRAS",'por',250)
 		print (facturaSupplier.split('\n'))
 		#Check if Document is in PT or ENG...
 		en_terpalavras = ['PROFORMA INVOICE','SALES INVOICE','INVOICE']
@@ -2385,7 +2385,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 		if en_scan:
 			#Scan in ENGLISH
-			facturaSupplier = ocr_pytesseract (filefinal,"COMPRAS",'eng')
+			facturaSupplier = ocr_pytesseract (filefinal,"COMPRAS",'eng',270) #180) #150) retuns line counter but not the rest...
 			print (facturaSupplier.split('\n'))
 		'''
 			TODO: Get MUST fields from OCR
@@ -2409,6 +2409,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		itemTotal = ''
 		itemIVA = ''
 
+		date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
 		cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)'
 		#filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
 		filtered_divs = {'COUNTER': [], 'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
@@ -2430,6 +2431,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		#frappe.throw(porra)
 
 		palavrasexiste_header = False
+
+		tmp_sn = ''	#Will hold SNs
 
 		for fsup in facturaSupplier.split('\n'):
 			print ('=====')
@@ -2458,7 +2461,51 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 							empresaSupplier = fsup.strip()[1:]
 						else:
 							empresaSupplier = fsup.strip()
+					#Check online for Company.... only twice
+					if empresaSupplier:
+						print ('Verificar Empresa Online')
+						procuraonline = False
+						if en_scan:
+							en_paraempresa_terpalavras = ['TRADING','LLC']
+							for tp in en_paraempresa_terpalavras:
+								if tp in fsup:
+									procuraonline = True
+									break
+							if procuraonline:
+								empresa = search_company_online(fsup)
+							else:
+								empresa = 'INVALIDO'
 
+						else:
+							#For Angola
+							empresa = empresaSupplier
+							#TODO: if NIF check NIF and get Company name...
+
+						if empresa == 'INVALIDO':
+							empresaSupplier = ''
+						else:
+							print ('RESULTADO Empresa Online')
+							print (empresa)
+							removerpalavras =['|','Facebook']
+							tmpempresa = ''
+							for ee in empresa:
+								if not ":" in ee:
+									for rr in removerpalavras:
+										if not tmpempresa:
+											tmpempresa = ee.replace(rr,'')
+										else:
+											tmpempresa1 = tmpempresa.replace(rr,'')
+											tmpempresa = tmpempresa1
+									#Stay with First or Second record from google search...
+									break
+							if tmpempresa:
+								print ('tmpempresa ',tmpempresa)
+								if tmpempresa.strip().endswith('-'):
+									empresaSupplier = tmpempresa.strip()[0:len(tmpempresa.strip())-1]
+								else:
+									empresaSupplier = tmpempresa.strip()
+
+						#frappe.throw(porra)
 				if not supplierAddress:
 					'''
 					TER palavras:
@@ -2479,8 +2526,15 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 						#print ('Ainda por fazer....')
 						supplierEmail = 'Ainda por fazer....'
 				if not supplierNIF:
-					if "NIF" in fsup.upper() or "NIF:" in fsup.upper():
-						supplierNIF = fsup.replace('NIF:','').replace('NIF','').strip()
+					if not en_scan:
+						if "NIF" in fsup.upper() or "NIF:" in fsup.upper():
+							supplierNIF = fsup.replace('NIF:','').replace('NIF','').strip()
+							print ('CHECK NIF....ANGOLA')
+							nifvalido = validar_nif (supplierNIF)
+							print (nifvalido)
+							if nifvalido and nifvalido[2]:
+								print ('Empresa CORRECTA ', nifvalido[2])
+								empresaSupplier = nifvalido[2]
 				if not supplierMoeda:
 					terpalavras = ['Moeda','AOA','AKZ']
 					#TODO: List of Currencies to see if on the Document to be OCR..
@@ -2510,6 +2564,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								supplierMoeda = tmpmoeda.upper().strip()
 
 				if not invoiceDate:
+					print ('invoiceDate')
 					terpalavras = ['Data Doc.','Data Doc','Invoice Date:','Invoice Date']
 					Datepalavraexiste = False
 					for ff in terpalavras:
@@ -2522,19 +2577,16 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								invoiceDate1 = fsup.strip()[fsup.strip().find(tt):]
 								invoiceDate = invoiceDate1.replace(tt,'').strip()
 								break
-
-						#if fsup.strip().find('Data Doc') != -1:
-						#	invoiceDate1 = fsup.strip()[fsup.strip().find('Data Doc'):] #fsup.replace('Data Doc.','').replace('Data Doc','').strip()
-						#elif fsup.strip().find('Invoice Date') != -1:
-						#	invoiceDate1 = fsup.strip()[fsup.strip().find('Invoice Date'):]
-						#print ('invoiceDate1 ',invoiceDate1)
-						#invoiceDate = invoiceDate1.replace('Data Doc.','').replace('Data Doc','').strip()
 						print (invoiceDate)
-						#print (fsup.replace('Data Doc.','').replace('Data Doc','').strip())
-						#frappe.throw(porra)
+					else:
+						#Check if has DATE on fsup
+						matches = re.finditer(date_pattern,fsup, re.MULTILINE)
+						for matchNum, match in enumerate(matches, start=1):
+							print ("Match {matchNum} was found at {start}-{end}: {match}".format(matchNum = matchNum, start = match.start(), end = match.end(), match = match.group()))
+							if match.group():
+								print('TEM DATA.... ',match.group())
+								invoiceDate = match.group()
 
-					#if "ESTE DOCUMENTO NÃO SERVE DE FACTURA" in fsup:
-					#	frappe.throw(porra)
 
 				if not invoiceNumber:
 					#Search for PP FT FR
@@ -2565,7 +2617,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 							print ('Factura ', tt.upper())
 							print (fsup.upper().strip())
 							if fsup.upper().strip().find(tt.upper()) != -1:
-								invoiceNumber = fsup.upper().strip()[fsup.upper().strip().find(tt.upper()):].replace(tt.upper(),'').replace(':','')
+								invoiceNumber = fsup.upper().strip()[fsup.upper().strip().find(tt.upper()):].replace(tt.upper(),'').replace(':','').strip()
 								print ('fac ', invoiceNumber)
 
 
@@ -2588,7 +2640,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					'''
 					contapalavras_header = 0
 					terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-					terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'UNIT PRICE', 'TOTAL']
+					terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'UNIT PRICE', 'TOTAL','ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)']
 
 
 
@@ -2620,6 +2672,29 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 						print ('TO SCAN the SN or Chassis')
 						palavraexiste_item = True
 
+					#Case above is for Single SN or Chassis
+					#This will check len for each if 15 or more each
+					#JTFBV71J8B044454
+
+					sao_sn = True
+					print ('sao_SN palavraexiste_item ', palavraexiste_item)
+					if not palavraexiste_item:
+						#To avoid having twice the SN
+						if palavrasexiste_header:
+							for cc in fsup.split():
+								print ('cc ',cc)
+								if not 'SN:' in cc:
+									print ('LEN ', len(cc))
+									if len(cc) >= 15:
+										#sao_sn = True
+										print ('SAO SNs')
+										tmp_sn += ' ' + cc.strip()
+									else:
+										sao_sn = False
+
+					print ('tmp_sn ',tmp_sn)
+					#if "SN: JTFBV71J8B044454 JTFBV71J8B044601 JTFBV71J8B044616" in fsup:
+					#	frappe.throw(porra)
 
 					if palavrasexiste_header:
 						#Tem HEADER entao ve os ITENS...
@@ -2629,6 +2704,13 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								palavraexiste_item = True
 						#Check if startswith a NUMBER...
 						if palavraexiste_item or fsup.strip()[0:1].isnumeric():
+							#Check if tmp_sn and add on previous ITEM and clear
+							if tmp_sn !='' and fsup.strip()[0:1].isnumeric():
+								filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += ' SN: ' + tmp_sn
+								tmp_sn = ''
+								print ('ADDED SNs to DESCRIPTION...')
+								print ('ADDED SNs to DESCRIPTION...')
+
 							#Check if First is Numbers... so is a Counter
 							if fsup.strip()[0:1].isnumeric():
 								contaLinhas = fsup.strip()[0:1]
@@ -2799,24 +2881,13 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 						#frappe.throw(porra)
 
 
-
+					print ('contapalavras_header ',contapalavras_header)
 					if contapalavras_header >= 5:
 						palavrasexiste_header = True
 
 				#if itemsSupplierInvoice:
 				#Already has list of list... to Append
 
-				if "aaaaaPROFORMA" in fsup:
-					print ('empresaSupplier ',empresaSupplier)
-					print ('supplierAddress ',supplierAddress)
-					print ('email ', supplierEmail)
-					print ('supplierNIF ', supplierNIF)
-					print ('invoiceNumber ', invoiceNumber)
-
-					frappe.throw(porra)
-				#print ('///////////')
-				#print (filtered_divs)
-				#print ('///////////')
 		print ('empresaSupplier ',empresaSupplier)
 		print ('supplierAddress ',supplierAddress)
 		print ('email ', supplierEmail)
@@ -2842,9 +2913,13 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		else:
 			empresaPais = 'DESCONHECIDO'
 			if supplierMoeda:
-				tmppais =pycountry.countries.get(numeric=pycountry.currencies.get(alpha_3=supplierMoeda).numeric)
-				print ('tmppais ',tmppais.name)
-				empresaPais = tmppais.name
+				print ('supplierMoeda ',supplierMoeda)
+				if supplierMoeda == "EUR":
+					empresaPais = 'Belgium' #DEFAULT for EUR currency
+				else:
+					tmppais =pycountry.countries.get(numeric=pycountry.currencies.get(alpha_3=supplierMoeda).numeric)
+					print ('tmppais ',tmppais.name)
+					empresaPais = tmppais.name
 
 		print ('supplierPais ', empresaPais)
 
@@ -2856,3 +2931,128 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		pprint(data)
 
 		return (empresaSupplier,invoiceNumber,invoiceDate,supplierMoeda,supplierAddress,supplierNIF,empresaPais,data)
+
+
+def search_company_online(empresa):
+
+	# Import the beautifulsoup
+	# and request libraries of python.
+	import requests
+	import bs4
+
+	# Make two strings with default google search URL
+	# 'https://google.com/search?q=' and
+	# our customized search keyword.
+	# Concatenate them
+	resultados = []
+	if empresa:
+		text= empresa #"I 1 TMJ EXPRESSO GENERAL TRADING LLC" # "c++ linear search program"
+		url = 'https://google.com/search?q=' + text
+
+		# Fetch the URL data using requests.get(url),
+		# store it in a variable, request_result.
+		request_result=requests.get( url )
+		#print ('search_company_online')
+
+		# Creating soup from the fetched request
+		soup = bs4.BeautifulSoup(request_result.text,"html.parser")
+		filter=soup.find_all("h3")
+		#print ('RESULTADO SOUP')
+		#print (soup)
+		for i in range(0,len(filter)):
+			#print(filter[i].get_text())
+			resultados.append(filter[i].get_text())
+
+		if resultados:
+			return resultados
+		else:
+			return 'INVALIDO'
+
+def validar_nif(nif):
+	import requests
+	if nif:
+		print ('verifying... ', nif)
+		try:
+			response  = requests.get("https://invoice.minfin.gov.ao/commonServer/common/taxpayer/get/" + str(nif),verify=False, timeout=5)
+			#check if Response is 502; Does not Exist the site...
+			if response.status_code == 502:
+				print ('Nao existe o SITE!!!!')
+				return ('SITE EM BAIXO.')
+			else:
+				print ('Tem dados NIF....')
+				data = response.json()
+				print ('data')
+				#print (data['success'])
+				print (data)
+				if 'status' in data:
+					if data['status'] == 500:
+						print ('Erro de Servidor!!!')
+					elif 'sucess' in data:
+						if data['success'] == False:
+							print ('NIF INVALIDO!!!')
+							return 'NIF INVALIDO'
+						else:
+							#Success
+							nifvalido = data['data']['nif']
+							regimeiva = ""
+							print ('Valido')
+							#verify Regime IVA
+							#"regimeIva":"GNAD"
+							if data['data']['regimeIva'] != "" and data['data']['regimeIva'] == "GNAD" :
+								#GERAL
+								regimeiva = 'Regime GERAL'
+								print ('Regime GERAL')
+
+							if data['data']['companyName']:
+								return nifvalido, regimeiva, data['data']['companyName']
+							else:
+								return nifvalido, regimeiva, data['data']['nameAbb']
+
+
+
+				elif 'success' in data:
+					if data['success'] == False:
+						print ('NIF INVALIDO!!!')
+						return 'NIF INVALIDO'
+					else:
+						#Success
+						nifvalido = data['data']['nif']
+						regimeiva = ""
+						print ('Valido')
+						print ('data ', data)
+						#verify Regime IVA
+						#"regimeIva":"GNAD"
+						if data['data']['regimeIva'] != "" and data['data']['regimeIva'] == "GNAD" :
+							#GERAL
+							regimeiva = 'Regime GERAL'
+							print ('Regime GERAL')
+						if data['data']['companyName']:
+							return nifvalido, regimeiva, data['data']['companyName']
+						else:
+							return nifvalido, regimeiva, data['data']['nameAbb']
+
+				else:
+					#Success
+					nifvalido = data['data']['nif']
+					regimeiva = ""
+					print ('Valido')
+					#verify Regime IVA
+					#"regimeIva":"GNAD"
+					if data['data']['regimeIva'] != "" and data['data']['regimeIva'] == "GNAD" :
+						#GERAL
+						regimeiva = 'Regime GERAL'
+						print ('Regime GERAL')
+
+					if data['data']['companyName']:
+						return nifvalido, regimeiva, data['data']['companyName']
+					else:
+						return nifvalido, regimeiva, data['data']['nameAbb']
+
+
+
+		except requests.exceptions.ReadTimeout:
+			print ('SEM LIGACAO.....')
+			print ('SEM LIGACAO.....')
+		except requests.exceptions.ConnectionError:
+			print ('Connection refused.....')
+			requests.status_code = "Connection refused"
