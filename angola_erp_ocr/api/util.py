@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 15/10/2022
+#Date Changed: 16/10/2022
 
 
 from __future__ import unicode_literals
@@ -1629,9 +1629,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 		#Try to lerPdf_ocr as CSV to extract TEXT
 		lerpdfocr = ocr_pdf.lerPdf_ocr(filefinal,6,'por')
-		print ('lerpdfocr')
+		print ('////// lerpdfocr \\\\\\\\')
 		print (lerpdfocr)
-		if lerpdfocr and ".pdf" in lerpdfocr:
+		if lerpdfocr and ".pdf" in filefinal: # lerpdfocr:
 			bancoBic = False
 			contaOrigem = ''
 			dataEMISSAO = ''
