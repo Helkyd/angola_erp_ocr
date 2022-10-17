@@ -34,6 +34,7 @@ import json
 #PyCountry ISO TESTE
 import pycountry
 
+from bs4 import BeautifulSoup as bs
 
 @frappe.whitelist(allow_guest=True)
 def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
@@ -2299,13 +2300,22 @@ def pdf_scrape_txt(ficheiro):
 	print (len(filtered_divs['TOTAL']))
 
 	data = []
-	for row in zip(filtered_divs['ITEM'], filtered_divs['DESCRIPTION'], filtered_divs['QUANTITY'], filtered_divs['RATE'], filtered_divs['TOTAL'], filtered_divs['IVA']):
-		if 'ITEM' in row[0]:
-			continue
+	if filtered_divs['IVA']:
+		for row in zip(filtered_divs['ITEM'], filtered_divs['DESCRIPTION'], filtered_divs['QUANTITY'], filtered_divs['RATE'], filtered_divs['TOTAL'], filtered_divs['IVA']):
+			if 'ITEM' in row[0]:
+				continue
+			#data_row = {'ID': row[0].split(' ')[0], 'Description': row[1], 'Quantity': row[2], 'Rate': row[3], 'Total': row[4]}
+			data_row = {'ID': row[0].split(' ')[0], 'Description': row[1], 'Quantity': row[2], 'Rate': row[3], 'Total': row[4], 'Iva': row[5]}
+			data.append(data_row)
+	else:
+		for row in zip(filtered_divs['ITEM'], filtered_divs['DESCRIPTION'], filtered_divs['QUANTITY'], filtered_divs['RATE'], filtered_divs['TOTAL']):
+			if 'ITEM' in row[0]:
+				continue
 
-		#data_row = {'ID': row[0].split(' ')[0], 'Description': row[1], 'Quantity': row[2], 'Rate': row[3], 'Total': row[4]}
-		data_row = {'ID': row[0].split(' ')[0], 'Description': row[1], 'Quantity': row[2], 'Rate': row[3], 'Total': row[4], 'Iva': row[5]}
-		data.append(data_row)
+			data_row = {'ID': row[0].split(' ')[0], 'Description': row[1], 'Quantity': row[2], 'Rate': row[3], 'Total': row[4]}
+			#data_row = {'ID': row[0].split(' ')[0], 'Description': row[1], 'Quantity': row[2], 'Rate': row[3], 'Total': row[4], 'Iva': row[5]}
+			data.append(data_row)
+
 
 	print('Supplier ', empresaSupplier)
 	print ('supplieraddre ', empresaSupplierEndereco)
@@ -2326,6 +2336,17 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 	Last modified: 16-10-2022
 	Using to Train or LEARN OCR from PDF files not configurated on the System....
 	'''
+
+	terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
+	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
+
+	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
+	#cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)'
+	cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)'
+	#filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
+	filtered_divs = {'COUNTER': [], 'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
+
+
 	if os.path.isfile(frappe.get_site_path('public','files') + data.replace('/files','')):
 		filefinal = frappe.get_site_path('public','files') + data.replace('/files','')
 		print ('filefinal ',filefinal)
@@ -2346,15 +2367,19 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		en_scan = False
 		#Check if Document is in PT or ENG...
 		en_terpalavras = ['PROFORMA INVOICE','SALES INVOICE','INVOICE']
+		en_palavras_fim_item = ['INCIDENCE','VAT','TAX']
+		fim_items = False
+
+		contapalavras_header = 0
 
 		#Check first if EN or PT Document...
 		import pdfquery
-		pdf  = pdfquery.PDFQuery(filefinal)
-		pdf.load(0)
+		tmppdf  = pdfquery.PDFQuery(filefinal)
+		tmppdf.load(0)
 		for engpalav in en_terpalavras:
 			print ('engpalav ',engpalav)
 			#print (pdf.pq(':contains("{}")'.format(engpalav)).text())
-			tt = pdf.pq(':contains("{}")'.format(engpalav)).text()
+			tt = tmppdf.pq(':contains("{}")'.format(engpalav)).text()
 			if tt:
 				#print (tt)
 				en_scan = True
@@ -2371,7 +2396,109 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		if en_scan:
 			#Scan in ENGLISH
 			facturaSupplier = ocr_pytesseract (filefinal,"COMPRAS",'eng',270) #180) #150) retuns line counter but not the rest...
+			#Check if needs Scan lower 260 to get all Numbers
+			palavras_header_counted = False
+			Qtd_isnot_number = False	#To control if needs to OCR again as 260
+
+			for fsup in facturaSupplier.split('\n'):
+				print ('TEXTO LINHA: ', fsup)
+				for fi in en_palavras_fim_item:
+					if fi in fsup.strip():
+						fim_items = True
+
+				if contapalavras_header >= 5 and not fim_items:
+					#Now check if all Columns for Items are correct ....
+					#ITEM| DESCRIPTION| QUANTITY| UNIT PRICE (EUR)| TOTAL PRICE (EUR)
+					#this case must have 5 columns with TEXTs...
+					totalgeral = ''
+					precounitario = ''
+					quantidade = ''
+
+
+					for idx,cc in reversed(list(enumerate(fsup.split()))):
+						print ('contapalavras_header ',contapalavras_header)
+						print (len(fsup.split()))
+						if len(fsup.split()) > contapalavras_header:
+							print ('TEM ESPACO nos ITENS.... ')
+							print ('TODO: IDX: last must be Number, LAST-1 also, last-2 also')
+							print ('TODO: IDX: First can be Number or TEXT')
+							print ('TODO: if NOT IDX: First and not LAST-1 and not LAST-2 than is DESCRIPTION')
+							#frappe.throw(porra)
+
+
+						print ('===== FIRST IDX ======')
+						print ('idx ',idx)
+						print ('cc ',cc)
+
+						#Check if cash
+						print (re.match(cash_pattern,cc))
+						print (cc.strip().isnumeric())
+
+						if re.match(cash_pattern,cc):
+							if not totalgeral:
+								totalgeral = cc
+							elif not precounitario:
+								precounitario = cc
+						elif contapalavras_header == 5:
+							#Check QTD is a Number...
+							if len(fsup.split()) > 1:
+								if not cc.strip().isnumeric():
+									#Gera novamente o OCR bcs QTD is not a Number...
+									if quantidade == '':
+										Qtd_isnot_number = True
+										print ('QTD is not a NUMBER ', cc)
+										break
+
+						if cc.strip().isnumeric():
+							if contapalavras_header == 5:
+								#Assuming that 5 is Total, 4 is Unit Price, 3 is Qtd
+								if not idx == 0:
+									if not quantidade:
+										quantidade = cc
+										Qtd_isnot_number = False
+
+					print ('totalgeral ', totalgeral)
+					print ('precounitario ', precounitario)
+					print ('quantidade ', quantidade)
+
+					#if "0.15065" in fsup:
+					#	frappe.throw(porra)
+
+				#Must be last to avoid running on the top first and still on the HEADER TEXT...
+				if palavras_header_counted == False:
+					palavra_total = False #TO AVOID counting 'TOTAL PRICE (EUR)' and again TOTAL
+					palavra_preco = False #TO AVOID counting 'UNIT PRICE (EUR)' and again UNIT PRICE
+					for pp in terpalavras_header_EN:
+						if pp.upper() in fsup.strip().upper():
+							if pp.upper() == 'UNIT PRICE' or pp.upper() == 'TOTAL':
+								if palavra_preco:
+									print ('NAO CONTA HEADER ', pp.upper())
+								if palavra_total:
+									print ('NAO CONTA HEADER ', pp.upper())
+							if not palavra_preco or not palavra_total:
+								contapalavras_header += 1
+								print ('pode contar HEADER')
+
+							palavras_header_counted = True
+							#'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL'
+							if pp.upper() == 'UNIT PRICE (EUR)':
+								palavra_preco = True
+							if pp.upper() == 'TOTAL PRICE (EUR)':
+								palavra_total = True
+
+				if Qtd_isnot_number:
+					break
+
+			if Qtd_isnot_number:
+				print ('HOW TO do 250 and if something missing after OCR do in 260 to COMPLETE WITH THE MISSING INFO... INITIALLY WILL ITEMS')
+				print ('OCR ocr_pytesseract again with 260DPI')
+				facturaSupplier = ocr_pytesseract (filefinal,"COMPRAS",'eng',260)
+			else:
+				print ('PODE CONTINUAR....')
+
+
 			print (facturaSupplier.split('\n'))
+			#frappe.throw(porra)
 		'''
 			TODO: Get MUST fields from OCR
 		'''
@@ -2394,10 +2521,6 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		itemTotal = ''
 		itemIVA = ''
 
-		date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
-		cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)'
-		#filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
-		filtered_divs = {'COUNTER': [], 'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
 
 
 		#System Currencies ...
@@ -2626,8 +2749,6 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 						UN, UNIDADE, CAIXA, CX, Artigo, Descrição, Qtd., Pr.Unit, Cód. Artigo, V.Líquido
 					'''
 					contapalavras_header = 0
-					terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-					terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'UNIT PRICE', 'TOTAL','ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)']
 
 					en_palavras_banco = ['BANK','ACCOUNT']
 
@@ -2680,39 +2801,57 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					sao_sn = True
 					print ('sao_SN palavraexiste_item ', palavraexiste_item)
 					print ('en_contapalavras_header_banco ',en_contapalavras_header_banco)
-					if not palavraexiste_item:
-						#To avoid having twice the SN
-						if palavrasexiste_header:
-							for cc in fsup.split():
-								print ('cc ',cc)
-								if not 'SN:' in cc:
-									print ('LEN ', len(cc))
-									if len(cc) >= 15:
-										#sao_sn = True
-										print ('SAO SNs')
-										tmp_sn += ' ' + cc.strip()
-									elif len(cc.strip()) >= 3 and cc.strip().isnumeric():
-										#Case Numbers only and has more 3 chars with no DOT or COMMA
-										if cc.strip().find('.') == -1 and cc.strip().find(',') == -1:
-											#To avoid Bank details as SN
-											if en_contapalavras_header_banco >=2:
-												print ('Bank details... NOT TO BE ENTERED AS SN')
-												tmp_sn = ''
-												tmpdescricao = ''
-												#en_contapalavras_header_banco = 0
-												palavrasexiste_header = False
-											else:
-												print ('Not Currency... might be SERIAL NUMBER')
-												print (cc.strip())
-												tmp_sn += ' ' + cc.strip()
-											#frappe.throw(porra)
 
-									else:
-										sao_sn = False
+					evitapalavras_telefone = [ 'Telef.', 'Telef. 244', 'Telef. +244']
+					email_pattern = r"^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
+					evitatelefone_items = False
+					for telf in evitapalavras_telefone:
+						if telf in fsup.strip():
+							evitatelefone_items = True
+						print ('EMAIL ')
+						print (re.match(email_pattern,fsup.strip()))
+					print ('evitatelefone_items ',evitatelefone_items)
+
+					if not evitatelefone_items:
+						if not palavraexiste_item:
+							#To avoid having twice the SN
+							if palavrasexiste_header:
+								for cc in fsup.split():
+									print ('cc ',cc)
+									print ('EMAIL ')
+									print (re.match(email_pattern,cc.strip()))
+
+									if not 'SN:' in cc and not re.match(email_pattern,cc.strip()):
+										print ('LEN ', len(cc))
+										if len(cc) >= 15:
+											#sao_sn = True
+											print ('SAO SNs')
+											tmp_sn += ' ' + cc.strip()
+										elif len(cc.strip()) >= 3 and cc.strip().isnumeric():
+											#Case Numbers only and has more 3 chars with no DOT or COMMA
+											if cc.strip().find('.') == -1 and cc.strip().find(',') == -1:
+												#To avoid Bank details as SN
+												if en_contapalavras_header_banco >=2:
+													print ('Bank details... NOT TO BE ENTERED AS SN')
+													tmp_sn = ''
+													tmpdescricao = ''
+													#en_contapalavras_header_banco = 0
+													palavrasexiste_header = False
+												else:
+													#Avoid NIF
+													if not "NIF:" in fsup.strip():
+														print ('Not Currency... might be SERIAL NUMBER')
+														print (cc.strip())
+														tmp_sn += ' ' + cc.strip()
+												#frappe.throw(porra)
+
+										else:
+											sao_sn = False
 
 					print ('tmp_sn ',tmp_sn)
 					#if "SN: JTFBV71J8B044454 JTFBV71J8B044601 JTFBV71J8B044616" in fsup:
 					#	frappe.throw(porra)
+					tmp_sn_added = False
 
 					if palavrasexiste_header:
 						#Tem HEADER entao ve os ITENS...
@@ -2728,6 +2867,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								tmp_sn = ''
 								print ('ADDED SNs to DESCRIPTION...')
 								print ('ADDED SNs to DESCRIPTION...')
+								tmp_sn_added = True
 
 							#Check if First is Numbers... so is a Counter
 							if fsup.strip()[0:1].isnumeric():
@@ -2738,6 +2878,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)'
 
 								for idx,cc in reversed(list(enumerate(fsup.split()))):
+									print ('===== IDX ======')
 									print ('idx ',idx)
 									print ('cc ',cc)
 
@@ -2772,12 +2913,12 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 										palavraexiste_item = False
 									elif len(fsup.strip().split()) == 1:
 										#Has SN bu might be with a DOT the SN
-										print ('Has SN bu might be with a DOT the SN')
-										print (fsup.strip())
-										tmpdescricao = ' SN: ' + cc
-										palavraexiste_item = False
-
-										itemCode = ''
+										if not tmp_sn_added:
+											print ('Has SN bu might be with a DOT the SN')
+											print (fsup.strip())
+											tmpdescricao = ' SN: ' + cc
+											palavraexiste_item = False
+											itemCode = ''
 
 
 									print ('tmpdescricao ', tmpdescricao)
@@ -2787,6 +2928,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 										print ('para')
 										if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1:
 											print('continua')
+										elif len(fsup.strip()) >= 3 and len(fsup.strip().split()) == 1:
+											print ('NUMERO SERIE.... ADD to DESCRIPTION')
 										elif not re.match(cash_pattern,cc):
 											tmpdescricao = ''
 											avoidADDING = True
@@ -2798,7 +2941,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								print (len(fsup.strip().split()))
 								print ('split')
 								print (fsup.strip().split())
-								if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1:
+								if (len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1) or (len(fsup.strip()) >= 3 and len(fsup.strip().split()) == 1):
 									print (len(fsup.strip()))
 									print (fsup.strip())
 									print ('tmpdescricao')
@@ -2809,7 +2952,12 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									print (filtered_divs['DESCRIPTION'])
 									print (len(filtered_divs['DESCRIPTION']))
 									print (filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1])
-									filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += tmpdescricao
+									if tmpdescricao not in filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1]:
+										print ('TEM tmpdescricao')
+										print (filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1])
+										print (tmpdescricao)
+										filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += tmpdescricao
+										#frappe.throw(porra)
 
 									tmpdescricao = ''
 									print ('----')
@@ -2921,7 +3069,17 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					if contapalavras_header >= 5:
 						palavrasexiste_header = True
 
-					if "0.29551.0" in fsup.strip():
+					if "244 913400191 923323564 pjpa65@gmail.com" in fsup.strip() or "244 913400191 923323564" in fsup.strip():
+						frappe.throw(porra)
+
+					if "16 TD42 TURBO O/G" in fsup.strip():
+						frappe.throw(porra)
+
+					if "0.0298.0" in fsup.strip(): # "5417178772" in fsup.strip(): #if "0.15065" in fsup.strip():
+					#	print (filtered_divs['DESCRIPTION'])
+						#filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').strip())
+						if palavrasexiste_header:
+							print ('supplierNIF ', supplierNIF)
 						frappe.throw(porra)
 
 				#if itemsSupplierInvoice:
@@ -3095,3 +3253,290 @@ def validar_nif(nif):
 		except requests.exceptions.ConnectionError:
 			print ('Connection refused.....')
 			requests.status_code = "Connection refused"
+
+
+def aprender_OCR_v2(data,action = "SCRAPE",tipodoctype = None):
+	'''
+	Last modified: 16-10-2022
+	Using to Train or LEARN OCR from PDF files not configurated on the System....
+	'''
+
+	empresaSupplier = ''
+	invoiceNumber = ''
+	invoiceDate = ''
+	moedaInvoice = ''
+	supplierAddress = ''
+	supplierEmail = ''
+	supplierNIF = ''
+	supplierCountry = ''
+	supplierMoeda = ''
+
+	#Items
+	itemsSupplierInvoice = []
+	itemCode = ''
+	itemDescription = ''
+	itemRate = ''
+	itemQtd = ''
+	itemTotal = ''
+	itemIVA = ''
+
+	terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
+	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
+
+	en_palavras_banco = ['BANK','ACCOUNT']
+	en_contapalavras_header_banco = 0
+
+	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
+	#cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)'
+	cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)'
+
+	iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
+
+	#filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
+	filtered_divs = {'COUNTER': [], 'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
+
+	#filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
+
+	contaLinhas = 1	#Conta as linhas de Itens....
+
+	if os.path.isfile(frappe.get_site_path('public','files') + data.replace('/files','')):
+		filefinal = frappe.get_site_path('public','files') + data.replace('/files','')
+		print ('filefinal ',filefinal)
+		if filefinal.startswith('.'):
+			filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+			filefinal = filefinal1
+		print ('filefinal1 ',filefinal)
+
+	else:
+		filefinal = data
+
+	#If no results... than change to OCR
+	if ".pdf" in filefinal:
+
+		print ('FAZ OCR COMPRAS')
+		print ('FAZ OCR COMPRAS')
+		print ('=================')
+		en_scan = False
+		#Check if Document is in PT or ENG...
+		en_terpalavras = ['PROFORMA INVOICE','SALES INVOICE','INVOICE']
+		en_palavras_fim_item = ['INCIDENCE','VAT','TAX']
+		fim_items = False
+
+		contapalavras_header = 0
+
+		#Check first if EN or PT Document...
+		import pdfquery
+		tmppdf  = pdfquery.PDFQuery(filefinal)
+		tmppdf.load(0)
+		for engpalav in en_terpalavras:
+			print ('engpalav ',engpalav)
+			#print (pdf.pq(':contains("{}")'.format(engpalav)).text())
+			tt = tmppdf.pq(':contains("{}")'.format(engpalav)).text()
+			if tt:
+				#print (tt)
+				en_scan = True
+				print ('TEM INGLES')
+		if not en_scan:
+			facturaSupplier = ocr_pytesseract (filefinal,"COMPRAS",'por',250)
+			print (facturaSupplier.split('\n'))
+
+			for engpalav in en_terpalavras:
+				if engpalav in facturaSupplier:
+					print ('DOC is ENGLISH....SCAN again ')
+					en_scan = True
+
+		if en_scan:
+			#Scan in ENGLISH
+			# Read PDF file and convert it to HTML
+			output = StringIO()
+			#with open('/tmp/SINV-2022-00021-1.pdf', 'rb') as pdf_file:
+			with open(filefinal, 'rb') as pdf_file:
+				extract_text_to_fp(pdf_file, output, laparams=LAParams(), output_type='html', codec=None)
+			raw_html = output.getvalue()
+
+			# Extract all DIV tags
+			tree = html.fromstring(raw_html)
+			divs = tree.xpath('.//div')
+
+
+			#trying Bs
+			root = html.tostring(tree)
+			soup = bs(root)
+			prettyHTML = soup.prettify()
+
+			pagina = 1
+			contador = 0
+			for pp in prettyHTML.split('span'):
+				#print (pp)
+				pag = "Page " + str(pagina)
+				if pag in pp:
+
+					if pagina == 3:
+						frappe.throw(porra)
+					pagina += 1
+
+				if "0.15065" in pp:
+					frappe.throw(porra)
+				print ('======')
+				#print (pp[contador].strip('\n').upper())
+				#print (pp.strip('\n').upper())
+				for pp1 in pp.split('\n'):
+					print ('!!!!!')
+					print (pp1)
+				#if pp1.split('<br/>'):
+				#print (pp1.split(','))
+				#print (pp.split('\n').split('<br/>'))
+				#if pp.strip('\n').split('<br/>'):
+				#print (pp.split('\n'))
+				#print (len(pp.split('\n')))
+				#pagina += 1
+				contador += 1
+				print ('contador ', contador)
+
+			frappe.throw(porra)
+
+			#print (divs)
+			#frappe.throw(porra)
+
+			# Sort and filter DIV tags
+			#filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': []}
+
+			temitems = False
+
+			contador = 1
+
+
+			oldIDXDescription = 0;
+
+			for div in divs:
+				# extract styles from a tag
+				div_style = div.get('style')
+				print ('+++++++++')
+				print(div_style)
+				print ('-------')
+				print (div.text_content().strip('\n').upper())
+				fsup = div.text_content().strip('\n').upper()
+				print (len(fsup))
+				print (fsup.split('\n'))
+				print ('-------')
+				#frappe.throw(porra)
+
+				#if "4874059" in div.text_content().strip('\n').upper():
+				#	tt = div.text_content().strip('\n').upper()
+				#	print (len(tt))
+				#	print (tt.split('\n'))
+
+
+				if not invoiceNumber:
+					#Search for PP FT FR
+					seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
+					#print (re.match(seriesDocs_pattern,fsup.upper().strip()))
+					if re.match(seriesDocs_pattern,fsup.upper().strip()):
+						invoiceNumber = fsup.upper().strip()
+					else:
+						if "FT" in fsup.upper().strip() or "PP" in fsup.upper().strip() or "FR" in fsup.upper().strip():
+							if "FT" in fsup.upper().strip():
+								tmpseries = fsup.upper().strip()[fsup.upper().strip().find('FT'):]
+							elif "PP" in fsup.upper().strip():
+								tmpseries = fsup.upper().strip()[fsup.upper().strip().find('PP'):]
+							elif "FR" in fsup.upper().strip():
+								tmpseries = fsup.upper().strip()[fsup.upper().strip().find('FR'):]
+
+							#print ('tmpseries ',tmpseries)
+							#print (re.match(seriesDocs_pattern,tmpseries))
+							if re.match(seriesDocs_pattern,tmpseries):
+								#Match series
+								invoiceNumber = tmpseries
+							#frappe.throw(porra)
+
+					#Case Doc is in EN and not from Angola
+					terpalavras = ['Invoice No:','Invoice No']
+					if not invoiceNumber:
+						for tt in terpalavras:
+							print ('Factura ', tt.upper())
+							print (fsup.upper().strip())
+							if fsup.upper().strip().find(tt.upper()) != -1:
+								invoiceNumber = fsup.upper().strip()[fsup.upper().strip().find(tt.upper()):].replace(tt.upper(),'').replace(':','').strip()
+								print ('fac ', invoiceNumber)
+
+
+				if not invoiceDate:
+					print ('invoiceDate')
+					terpalavras = ['Data Doc.','Data Doc','Invoice Date:','Invoice Date','Date']
+					Datepalavraexiste = False
+					for ff in terpalavras:
+						if ff in fsup.strip():
+							Datepalavraexiste = True
+					if Datepalavraexiste:
+						#Loop thro terpalavras
+						for tt in terpalavras:
+							if fsup.strip().find(tt) != -1:
+								invoiceDate1 = fsup.strip()[fsup.strip().find(tt):]
+								invoiceDate = invoiceDate1.replace(tt,'').strip()
+								break
+						print (invoiceDate)
+					else:
+						#Check if has DATE on fsup
+						matches = re.finditer(date_pattern,fsup, re.MULTILINE)
+						for matchNum, match in enumerate(matches, start=1):
+							print ("Match {matchNum} was found at {start}-{end}: {match}".format(matchNum = matchNum, start = match.start(), end = match.end(), match = match.group()))
+							if match.group():
+								print('TEM DATA.... ',match.group())
+								invoiceDate = match.group()
+
+				for pp in terpalavras_header_EN:
+
+					if pp.upper() in fsup.strip().upper():
+						contapalavras_header += 1
+						print ('Ver HEADER')
+						print (pp)
+						print (fsup.strip())
+						break
+
+				for pp1 in en_palavras_banco:
+					if pp1.upper() in fsup.strip().upper():
+						en_contapalavras_header_banco += 1
+
+				print ('contapalavras_header ',contapalavras_header)
+
+				if contapalavras_header >= 5:
+					#TEM Headers
+					tem_headers = True
+					#First will be ITEM
+					#Itemcode
+
+					filtered_divs['COUNTER'].append(contaLinhas)
+
+					#Must be Numeric
+					if fsup.strip().isnumeric():
+						itemCode = fsup.strip()
+						filtered_divs['ITEM'].append(itemCode)
+
+					#if not itemCode:
+					#	itemCode = fsup.strip()
+					#	print ('itemcode ',itemCode)
+
+					#elif not itemDescription:
+					#	itemDescription = fsup.strip()
+
+
+					contaLinhas += 1
+				if contaLinhas == 17:
+					frappe.throw(porra)
+				if "5549545" in div.text_content().strip('\n').upper():
+					#frappe.throw(porra)
+					print ('aaaaa')
+
+		print ('empresaSupplier ',empresaSupplier)
+		print ('supplierAddress ',supplierAddress)
+		print ('email ', supplierEmail)
+		print ('supplierNIF ', supplierNIF)
+		print ('invoiceNumber ', invoiceNumber)
+
+		print ('!!!!!!!!!!')
+		print ('COUNTER')
+		print (filtered_divs['COUNTER'])
+		print ('ITEM')
+		print (filtered_divs['ITEM'])
+		#print (filtered_divs)
+		print ('!!!!!!!!!!')
