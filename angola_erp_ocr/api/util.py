@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 16/10/2022
+#Date Changed: 17/10/2022
 
 
 from __future__ import unicode_literals
@@ -2277,36 +2277,6 @@ def pdf_scrape_txt(ficheiro):
 				if moedainvoice == "":
 					moedainvoice = "AED"
 
-
-			'''
-			if TOTALx_LEFT_BORDER < int(left) < TOTALx_RIGHT_BORDER:
-				#print ('TOTAL...')
-				#print (div.text_content().strip('\n').upper())
-				if "14.0%" not in div.text_content().strip('\n'):
-					print (div.text_content().strip('\n').isnumeric())
-					print (re.match(cash_pattern,div.text_content().strip('\n').replace(',','')))
-
-					if div.text_content().strip('\n').isnumeric():
-						filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
-						print ('AQUI AQUI ', div.text_content().strip('\n'))
-					elif div.text_content().strip('\n').upper().endswith('AOA'):
-						tmptotal = div.text_content().split(' ')[0]
-						print ('total ', re.match(cash_pattern,tmptotal.replace(',','')))
-						if re.match(cash_pattern,tmptotal.replace(',','')):
-							filtered_divs['TOTAL'].append(tmptotal)
-						#print ('TOTAL TOTAL ', div.text_content().strip('\n'))
-						#print (tmptotal)
-					elif re.match(cash_pattern,div.text_content().strip('\n').replace(',','')):
-						filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
-						print ('AQUI2 AQUI2 ', div.text_content().strip('\n'))
-
-
-					#Check if has $ €
-					if "€" in div.text_content().strip('\n'):
-						moedainvoice = "Eur"
-					elif "$" in div.text_content().strip('\n'):
-						moedainvoice = "Usd"
-			'''
 				#if "149,719.53 AOA" in div.text_content().strip('\n'):
 				#	frappe.throw(porra)
 
@@ -2353,7 +2323,7 @@ def pdf_scrape_txt(ficheiro):
 
 def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 	'''
-	Last modified: 15-10-2022
+	Last modified: 16-10-2022
 	Using to Train or LEARN OCR from PDF files not configurated on the System....
 	'''
 	if os.path.isfile(frappe.get_site_path('public','files') + data.replace('/files','')):
@@ -2373,15 +2343,30 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		print ('FAZ OCR COMPRAS')
 		print ('FAZ OCR COMPRAS')
 		print ('=================')
-		facturaSupplier = ocr_pytesseract (filefinal,"COMPRAS",'por',250)
-		print (facturaSupplier.split('\n'))
+		en_scan = False
 		#Check if Document is in PT or ENG...
 		en_terpalavras = ['PROFORMA INVOICE','SALES INVOICE','INVOICE']
-		en_scan = False
+
+		#Check first if EN or PT Document...
+		import pdfquery
+		pdf  = pdfquery.PDFQuery(filefinal)
+		pdf.load(0)
 		for engpalav in en_terpalavras:
-			if engpalav in facturaSupplier:
-				print ('DOC is ENGLISH....SCAN again ')
+			print ('engpalav ',engpalav)
+			#print (pdf.pq(':contains("{}")'.format(engpalav)).text())
+			tt = pdf.pq(':contains("{}")'.format(engpalav)).text()
+			if tt:
+				#print (tt)
 				en_scan = True
+				print ('TEM INGLES')
+		if not en_scan:
+			facturaSupplier = ocr_pytesseract (filefinal,"COMPRAS",'por',250)
+			print (facturaSupplier.split('\n'))
+
+			for engpalav in en_terpalavras:
+				if engpalav in facturaSupplier:
+					print ('DOC is ENGLISH....SCAN again ')
+					en_scan = True
 
 		if en_scan:
 			#Scan in ENGLISH
@@ -2433,6 +2418,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		palavrasexiste_header = False
 
 		tmp_sn = ''	#Will hold SNs
+
+		en_contapalavras_header_banco = 0	#To avoid adding Bank details as SN
 
 		for fsup in facturaSupplier.split('\n'):
 			print ('=====')
@@ -2642,6 +2629,9 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
 					terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'UNIT PRICE', 'TOTAL','ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)']
 
+					en_palavras_banco = ['BANK','ACCOUNT']
+
+
 
 
 					#palavrasexiste_header = False
@@ -2649,6 +2639,10 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 						for pp in terpalavras_header_EN:
 							if pp.upper() in fsup.strip().upper():
 								contapalavras_header += 1
+						for pp1 in en_palavras_banco:
+							if pp1.upper() in fsup.strip().upper():
+								en_contapalavras_header_banco += 1
+
 					else:
 						for pp in terpalavras_header:
 							if pp.upper() in fsup.strip().upper():
@@ -2671,6 +2665,13 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1 and en_scan:
 						print ('TO SCAN the SN or Chassis')
 						palavraexiste_item = True
+					#elif len(fsup.strip()) >= 2 and fsup.strip().isnumeric():
+					#	#Case Numbers only and has more 3 chars with no DOT or COMMA
+					#	if fsup.strip().find('.') == -1 and fsup.strip().find(',') == -1:
+					#		print ('Not Currency... might be SERIAL NUMBER')
+					#		print (fsup.strip())
+					#		palavraexiste_item = True
+					#		#frappe.throw(porra)
 
 					#Case above is for Single SN or Chassis
 					#This will check len for each if 15 or more each
@@ -2678,6 +2679,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 					sao_sn = True
 					print ('sao_SN palavraexiste_item ', palavraexiste_item)
+					print ('en_contapalavras_header_banco ',en_contapalavras_header_banco)
 					if not palavraexiste_item:
 						#To avoid having twice the SN
 						if palavrasexiste_header:
@@ -2689,6 +2691,22 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 										#sao_sn = True
 										print ('SAO SNs')
 										tmp_sn += ' ' + cc.strip()
+									elif len(cc.strip()) >= 3 and cc.strip().isnumeric():
+										#Case Numbers only and has more 3 chars with no DOT or COMMA
+										if cc.strip().find('.') == -1 and cc.strip().find(',') == -1:
+											#To avoid Bank details as SN
+											if en_contapalavras_header_banco >=2:
+												print ('Bank details... NOT TO BE ENTERED AS SN')
+												tmp_sn = ''
+												tmpdescricao = ''
+												#en_contapalavras_header_banco = 0
+												palavrasexiste_header = False
+											else:
+												print ('Not Currency... might be SERIAL NUMBER')
+												print (cc.strip())
+												tmp_sn += ' ' + cc.strip()
+											#frappe.throw(porra)
+
 									else:
 										sao_sn = False
 
@@ -2732,24 +2750,35 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									#	palavrasexiste_header = False
 									#	break
 
-									if re.match(cash_pattern,cc):
-										if not itemTotal:
-											itemTotal = cc.strip()
-										elif not itemRate:
-											itemRate = cc.strip()
-										primeiroRegisto = False
-									elif cc.strip().isnumeric():
-										#Qtd
-										if not itemQtd:
-											itemQtd = cc.strip()
-									else:
-										#String...
-										tmpdescricao = cc.strip() + ' ' + tmpdescricao
+									#More than 1 can be Items...
+									if len(fsup.strip().split()) > 1:
+										if re.match(cash_pattern,cc):
+											if not itemTotal:
+												itemTotal = cc.strip()
+											elif not itemRate:
+												itemRate = cc.strip()
+											primeiroRegisto = False
+										elif cc.strip().isnumeric():
+											#Qtd
+											if not itemQtd:
+												itemQtd = cc.strip()
+										else:
+											#String...
+											tmpdescricao = cc.strip() + ' ' + tmpdescricao
 									if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1:
 										#Add SN JSTJPB7CX5N4008215 to Description
 										#tmpdescricao = tmpdescricao + 'SN: ' + cc
 										tmpdescricao = ' SN: ' + cc
 										palavraexiste_item = False
+									elif len(fsup.strip().split()) == 1:
+										#Has SN bu might be with a DOT the SN
+										print ('Has SN bu might be with a DOT the SN')
+										print (fsup.strip())
+										tmpdescricao = ' SN: ' + cc
+										palavraexiste_item = False
+
+										itemCode = ''
+
 
 									print ('tmpdescricao ', tmpdescricao)
 									print ('primeiroRegisto ',primeiroRegisto)
@@ -2772,6 +2801,10 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1:
 									print (len(fsup.strip()))
 									print (fsup.strip())
+									print ('tmpdescricao')
+									print ('tmpdescricao')
+									print ('tmpdescricao')
+									print ('tmpdescricao ',tmpdescricao)
 									#Add to previous itemDescription
 									print (filtered_divs['DESCRIPTION'])
 									print (len(filtered_divs['DESCRIPTION']))
@@ -2796,6 +2829,10 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1 and en_scan:
 									print ('AVOID ADDING... was only SN')
 									avoidADDING = True
+								elif len(fsup.strip().split()) == 1 and en_scan:
+									print ('ALERT:AVOID ADDING... was only SN')
+									avoidADDING = True
+
 								else:
 									#Itemcode
 									if not itemCode:
@@ -2880,10 +2917,12 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 						#frappe.throw(porra)
 
-
 					print ('contapalavras_header ',contapalavras_header)
 					if contapalavras_header >= 5:
 						palavrasexiste_header = True
+
+					if "0.29551.0" in fsup.strip():
+						frappe.throw(porra)
 
 				#if itemsSupplierInvoice:
 				#Already has list of list... to Append
@@ -2895,7 +2934,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		print ('invoiceNumber ', invoiceNumber)
 
 		print ('!!!!!!!!!!')
-		print (filtered_divs)
+		#print (filtered_divs)
 		print ('!!!!!!!!!!')
 		data = []
 		for row in zip(filtered_divs['ITEM'], filtered_divs['DESCRIPTION'], filtered_divs['QUANTITY'], filtered_divs['RATE'], filtered_divs['TOTAL'], filtered_divs['IVA'], filtered_divs['COUNTER']):
