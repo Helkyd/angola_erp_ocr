@@ -2333,7 +2333,7 @@ def pdf_scrape_txt(ficheiro):
 
 def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 	'''
-	Last modified: 16-10-2022
+	Last modified: 18-10-2022
 	Using to Train or LEARN OCR from PDF files not configurated on the System....
 	'''
 
@@ -3032,7 +3032,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 										#itemDescription = ii.strip()
 										print ('t2 ', fsup.strip())
 										print ('t2 ', retorna_descricao(fsup.strip()))
-										itemDescription = retorna_descricao(fsup.strip())
+										itemDescription = retorna_descricao(fsup.strip().replace(itemQtd,''))
 										print (itemDescription)
 									elif itemCode and itemDescription and not ii.strip().isnumeric():
 										if not en_scan:
@@ -3042,7 +3042,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 												if not ii.strip() in terpalavras_item:
 													#itemDescription = itemDescription + " " + ii.strip()
 													print ('t3 ', retorna_descricao(fsup.strip()))
-													itemDescription = retorna_descricao(fsup.strip())
+													itemDescription = retorna_descricao(fsup.strip().replace(itemQtd,''))
 													print (itemDescription)
 									if ii.strip().isnumeric():
 										print ('number')
@@ -3096,7 +3096,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 							print ('Items')
 							print ('contaLinhas ',contaLinhas)
 							print ('itemCode ',itemCode)
-							print ('itemDescription ',itemDescription)
+							print ('itemDescription ',itemDescription.replace(itemQtd,''))
 							print ('itemQtd ',itemQtd)
 							print ('itemRate ',itemRate)
 							print ('itemTotal ',itemTotal)
@@ -3106,7 +3106,10 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 							if not avoidADDING:
 								filtered_divs['COUNTER'].append(contaLinhas)
 								filtered_divs['ITEM'].append(itemCode)
-								filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').strip())
+								if len(itemCode) != len(itemDescription) and len(itemCode) > 5:
+									filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(itemQtd,'').replace(itemCode,'').strip())
+								else:
+									filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(itemQtd,'').strip())
 								filtered_divs['QUANTITY'].append(itemQtd)
 								filtered_divs['RATE'].append(itemRate)
 								filtered_divs['TOTAL'].append(itemTotal)
@@ -3118,8 +3121,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					if contapalavras_header >= 5:
 						palavrasexiste_header = True
 
-					if "L0S70AE" in fsup.strip() or "LOS70AE" in fsup.strip():
-						frappe.throw(porra)
+					#if "L0S70AE" in fsup.strip() or "LOS70AE" in fsup.strip():
+					#	frappe.throw(porra)
 
 					if "244 913400191 923323564 pjpa65@gmail.com" in fsup.strip() or "244 913400191 923323564" in fsup.strip():
 						frappe.throw(porra)
@@ -4412,7 +4415,7 @@ def retorna_descricao(fsup):
 	#print (len(fsup.split()))
 	for idx,cc in reversed(list(enumerate(fsup.strip().split()))):
 		#print ('idx ', idx)
-		print ('retorna_descricao ',cc)
+		#print ('retorna_descricao ',cc)
 		#print ('----')
 		if len(fsup.strip().split()) > 1:
 			if re.match(cash_pattern,cc):
@@ -4421,8 +4424,8 @@ def retorna_descricao(fsup):
 				elif not tmpitemRate:
 					tmpitemRate = cc.strip()
 				elif not idx == 0:
-					print ('0:ADD TO DESCRICAO....')
-					print ('tmpitemQtd ',tmpitemQtd)
+					#print ('0:ADD TO DESCRICAO....')
+					#print ('tmpitemQtd ',tmpitemQtd)
 					if tmpitemQtd:
 						tmpdescricao00 = cc.strip() + ' ' + tmpdescricao00
 					#print (cc.strip())
@@ -4441,9 +4444,9 @@ def retorna_descricao(fsup):
 			else:
 				#String...
 				#print ('DESCRICAO')
-				print ('Check for UN word')
-				print (cc.strip().upper() == 'UN')
-				print (cc.strip().upper())
+				#print ('Check for UN word')
+				#print (cc.strip().upper() == 'UN')
+				#print (cc.strip().upper())
 
 				if cc.strip().upper() == 'UN':
 					#Reset to NONE

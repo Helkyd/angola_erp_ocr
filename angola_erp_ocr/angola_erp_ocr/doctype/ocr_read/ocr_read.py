@@ -35,6 +35,10 @@ def get_spellchecked_text(message, language):
 	:param message: return text with correction:
 	Example: Cet in glaves cetches no mice -> Cat in gloves catches no mice
 	"""
+	print ('get_spellchecked_text ')
+	print ('=======')
+	print (message)
+	print ('=======')
 	lang = frappe.get_doc("OCR Language", language).lang
 	spell_checker = SpellChecker(lang)
 	only_words = get_words_from_text(message)
@@ -136,6 +140,7 @@ def read_document(path, lang='eng', spellcheck=False, resolucao=150, event="ocr_
 				size = len(pdf_image.sequence) * 3
 
 				for img in pdf_image.sequence:
+					page = wi(image=img)
 					with wi(image=img) as img_page:
 						image_blob = img_page.make_blob('jpeg')
 						frappe.publish_realtime(
