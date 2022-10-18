@@ -2462,10 +2462,12 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									if not cc.strip().isnumeric():
 										#Gera novamente o OCR bcs QTD is not a Number...
 										if quantidade == '':
-											Qtd_isnot_number = True
+											#Qtd_isnot_number = True
 											print ('QTD is not a NUMBER ', cc)
-											frappe.throw(porra)
-											break
+											#frappe.throw(porra)
+											#break
+											#SET to ZERO and after Rate and Total added divide to find the QTD
+											quantidade = 0
 
 							if cc.strip().isnumeric():
 								if contapalavras_header == 5:
@@ -2562,8 +2564,10 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 		en_contapalavras_header_banco = 0	#To avoid adding Bank details as SN
 
+		countlines = 1
+
 		for fsup in facturaSupplier.split('\n'):
-			print ('=====')
+			print ('=====INICIO =======')
 			print (fsup)
 
 			if fsup.strip() != None and fsup.strip() != "":
@@ -2891,6 +2895,20 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 							if pp in fsup.strip():
 								#IS an ITEMS so add
 								palavraexiste_item = True
+
+						#Check if previous was a Number... ERROR OCR so do Plus 1 as this is First Col or Chars...
+						if len(filtered_divs['ITEM']) > 1:
+							tmpitemCode = ''
+							print ('Check if previous was a Number... ERROR OCR so do Plus 1 as this is First Col or Chars... ')
+							print (filtered_divs['ITEM'][len(filtered_divs['ITEM'])-1])
+							if filtered_divs['ITEM'][len(filtered_divs['ITEM'])-1].isnumeric():
+								if not fsup.strip()[0:1].isnumeric():
+									tmpitemCode = str(int(filtered_divs['ITEM'][len(filtered_divs['ITEM'])-1]) + 1)
+									print ('tmpitemCode ',tmpitemCode)
+									palavraexiste_item = True
+									#frappe.throw(porra)
+
+
 						#Check if startswith a NUMBER...
 						if palavraexiste_item or fsup.strip()[0:1].isnumeric():
 							#Check if tmp_sn and add on previous ITEM and clear
@@ -2939,11 +2957,23 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 											primeiroRegisto = False
 										elif cc.strip().isnumeric():
 											#Qtd
-											if not itemQtd:
+											print ('Qtd ',itemQtd)
+											if not itemQtd and itemQtd == '':
 												itemQtd = cc.strip()
 										else:
-											#String...
-											tmpdescricao = cc.strip() + ' ' + tmpdescricao
+											print('String...')
+											if idx == 0:
+												#First is a Number but OCR was wrong... FIX
+												print ('First is a Number but OCR was wrong... FIX ')
+												print ('itemCode ',itemCode)
+												print ('tmpitemCode ',tmpitemCode)
+												if not itemCode and tmpitemCode:
+													itemCode = tmpitemCode
+											elif not itemQtd and not tmpdescricao:
+												itemQtd = 0	#Has ERROR WHEN OCR so no QTD as number returned...
+
+											else:
+												tmpdescricao = cc.strip() + ' ' + tmpdescricao
 									if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1:
 										#Add SN JSTJPB7CX5N4008215 to Description
 										#tmpdescricao = tmpdescricao + 'SN: ' + cc
@@ -2958,7 +2988,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 											palavraexiste_item = False
 											itemCode = ''
 
-
+									print ('tmpQtd ', itemQtd)
 									print ('tmpdescricao ', tmpdescricao)
 									print ('primeiroRegisto ',primeiroRegisto)
 									print (len(fsup.split()))
@@ -3032,8 +3062,16 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 										#itemDescription = ii.strip()
 										print ('t2 ', fsup.strip())
 										print ('t2 ', retorna_descricao(fsup.strip()))
-										itemDescription = retorna_descricao(fsup.strip().replace(itemQtd,''))
+										itemDescription = retorna_descricao(fsup.strip()) #.replace(str(itemQtd),''))
 										print (itemDescription)
+
+										#Check if same as TOTAL LINE ... Might be Serial Numbers or just one with SPACEs...
+										print (fsup.strip())
+										if itemDescription == fsup.strip():
+											if not "(" in fsup.strip() and not "|" in fsup.strip():
+												print ('IGUAl... IS Serial Number')
+												#frappe.throw(porra)
+
 									elif itemCode and itemDescription and not ii.strip().isnumeric():
 										if not en_scan:
 											#Deal with Numbers
@@ -3042,11 +3080,11 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 												if not ii.strip() in terpalavras_item:
 													#itemDescription = itemDescription + " " + ii.strip()
 													print ('t3 ', retorna_descricao(fsup.strip()))
-													itemDescription = retorna_descricao(fsup.strip().replace(itemQtd,''))
+													itemDescription = retorna_descricao(fsup.strip()) #.replace(itemQtd,''))
 													print (itemDescription)
 									if ii.strip().isnumeric():
 										print ('number')
-										if not itemQtd:
+										if not itemQtd and itemQtd == '':
 											print ('check itemcode ', itemCode)
 											itemQtd = ii.strip()
 										elif not itemRate:
@@ -3072,7 +3110,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									elif re.match(cash_pattern,ii) and ii.find(',') != -1:
 										#Tem Decimais...
 										print ('Tem Decimais...')
-										if not itemQtd:
+										if not itemQtd and itemQtd == '':
 											itemQtd = ii.strip()
 										elif not itemRate:
 											if tmprate != '':
@@ -3093,10 +3131,37 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 											if not en_scan:
 												itemIVA = ii.strip()
 
+							print ('avoidADDING ',avoidADDING)
+							if avoidADDING:
+								#Check if same as TOTAL LINE ... Might be Serial Numbers or just one with SPACEs...
+								print (fsup.strip())
+								if itemDescription == fsup.strip():
+									if not "(" in fsup.strip() and not "|" in fsup.strip() and not ":" in fsup.strip() and not "BAIRRO" in fsup.strip():
+										print ('IGUAl... IS Serial Number')
+										print ('TO THINK BETTER how to DETECT SERIAL NUMBERS....')
+										#frappe.throw(porra)
+
+							print ('CORRIGIR QUNATIDADES ZERO')
+							print ('itemQtd ',itemQtd)
+							if itemQtd != '' and itemQtd == 0:
+								if itemTotal and itemRate:
+									print ('itemQtd ',itemQtd)
+									print ('itemRate ',itemRate)
+									print ('itemTotal ',itemTotal)
+									print (str(float(itemTotal.replace(',','')) / float(itemRate.replace(',',''))))
+
+									if float(itemTotal.replace(',','')) / float(itemRate.replace(',','')) == 0:
+										itemQtd = str(1)
+									else:
+										itemQtd = str(float(itemTotal.replace(',','')) / float(itemRate.replace(',','')))
+								#frappe.throw(porra)
+
+
 							print ('Items')
 							print ('contaLinhas ',contaLinhas)
+							print ('countlines ',countlines)
 							print ('itemCode ',itemCode)
-							print ('itemDescription ',itemDescription.replace(itemQtd,''))
+							print ('itemDescription ',itemDescription.replace(str(itemQtd),''))
 							print ('itemQtd ',itemQtd)
 							print ('itemRate ',itemRate)
 							print ('itemTotal ',itemTotal)
@@ -3104,38 +3169,40 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 							#frappe.throw(porra)
 							if not avoidADDING:
-								filtered_divs['COUNTER'].append(contaLinhas)
+								filtered_divs['COUNTER'].append(countlines)
 								filtered_divs['ITEM'].append(itemCode)
 								if len(itemCode) != len(itemDescription) and len(itemCode) > 5:
-									filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(itemQtd,'').replace(itemCode,'').strip())
+									filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(str(itemQtd),'').replace(itemCode,'').strip())
 								else:
-									filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(itemQtd,'').strip())
+									filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(str(itemQtd),'').strip())
 								filtered_divs['QUANTITY'].append(itemQtd)
 								filtered_divs['RATE'].append(itemRate)
 								filtered_divs['TOTAL'].append(itemTotal)
 								filtered_divs['IVA'].append(itemIVA)
+								countlines += 1
 
-						#frappe.throw(porra)
+					#frappe.throw(porra)
+
 
 					print ('contapalavras_header ',contapalavras_header)
 					if contapalavras_header >= 5:
 						palavrasexiste_header = True
 
-					#if "L0S70AE" in fsup.strip() or "LOS70AE" in fsup.strip():
+					#if "527041" in fsup.strip() or "KS 527041 K" in fsup.strip():
 					#	frappe.throw(porra)
 
 					if "244 913400191 923323564 pjpa65@gmail.com" in fsup.strip() or "244 913400191 923323564" in fsup.strip():
 						frappe.throw(porra)
 
-					if "16 TD42 TURBO O/G" in fsup.strip():
-						frappe.throw(porra)
+					#if "1HZ O/G" in fsup.strip():
+					#	frappe.throw(porra)
 
-					if "0.0298.0" in fsup.strip(): # "5417178772" in fsup.strip(): #if "0.15065" in fsup.strip():
+					#if "4680569" in fsup.strip(): # "5417178772" in fsup.strip(): #if "0.15065" in fsup.strip():
 					#	print (filtered_divs['DESCRIPTION'])
 						#filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').strip())
-						if palavrasexiste_header:
-							print ('supplierNIF ', supplierNIF)
-						frappe.throw(porra)
+					#	if palavrasexiste_header:
+					#		print ('supplierNIF ', supplierNIF)
+					#	frappe.throw(porra)
 
 				#if itemsSupplierInvoice:
 				#Already has list of list... to Append
@@ -4461,12 +4528,12 @@ def retorna_descricao(fsup):
 			palavraexiste_item = False
 		elif len(fsup.strip().split()) == 1:
 			#Has SN bu might be with a DOT the SN
-			if not tmp_sn_added:
+			#if not tmp_sn_added:
 				#print ('Has SN bu might be with a DOT the SN')
 				#print (fsup.strip())
-				tmpdescricao00 = ' SN: ' + cc
-				palavraexiste_item = False
-				tmpitemCode = ''
+			tmpdescricao00 = ' SN: ' + cc
+			palavraexiste_item = False
+			tmpitemCode = ''
 
 
 	#print ('itemCode ',tmpitemCode)

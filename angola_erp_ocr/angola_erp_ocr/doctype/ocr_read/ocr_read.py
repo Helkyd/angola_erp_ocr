@@ -126,6 +126,8 @@ def read_document(path, lang='eng', spellcheck=False, resolucao=150, event="ocr_
 	print ('lang ', lang)
 
 	text = " "
+	paginas = []
+
 	with tesserocr.PyTessBaseAPI(lang=lang) as api:
 
 		if path.endswith('.pdf'):
@@ -143,25 +145,30 @@ def read_document(path, lang='eng', spellcheck=False, resolucao=150, event="ocr_
 					page = wi(image=img)
 					with wi(image=img) as img_page:
 						image_blob = img_page.make_blob('jpeg')
-						frappe.publish_realtime(
-							event, {"progress": [i, size]}, user=frappe.session.user)
-						i += 1
+						#frappe.publish_realtime(
+						#	event, {"progress": [i, size]}, user=frappe.session.user)
+						#i += 1
 
 						recognized_text = " "
 
 						image = Image.open(io.BytesIO(image_blob))
 						api.SetImage(image)
-						frappe.publish_realtime(
-							event, {"progress": [i, size]}, user=frappe.session.user)
-						i += 1
+						#frappe.publish_realtime(
+						#	event, {"progress": [i, size]}, user=frappe.session.user)
+						#i += 1
 
 						recognized_text = api.GetUTF8Text()
 						text = text + recognized_text
-						frappe.publish_realtime(
-							event, {"progress": [i, size]}, user=frappe.session.user)
-						i += 1
+						paginas.append(recognized_text)
+
+						#frappe.publish_realtime(
+						#	event, {"progress": [i, size]}, user=frappe.session.user)
+						#i += 1
+			print ('PAGINAS')
+			print (paginas)
+			print ('***********************')
 			#TEST TO SEE IF no error is show...
-			pdf_image.destroy()	# frees memory used by Image object.
+			#pdf_image.destroy()	# frees memory used by Image object.
 
 		else:
 			image = Image.open(fullpath)
