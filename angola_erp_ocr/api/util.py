@@ -1728,6 +1728,8 @@ def lerdocumento(dados):
 	valorPAGO = ''
 	mcexpress = False
 
+	NIFContribuinte = ''
+
 	if dados:
 		print (dados.split('\n'))
 		for aa in dados.split('\n'):
@@ -4543,3 +4545,174 @@ def retorna_descricao(fsup):
 	#print ('tmpdescricao',tmpdescricao00)
 
 	return tmpdescricao00.strip()
+
+
+def qrcode_decode():
+	'''
+		QRCode decode from image files....
+	'''
+	from pyzbar.pyzbar import ZBarSymbol
+
+	#Look fro QRCODE on file
+	decode(Image.open('pyzbar/tests/qrcode.png'), symbols=[ZBarSymbol.QRCODE])
+
+	#Decode from IMAGE
+	from pyzbar.pyzbar import decode
+	from PIL import Image
+	decode(Image.open('pyzbar/tests/code128.png'))
+
+
+def liquidacao_generica_tributo(ficheiro):
+	'''
+		OCR an image file to get either the QRCODE or the Referencia do Documento and SCAN ONLINE
+		Last Modified: 20-10-2022
+	'''
+	import cv2
+	import pytesseract
+
+	ficheiro = '/home/frappe/frappe-bench/sites/tools.angolaerp.co.ao/public/files/Pagto teor.jpeg'
+	img = cv2.imread(ficheiro)
+
+	# Adding custom options
+	custom_config = r'--oem 3 --psm 6'
+	textotemp = pytesseract.image_to_string(img, config=custom_config)
+
+	for tt in textotemp.split('\n'):
+		#LIQUIDAGAO GENERICA DE TRIBUTO
+		#print (tt)
+		if "LIQUIDAGAO GENERICA DE TRIBUTO" in tt or "LIQUIDAÇÃO GENÉRICA DE TRIBUTO" in tt:
+			print ('AQUI DEVE TER NUMERO')
+			print (tt)
+			tmprefdocumento = tt[:tt.find("LIQUIDAGAO GENERICA DE TRIBUTO")]
+			print (tmprefdocumento)
+			#check | start from there
+			refdocumento = tmprefdocumento[tmprefdocumento.find("|")+1:].strip().replace(' ','')
+			print (refdocumento)
+
+			#Check if all Numbers...
+			#Check 1 by one and replace by a number; only if 1 letter
+			print (len(refdocumento))
+
+			#LIQUIDAÇÃO Ref. document must:
+			#Start with 22 (YEAR)
+			#Followed by 010 (Don't know what if changes after year or period)
+			#Total len 15
+			if len(refdocumento) == 14:
+				if refdocumento.startswith('2010'):
+					#Missing 2
+					tmprefdocumento = '2' + refdocumento
+					refdocumento = tmprefdocumento
+			if refdocumento.isnumeric():
+				print ('OK... pode validar ONLINE')
+			else:
+				for x in refdocumento:
+					print (x)
+					print (x.isnumeric())
+					if not x.isnumeric():
+						#testing... all number to match the ONLINE LIQUIDAÇÃO
+						#TEMP FIX to see if works...
+						tmprefdocumento = refdocumento.replace(x,'8')
+						refdocumento = tmprefdocumento
+						break
+			print ('REF ',refdocumento)
+			validar_dlinumber(refdocumento)
+
+
+
+@frappe.whitelist(allow_guest=True)
+def validar_dlinumber(dlinumber):
+	import requests
+	if dlinumber:
+		print ('verifying... ', dlinumber)
+		try:
+			response.headers['Content-Type'] = 'application/json; charset=utf-8'
+			response  = requests.get("https://portaldocontribuinte.minfin.gov.ao/imprimir-verificar-nota-de-liquidacao?dliNumber=" + str(dlinumber),headers=headers,verify=False, timeout=5)
+			#check if Response is 502; Does not Exist the site...
+			if response.status_code == 502:
+				print ('Nao existe o SITE!!!!')
+				return ('SITE EM BAIXO.')
+			else:
+				print ('Tem dados NIF....')
+				data = response.json()
+				print ('data')
+				#print (data['success'])
+				print (data)
+
+				#Verify if PAGA
+				if data.find('encontra-se paga e registada no sistema') != -1:
+					print ('Nota de Liquidacao ESTA PAGA...')
+
+
+				frappe.throw(porra)
+				if 'status' in data:
+					if data['status'] == 500:
+						print ('Erro de Servidor!!!')
+					elif 'sucess' in data:
+						if data['success'] == False:
+							print ('NIF INVALIDO!!!')
+							return 'NIF INVALIDO'
+						else:
+							#Success
+							nifvalido = data['data']['nif']
+							regimeiva = ""
+							print ('Valido')
+							#verify Regime IVA
+							#"regimeIva":"GNAD"
+							if data['data']['regimeIva'] != "" and data['data']['regimeIva'] == "GNAD" :
+								#GERAL
+								regimeiva = 'Regime GERAL'
+								print ('Regime GERAL')
+
+							if data['data']['companyName']:
+								return nifvalido, regimeiva, data['data']['companyName']
+							else:
+								return nifvalido, regimeiva, data['data']['nameAbb']
+
+
+
+				elif 'success' in data:
+					if data['success'] == False:
+						print ('NIF INVALIDO!!!')
+						return 'NIF INVALIDO'
+					else:
+						#Success
+						nifvalido = data['data']['nif']
+						regimeiva = ""
+						print ('Valido')
+						print ('data ', data)
+						#verify Regime IVA
+						#"regimeIva":"GNAD"
+						if data['data']['regimeIva'] != "" and data['data']['regimeIva'] == "GNAD" :
+							#GERAL
+							regimeiva = 'Regime GERAL'
+							print ('Regime GERAL')
+						if data['data']['companyName']:
+							return nifvalido, regimeiva, data['data']['companyName']
+						else:
+							return nifvalido, regimeiva, data['data']['nameAbb']
+
+				else:
+					#Success
+					nifvalido = data['data']['nif']
+					regimeiva = ""
+					print ('Valido')
+					#verify Regime IVA
+					#"regimeIva":"GNAD"
+					if data['data']['regimeIva'] != "" and data['data']['regimeIva'] == "GNAD" :
+						#GERAL
+						regimeiva = 'Regime GERAL'
+						print ('Regime GERAL')
+
+					if data['data']['companyName']:
+						return nifvalido, regimeiva, data['data']['companyName']
+					else:
+						return nifvalido, regimeiva, data['data']['nameAbb']
+
+
+
+		except requests.exceptions.ReadTimeout:
+			print ('SEM LIGACAO.....')
+			print ('SEM LIGACAO.....')
+		except requests.exceptions.ConnectionError:
+			print ('Connection refused.....')
+			requests.status_code = "Connection refused"
