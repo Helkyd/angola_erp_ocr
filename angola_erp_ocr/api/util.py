@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 18/10/2022
+#Date Changed: 22/10/2022
 
 
 from __future__ import unicode_literals
@@ -4716,3 +4716,18 @@ def validar_dlinumber(dlinumber):
 		except requests.exceptions.ConnectionError:
 			print ('Connection refused.....')
 			requests.status_code = "Connection refused"
+
+def agt_lgt(dlinumber):
+	'''
+		Run nodejs using Numero de Referencia do download REGISTO DE PAGAMENTO - LIQUIDACAO GENERICA
+		RETENCAO na FONTE
+	'''
+	if dlinumber:
+		p = subprocess.Popen(['node','../agt_lgt.js', dlinumber], stdout=subprocess.PIPE)
+		out = p.stdout.read()
+		print(out)
+
+		tmpficheiroPDF = out.decode("utf-8").split('\n')[12]
+		ficheiroPDF = tmpficheiroPDF[tmpficheiroPDF.find('VERIFICAR PASTA ')+16:]
+
+		return ficheiroPDF
