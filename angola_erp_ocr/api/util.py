@@ -4561,7 +4561,7 @@ def qrcode_decode():
 	from PIL import Image
 	decode(Image.open('pyzbar/tests/code128.png'))
 
-
+@frappe.whitelist(allow_guest=True)
 def liquidacao_generica_tributo(ficheiro):
 	'''
 		OCR an image file to get either the QRCODE or the Referencia do Documento and SCAN ONLINE
@@ -4615,7 +4615,10 @@ def liquidacao_generica_tributo(ficheiro):
 						refdocumento = tmprefdocumento
 						break
 			print ('REF ',refdocumento)
-			validar_dlinumber(refdocumento)
+			#validar_dlinumber(refdocumento)
+			pdf_notaliquidacao = agt_lgt(refdocumento)
+			print ('TEM pdf_notaliquidacao ', pdf_notaliquidacao)
+			return pdf_notaliquidacao
 
 
 
@@ -4722,10 +4725,16 @@ def agt_lgt(dlinumber):
 		Run nodejs using Numero de Referencia do download REGISTO DE PAGAMENTO - LIQUIDACAO GENERICA
 		RETENCAO na FONTE
 	'''
+	import subprocess
 	if dlinumber:
 		p = subprocess.Popen(['node','../agt_lgt.js', dlinumber], stdout=subprocess.PIPE)
 		out = p.stdout.read()
 		print(out)
+		if "statusCode: 404" in out.decode("utf-8"):
+			print ('Running again....')
+			p = subprocess.Popen(['node','../agt_lgt.js', dlinumber], stdout=subprocess.PIPE)
+			out = p.stdout.read()
+			print(out)
 
 		tmpficheiroPDF = out.decode("utf-8").split('\n')[12]
 		ficheiroPDF = tmpficheiroPDF[tmpficheiroPDF.find('VERIFICAR PASTA ')+16:]
