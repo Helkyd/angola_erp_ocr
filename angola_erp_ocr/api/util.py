@@ -4570,7 +4570,7 @@ def liquidacao_generica_tributo(ficheiro):
 	import cv2
 	import pytesseract
 
-	ficheiro = '/home/frappe/frappe-bench/sites/tools.angolaerp.co.ao/public/files/Pagto teor.jpeg'
+	#ficheiro = '/home/frappe/frappe-bench/sites/tools.angolaerp.co.ao/public/files/Pagto teor.jpeg'
 	img = cv2.imread(ficheiro)
 
 	# Adding custom options
