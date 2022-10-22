@@ -4740,13 +4740,16 @@ def agt_lgt(dlinumber):
 		RETENCAO na FONTE
 	'''
 	import subprocess
+
 	if dlinumber:
-		p = subprocess.Popen(['node','../agt_lgt.js', dlinumber], stdout=subprocess.PIPE)
+		#p = subprocess.Popen(['node','../agt_lgt.js', dlinumber], stdout=subprocess.PIPE)
+		p = subprocess.Popen(['/home/frappe/.nvm/versions/node/v14.17.3/bin/node','../agt_lgt.js', dlinumber], stdout=subprocess.PIPE)
 		out = p.stdout.read()
 		print(out)
 		if "statusCode: 404" in out.decode("utf-8"):
 			print ('Running again....')
-			p = subprocess.Popen(['node','../agt_lgt.js', dlinumber], stdout=subprocess.PIPE)
+			#p = subprocess.Popen(['node','../agt_lgt.js', dlinumber], stdout=subprocess.PIPE)
+			p = subprocess.Popen(['/home/frappe/.nvm/versions/node/v14.17.3/bin/node','../agt_lgt.js', dlinumber], stdout=subprocess.PIPE)
 			out = p.stdout.read()
 			print(out)
 			if "statusCode: 404" in out.decode("utf-8"):
@@ -4755,11 +4758,11 @@ def agt_lgt(dlinumber):
 				tmpficheiroPDF = out.decode("utf-8").split('\n')[12]
 				ficheiroPDF = tmpficheiroPDF[tmpficheiroPDF.find('VERIFICAR PASTA ')+16:]
 
-				return ficheiroPDF
+				return out.decode("utf-8") #ficheiroPDF
 
 		else:
-			return out.decode("utf-8")
+			#return out #.decode("utf-8")
 			tmpficheiroPDF = out.decode("utf-8").split('\n')[12]
 			ficheiroPDF = tmpficheiroPDF[tmpficheiroPDF.find('VERIFICAR PASTA ')+16:]
 
-			return ficheiroPDF
+			return out.decode("utf-8") # ficheiroPDF
