@@ -4578,6 +4578,13 @@ def liquidacao_generica_tributo(ficheiro):
 			filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
 			filefinal = filefinal1
 		print ('filefinal1 ',filefinal)
+	elif os.path.isfile(frappe.get_site_path('public','files') + ficheiro.replace('/public/files','')):
+		filefinal = frappe.get_site_path('public','files') + ficheiro.replace('/public/files','')
+		print ('filefinal ',filefinal)
+		if filefinal.startswith('.'):
+			filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+			filefinal = filefinal1
+		print ('filefinal1 ',filefinal)
 
 	else:
 		filefinal = data
