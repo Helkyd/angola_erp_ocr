@@ -4583,7 +4583,7 @@ def liquidacao_generica_tributo(ficheiro):
 		filefinal = data
 
 	print ('filefinal ',filefinal)
-	
+
 	#ficheiro = '/home/frappe/frappe-bench/sites/tools.angolaerp.co.ao/public/files/Pagto teor.jpeg'
 	img = cv2.imread(filefinal)
 
@@ -4749,8 +4749,16 @@ def agt_lgt(dlinumber):
 			p = subprocess.Popen(['node','../agt_lgt.js', dlinumber], stdout=subprocess.PIPE)
 			out = p.stdout.read()
 			print(out)
+			if "statusCode: 404" in out.decode("utf-8"):
+				return 'INVALIDO'
+			else:
+				tmpficheiroPDF = out.decode("utf-8").split('\n')[12]
+				ficheiroPDF = tmpficheiroPDF[tmpficheiroPDF.find('VERIFICAR PASTA ')+16:]
 
-		tmpficheiroPDF = out.decode("utf-8").split('\n')[12]
-		ficheiroPDF = tmpficheiroPDF[tmpficheiroPDF.find('VERIFICAR PASTA ')+16:]
+				return ficheiroPDF
 
-		return ficheiroPDF
+		else:
+			tmpficheiroPDF = out.decode("utf-8").split('\n')[12]
+			ficheiroPDF = tmpficheiroPDF[tmpficheiroPDF.find('VERIFICAR PASTA ')+16:]
+
+			return ficheiroPDF
