@@ -4570,6 +4570,19 @@ def liquidacao_generica_tributo(ficheiro):
 	import cv2
 	import pytesseract
 
+
+	if os.path.isfile(frappe.get_site_path('public','files') + ficheiro.replace('/files','')):
+		filefinal = frappe.get_site_path('public','files') + ficheiro.replace('/files','')
+		print ('filefinal ',filefinal)
+		if filefinal.startswith('.'):
+			filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+			filefinal = filefinal1
+		print ('filefinal1 ',filefinal)
+
+	else:
+		filefinal = data
+
+
 	#ficheiro = '/home/frappe/frappe-bench/sites/tools.angolaerp.co.ao/public/files/Pagto teor.jpeg'
 	img = cv2.imread(ficheiro)
 
