@@ -4582,9 +4582,10 @@ def liquidacao_generica_tributo(ficheiro):
 	else:
 		filefinal = data
 
-
+	print ('filefinal ',filefinal)
+	
 	#ficheiro = '/home/frappe/frappe-bench/sites/tools.angolaerp.co.ao/public/files/Pagto teor.jpeg'
-	img = cv2.imread(ficheiro)
+	img = cv2.imread(filefinal)
 
 	# Adding custom options
 	custom_config = r'--oem 3 --psm 6'
