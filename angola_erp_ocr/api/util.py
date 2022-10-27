@@ -435,6 +435,13 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 				filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
 				filefinal = filefinal1
 			print ('filefinal1 ',filefinal)
+		elif os.path.isfile(frappe.get_site_path('public','files') + data.replace('/public/files','')):
+			filefinal = frappe.get_site_path('public','files') + data.replace('/public/files','')
+			print ('filefinal ',filefinal)
+			if filefinal.startswith('.'):
+				filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+				filefinal = filefinal1
+			print ('filefinal1 ',filefinal)
 
 		else:
 			filefinal = data

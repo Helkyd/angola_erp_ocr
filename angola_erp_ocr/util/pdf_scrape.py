@@ -1,5 +1,5 @@
 #Extracted from https://www.thepythoncode.com/article/extract-text-from-images-or-scanned-pdf-python
-#Last Modifed by HELKYD 14-10-2022
+#Last Modifed by HELKYD 27-10-2022
 
 from __future__ import unicode_literals
 
@@ -49,6 +49,8 @@ modelo6IVA_GrupoB = ""
 modelo6IVA_RegimeIVA_II = ""
 modelo6IVA_NIF = ""
 
+scrapresult_tmp = {}
+
 @frappe.whitelist(allow_guest=True)
 def pdfscrape_perpage(ficheiropdf = None, empresa = None):
 
@@ -67,27 +69,53 @@ def pdfscrape_perpage(ficheiropdf = None, empresa = None):
 
 	#we can get the number of pages using “pdf.doc.catalog[‘Pages’].resolve()[‘Count’]”. To extract data from a specific page, we can use “pdf.load(#)”.
 	scrapresult = {}
+
+	tt = ''
+	print ('CONTA PAGINAS.... ')
 	pagecount = pdf.doc.catalog['Pages'].resolve()['Count']
 	master = pd.DataFrame()
 	for p in range(pagecount):
+		print ('PAGINA ', p)
 		pdf.load(p)
 		page = pdf_scrape(pdf)
+		print ('PAGE PAGE PAGE PAGE PAGE PAGE ')
+		print (page)
+		print (len(page))
 		if not scrapresult:
 			scrapresult = page
 		else:
-			scrapresult.update(page)
+			print ('TEM DADOSSSSSSSSSSSSSSSSSSSs')
+			print ('TEM DADOSSSSSSSSSSSSSSSSSSSs')
+			print (scrapresult)
+			print (scrapresult_tmp)
+			if page['pagamentovia'][0] != 'QUEM':
+				scrapresult.update(page)
+		if len(page) >= 9:
+			print (page['pagamentovia'][0])
+			if page['pagamentovia'][0] != 'QUEM':
+				scrapresult_tmp = scrapresult
+				tt = scrapresult_tmp
+				print ('GRAVOU scrapresult_tmp ')
+				print ('GRAVOU scrapresult_tmp ')
+				print ('GRAVOU scrapresult_tmp ')
+				print ('GRAVOU scrapresult_tmp ')
+				print ('GRAVOU scrapresult_tmp ')
+				print ('GRAVOU scrapresult_tmp ',scrapresult )
 		master = master.append(page, ignore_index=True)
 
 	print ('GRAVAR FILE')
 	print (scrapresult)
-	#print (master['datahora'])
-	#print (master['datahora'][0])
-	#print (master['empresa'][0])
-
-	return scrapresult #master
+	print ('scrapresult_tmp')
+	print (scrapresult_tmp)
+	print ('tt ', tt)
+	if scrapresult['pagamentovia'][0] == 'QUEM':
+		return scrapresult_tmp
+	else:
+		return scrapresult
 
 def pdf_scrape(pdf):
 
+	print ('Running pdf_scrape....')
 
 	#Needs to know if is PDF from  MULTICAIXA Express
 	datahora = ""
@@ -156,6 +184,8 @@ def pdf_scrape(pdf):
 	print ('baidirecto ',baidirecto)
 	print ('pagamentoDC ', pagamentoDC)
 	print ('pdfasIMAGE ', pdfasIMAGE)
+
+	print ('PRIMEIRO QUEM.....')
 
 	pagamentovia = "QUEM"
 
@@ -392,7 +422,7 @@ def pdfscrape(ficheiropdf = None, empresa = None, tipodoctype = None):
 	#Can be used to read any PDF and extract TEXT from it...
 	#Read a PDF from Multicaixa EXPRESS payment and extract
 	#Date of Payment, Company paid to, IBAN paid to, Amount paid, Transaction number and IBAN from
-
+	print ('Running pdfscrape....')
 
 
 	print ('Can be used to read any PDF and extract TEXT from it...')
@@ -481,6 +511,8 @@ def pdfscrape(ficheiropdf = None, empresa = None, tipodoctype = None):
 	print ('baidirecto ',baidirecto)
 	print ('pagamentoDC ', pagamentoDC)
 	print ('pdfasIMAGE ', pdfasIMAGE)
+
+	print ('SEGUNDO QUEM.....')
 
 	pagamentovia = "QUEM"
 
