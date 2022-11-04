@@ -1704,9 +1704,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						if "Referencia Pessoal" in val:
 							if not descricaoPagamento:
 								descricaoPagamento = val[val.find('Referencia Pessoal')+19:].strip()
-						if "Data do Registo -" in val:
+						if "Data de Execução -" in val:
 							if not dataEMISSAO:
-								dataEMISSAO = val[val.find('Data do Registo -')+18:].strip()
+								dataEMISSAO = val[val.find('Data de Execução -')+18:].strip().replace("'","")
 					else:
 						#Check IF Designaçäo: Conta BIC Empresas - Moeda Nacional
 						#Check fo Conta de Origem:
