@@ -1,5 +1,5 @@
 #Extracted from https://www.thepythoncode.com/article/extract-text-from-images-or-scanned-pdf-python
-#Last Modifed by HELKYD 27-10-2022
+#Last Modifed by HELKYD 04-11-2022
 
 from __future__ import unicode_literals
 
@@ -54,6 +54,7 @@ scrapresult_tmp = {}
 @frappe.whitelist(allow_guest=True)
 def pdfscrape_perpage(ficheiropdf = None, empresa = None):
 
+	global scrapresult_tmp
 
 	if not ficheiropdf:
 		frappe.throw('Nao tem FICHEIRO em PDF...')

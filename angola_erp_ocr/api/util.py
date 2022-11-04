@@ -818,10 +818,16 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 	print ("RECIBO DE PAGAMENTO" in ocr_tesserac)
 	print ("EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac)
 
+	print ('TESTA BAI')
+	print ("através do serviço BAlDirecto." in ocr_tesserac)
+	print ("através do serviço BAIDirecto." in ocr_tesserac)
+
 	referenciadocumento = ""
 
 
-	if "RECIBO DE PAGAMENTO" in ocr_tesserac or "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac or "EMITIDO EM: RF PORTAL BO CONTRIBUINTE" in ocr_tesserac or "MCX DEBIT" in ocr_tesserac or "COMPROVATIVO DA OPERACAO" in ocr_tesserac or "COMPROVATIVO DA OPERAÇÃO" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac or "MULTICAIXA Express." in ocr_tesserac:
+	if "RECIBO DE PAGAMENTO" in ocr_tesserac or "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac or "EMITIDO EM: RF PORTAL BO CONTRIBUINTE" in ocr_tesserac \
+		or "MCX DEBIT" in ocr_tesserac or "COMPROVATIVO DA OPERACAO" in ocr_tesserac or "COMPROVATIVO DA OPERAÇÃO" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac \
+		or "MULTICAIXA Express." in ocr_tesserac: # or "através do serviço BAlDirecto." in ocr_tesserac or "através do serviço BAIDirecto." in ocr_tesserac:
 		#MCX DEBIT -> Multicaixa Express
 		#COMPROVATIVO DA OPERACAO BFA
 
@@ -1648,6 +1654,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 			descricaoPagamento = ''
 			valorPAGO = ''
 			ibanDestino = ''
+			ibanOrigem = ''
+
+			bancoBAIDIRECTO = False
 
 			'''
 				TODO:
@@ -1670,39 +1679,83 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					#print ("val", val.split(','))
 					#print (len(val.split(',')))
 
-					#Check IF Designaçäo: Conta BIC Empresas - Moeda Nacional
-					#Check fo Conta de Origem:
-					if "Conta de Origem:" in val:
-						contaOrigem = val[val.find('Conta de Origem:')+17:].strip()
-					if "Data do movimento" in val:
-						dataEMISSAO = val[val.find('Data do movimento')+18:].strip()
-					if "Designaçäo: Conta BIC Empresas - Moeda Nacional" in val or "Designação: Conta BIC Empresas - Moeda Nacional" in val:
-						#BANCO BIC TRANSFERENCIA
-						bancoBic = True
-					if "Número do documento" in val:
-						numeroDocumento =  val[val.find('Número do documento')+20:].strip()
-					if "Nümero de operaçäo" in val or "Número de operaçäo" in val:
-						if not numeroOperacao:
-							if "Nümero de operaçäo" in val:
-								numeroOperacao = val[val.find('Nümero de operaçäo')+19:].strip()
-							else:
-								numeroOperacao = val[val.find('Número de operaçäo')+19:].strip()
-					if "Descrição do movimento" in val:
-						descricaoPagamento = val[val.find('Descrição do movimento')+23:].strip()
+					#Check if BAIDIRECTO
+					if "através do serviço BAIDirecto" in val:
+						bancoBAIDIRECTO = True
 
-					if "Valor a debitar" in val:
-						valorPAGO = val[val.find('Valor a debitar')+16:].strip()
+					if bancoBAIDIRECTO:
+						if "Conta" in val:
+							contaOrigem = val[val.find('Conta ')+6:].strip().replace(' ','')
+						if "IBAN " in val:
+							if not ibanOrigem:
+								tmpiban = val[val.find('IBAN ')+5:].strip().replace(' ','').replace('—','')
+								ibanOrigem = tmpiban.replace('AOO6','AO06')
+						if "Nümero de operaçäo" in val or "Número de operaçäo" in val or "Número de Operação" in val:
+							if not numeroOperacao:
+								if "Nümero de operaçäo" in val:
+									numeroOperacao = val[val.find('Nümero de operaçäo')+19:].strip()
+								elif "Número de operaçäo" in val:
+									numeroOperacao = val[val.find('Número de operaçäo')+19:].strip()
+								elif "Número de Operação" in val:
+									numeroOperacao = val[val.find('Número de Operação')+19:].strip()
+						if "Montante Kz" in val:
+							if not valorPAGO:
+								valorPAGO = val[val.find('Montante Kz')+12:].strip().replace('"','')
+						if "Referencia Pessoal" in val:
+							if not descricaoPagamento:
+								descricaoPagamento = val[val.find('Referencia Pessoal')+19:].strip()
+						if "Data do Registo -" in val:
+							if not dataEMISSAO:
+								dataEMISSAO = val[val.find('Data do Registo -')+18:].strip()
+					else:
+						#Check IF Designaçäo: Conta BIC Empresas - Moeda Nacional
+						#Check fo Conta de Origem:
+						if "Conta de Origem:" in val:
+							contaOrigem = val[val.find('Conta de Origem:')+17:].strip()
+						if "Data do movimento" in val:
+							dataEMISSAO = val[val.find('Data do movimento')+18:].strip()
+						if "Designaçäo: Conta BIC Empresas - Moeda Nacional" in val or "Designação: Conta BIC Empresas - Moeda Nacional" in val:
+							#BANCO BIC TRANSFERENCIA
+							bancoBic = True
+						if "Número do documento" in val:
+							numeroDocumento =  val[val.find('Número do documento')+20:].strip()
+						if "Nümero de operaçäo" in val or "Número de operaçäo" in val:
+							if not numeroOperacao:
+								if "Nümero de operaçäo" in val:
+									numeroOperacao = val[val.find('Nümero de operaçäo')+19:].strip()
+								else:
+									numeroOperacao = val[val.find('Número de operaçäo')+19:].strip()
+						if "Descrição do movimento" in val:
+							descricaoPagamento = val[val.find('Descrição do movimento')+23:].strip()
+
+						if "Valor a debitar" in val:
+							valorPAGO = val[val.find('Valor a debitar')+16:].strip()
+
+
 
 			#Return values if
-			if dataEMISSAO and contaOrigem and valorPAGO:
-				return {
-					"bancoBic": bancoBic,
-					"numeroTransacao": numeroDocumento or numeroOperacao,
-					"datadePAGAMENTO": dataEMISSAO,
-					"contaOrigem": contaOrigem,
-					"ibanDestino": ibanDestino,
-					"valorPAGO": valorPAGO
-				}
+			if bancoBAIDIRECTO:
+				if dataEMISSAO and contaOrigem and valorPAGO:
+					return {
+						"bancoBAIDIRECTO": bancoBAIDIRECTO,
+						"numeroTransacao": numeroDocumento or numeroOperacao,
+						"datadePAGAMENTO": dataEMISSAO,
+						"contaOrigem": contaOrigem,
+						"ibanOrigem": ibanOrigem,
+						"ibanDestino": ibanDestino,
+						"valorPAGO": valorPAGO
+					}
+
+			else:
+				if dataEMISSAO and contaOrigem and valorPAGO:
+					return {
+						"bancoBic": bancoBic,
+						"numeroTransacao": numeroDocumento or numeroOperacao,
+						"datadePAGAMENTO": dataEMISSAO,
+						"contaOrigem": contaOrigem,
+						"ibanDestino": ibanDestino,
+						"valorPAGO": valorPAGO
+					}
 
 		print ('TODO: Tenta ocr_pytesseract.... but reading all Lines and checking for the required fields...')
 		#TODO:Tenta ocr_pytesseract.... but reading all Lines and checking for the required fields...
