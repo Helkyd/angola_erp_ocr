@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 22/10/2022
+#Date Changed: 07/11/2022
 
 
 from __future__ import unicode_literals
@@ -791,7 +791,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 	#Podemos fazer OCR with tesseract before trying with pytesseract
 	# File, Language, DPI
 	#cash to include . and , ex. 44.123,00 / 44.123,97
-	cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)' #r'^[-+]?(?:\d*\.\d+|\d+)'
+	#cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)' #r'^[-+]?(?:\d*\.\d+|\d+)'
+	cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)|(?:\d*\,\d+)'
+
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
 	iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
 
@@ -925,8 +927,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					print ('Numero Referencia..')
 					print (dd[0:dd.find(' ')])
 					print (dd[0:dd.find(' ')].strip().isnumeric())
-					referenciadocumento = dd[0:dd.find(' ')].strip()
-					print (referenciadocumento)
+					if dd[0:dd.find(' ')].strip().isnumeric():
+						referenciadocumento = dd[0:dd.find(' ')].strip()
+						print (referenciadocumento)
 					#frappe.throw(porra)
 				elif "COMPROVATIVO DA OPERACAO" in dd or "COMPROVATIVO DA OPERAÇÃO" in dd:
 					bfatransferencia = True
@@ -1121,7 +1124,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						if not valorPAGO:
 							valorPAGO = dd.strip()
 					nextlinha = False
-					frappe.throw(porra)
+					#frappe.throw(porra)
 
 				elif "TRANSACCAI" in dd and len(dd.split(' ')) == 2:
 					#Caso unico where N.CAIXA numbers are first and TEXT Will be after...
@@ -1245,6 +1248,11 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						BeneficiarioNIF = dd[0:dd.find(' ')].strip()
 					print ('NUMEROSSSSSSS')
 
+					#Check for Referencia Pagamento
+					if temreferenciaDar and not referenciaDAR:
+						if dd.isnumeric() and len(dd) == 12:
+							referenciaDAR = dd.strip()
+
 				elif re.match(iban_pattern,dd.strip()):
 					print ('IBAN DEST. ',re.match(iban_pattern,dd.strip()))
 					if mcexpress:
@@ -1264,7 +1272,8 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 							if not referenciaDAR:
 								referenciaDAR = tmprefedar1.strip()
 								print ('referenciaDAR ',referenciaDAR)
-					frappe.throw(porra)
+					if dd.startswith('467'):
+						frappe.throw(porra)
 
 
 				elif re.match(cash_pattern,dd.strip()):
@@ -1300,8 +1309,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						print ('dataEMISSAO ', dataEMISSAO)
 						print ('datadePAGAMENTO ', datadePAGAMENTO)
 
-				elif "Nº REFERÊNCIA DO PAGAMENTO" in dd:
+				elif "Nº REFERÊNCIA DO PAGAMENTO" in dd or "N° REFERÉNCIA DO PAGAMENTO" in dd:
 					temreferenciaDar = True
+					#frappe.throw(porra)
 				elif dd.startswith("AO06") or dd.startswith("A006") or dd.startswith("AONE") or dd.startswith("ACO6"):
 					print ('IBAN....')
 					print (len(dd))
@@ -1789,6 +1799,8 @@ def lerdocumento(dados):
 	mcexpress = False
 
 	NIFContribuinte = ''
+
+	datasubmissaoTEMP = ''
 
 	if dados:
 		print (dados.split('\n'))
