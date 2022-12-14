@@ -2755,6 +2755,9 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 							if nifvalido and nifvalido[2]:
 								print ('Empresa CORRECTA ', nifvalido[2])
 								empresaSupplier = nifvalido[2]
+					elif 'TRN :' in fsup.upper().strip():
+						print ('TRN aqui....')
+						supplierNIF = fsup[fsup.upper().find('TRN :')+5:].strip()
 				if not supplierMoeda:
 					terpalavras = ['Moeda','AOA','AKZ']
 					#TODO: List of Currencies to see if on the Document to be OCR..
