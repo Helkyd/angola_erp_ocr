@@ -2447,7 +2447,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		en_scan = False
 		#Check if Document is in PT or ENG...
 		en_terpalavras = ['PROFORMA INVOICE','SALES INVOICE','INVOICE']
-		en_palavras_fim_item = ['INCIDENCE','TAX','TAXABLE AMT'] #['INCIDENCE','VAT','TAX']
+		#FIX 14-12-2022
+		en_palavras_fim_item = ['INCIDENCE','TAXABLE AMT'] #['INCIDENCE','TAX','TAXABLE AMT'] #['INCIDENCE','VAT','TAX']
 		fim_items = False
 
 		palavras_serialnumbers = ['SN:','SN ']
@@ -2649,9 +2650,18 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 		countlines = 1
 
+		fim_items = False
+
 		for fsup in facturaSupplier.split('\n'):
 			print ('=====INICIO =======')
 			print (fsup)
+
+			#FIX 14-12-2022
+			for fi in en_palavras_fim_item:
+				if fi.upper() in fsup.strip().upper():
+					fim_items = True
+					#frappe.throw(porra)
+
 
 			if fsup.strip() != None and fsup.strip() != "":
 				if not empresaSupplier:
@@ -2844,7 +2854,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								print ('fac ', invoiceNumber)
 
 
-				if not itemsSupplierInvoice:
+				if not itemsSupplierInvoice and fim_items == False:
 					#Items
 					itemsSupplierInvoice = []
 					contaLinhas = ''
