@@ -84,7 +84,7 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 					#Check if Items created...
 					print (scrapeTXT[7])
 
-					#FIX 21-12-2022; Check if has Invoice number.. 
+					#FIX 21-12-2022; Check if has Invoice number..
 					if scrapeTXT[1] == '':
 						#TESTING....15-10-2022
 						return aprender_OCR (filefinal,"COMPRAS")
@@ -2433,6 +2433,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 	palavras_no_header = []
 
+	supplierMoeda = ''
+
 	if os.path.isfile(frappe.get_site_path('public','files') + data.replace('/files','')):
 		filefinal = frappe.get_site_path('public','files') + data.replace('/files','')
 		print ('filefinal ',filefinal)
@@ -2541,7 +2543,12 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								#Check QTD is a Number...
 								if len(fsup.split()) > 1:
 									print ('size fsup ',len(fsup.split()))
-									if not cc.strip().isnumeric():
+									#FIX 21-12-2022; Check if Currency Symbol...
+									if cc.strip() == "€":
+										if not supplierMoeda:
+											supplierMoeda = 'EUR'
+
+									elif not cc.strip().isnumeric():
 										#Gera novamente o OCR bcs QTD is not a Number...
 										if quantidade == '':
 											#Qtd_isnot_number = True
@@ -2622,7 +2629,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		supplierEmail = ''
 		supplierNIF = ''
 		supplierCountry = ''
-		supplierMoeda = ''
+		supplierPais = ''
+
 
 		#Items
 		itemsSupplierInvoice = []
@@ -2633,7 +2641,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		itemTotal = ''
 		itemIVA = ''
 
-
+		tmpcountry = ''
 
 		#System Currencies ...
 		moedassystem = []
@@ -2726,11 +2734,17 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 							print (empresa)
 							removerpalavras =['|','Facebook']
 							tmpempresa = ''
+
 							for ee in empresa:
 								if not ":" in ee:
 									for rr in removerpalavras:
 										if not tmpempresa:
-											tmpempresa = ee.replace(rr,'')
+											if rr == "|":
+												print ('poder ser country')
+												tmpempresa = ee[:ee.find('|')]
+												tmpcountry = ee[ee.find('|')+1:ee.find('-')-1]
+											else:
+												tmpempresa = ee.replace(rr,'')
 										else:
 											tmpempresa1 = tmpempresa.replace(rr,'')
 											tmpempresa = tmpempresa1
@@ -2738,10 +2752,14 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									break
 							if tmpempresa:
 								print ('tmpempresa ',tmpempresa)
+								print ('tmpcountry ', tmpcountry)
 								if tmpempresa.strip().endswith('-'):
 									empresaSupplier = tmpempresa.strip()[0:len(tmpempresa.strip())-1]
 								else:
 									empresaSupplier = tmpempresa.strip()
+								if tmpcountry:
+									if tmpcountry.upper().strip() == "DUBAI":
+										supplierPais = 'United Arab Emirates'
 
 						#frappe.throw(porra)
 				if not supplierAddress:
@@ -2749,15 +2767,16 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					TER palavras:
 						RUA, AVENIDA
 					'''
-					terpalavras = ['RUA', 'AVENIDA']
-					ADDRpalavraexiste = False
-					for ff in fsup.split(' '):
-						#print (ff)
-						if ff in terpalavras:
-							#print ('TEM palavra ', ff)
-							ADDRpalavraexiste = True
-					if ADDRpalavraexiste:
-						supplierAddress = fsup.strip()
+					if tmpcountry.upper().strip() != "DUBAI":
+						terpalavras = ['RUA', 'AVENIDA']
+						ADDRpalavraexiste = False
+						for ff in fsup.split(' '):
+							#print (ff)
+							if ff in terpalavras:
+								#print ('TEM palavra ', ff)
+								ADDRpalavraexiste = True
+						if ADDRpalavraexiste:
+							supplierAddress = fsup.strip()
 
 				if not supplierEmail:
 					if "EMAIL:" in fsup.upper():
@@ -2796,7 +2815,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					else:
 						#Check words on doc if any on the list...
 						for mm in moedassystem:
-							tmpmoeda = ' ' + mm.upper()
+							tmpmoeda = ' ' + mm.upper() + ' '
 							if tmpmoeda.upper() in fsup.upper():
 								print ('TEM MOEDA NA FACTURA...')
 								print (mm.upper())
@@ -3460,20 +3479,27 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		print('Supplier ', empresaSupplier)
 		print ('supplieraddre ', supplierAddress)
 		print ('supplierNIF ', supplierNIF)
+
+		print ('supplierPais ', supplierPais)
+
 		if supplierMoeda == 'AOA' or supplierMoeda == 'AKZ' or supplierMoeda == 'KZ':
 			empresaPais = 'Angola'
 		else:
-			empresaPais = 'DESCONHECIDO'
+			if not supplierPais:
+				empresaPais = 'DESCONHECIDO'
+			else:
+				empresaPais = supplierPais
 			if supplierMoeda:
 				print ('supplierMoeda ',supplierMoeda)
 				if supplierMoeda == "EUR":
-					empresaPais = 'Belgium' #DEFAULT for EUR currency
+					if not supplierPais:
+						empresaPais = 'Belgium' #DEFAULT for EUR currency
 				else:
 					tmppais =pycountry.countries.get(numeric=pycountry.currencies.get(alpha_3=supplierMoeda).numeric)
 					print ('tmppais ',tmppais.name)
 					empresaPais = tmppais.name
 
-		print ('supplierPais ', empresaPais)
+		print ('empresaPais ', empresaPais)
 
 		print('Invoice', invoiceNumber)
 		print('Date ', invoiceDate)
