@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 07/11/2022
+#Date Changed: 21/12/2022
 
 
 from __future__ import unicode_literals
@@ -2414,7 +2414,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
 	terpalavras_header = ['UNIDADE', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido','%Imp.']
 
-	terpalavras_header_EN = ['CODE NO', 'DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL AMOUNT', 'AMOUNT', 'TOTAL', 'VAT', 'PRICE']
+	terpalavras_header_EN = ['CODE NO','CODE', 'DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL AMOUNT', 'AMOUNT', 'TOTAL', 'VAT', 'PRICE']
 
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
 	#cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)'
@@ -2516,7 +2516,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 
 
-							print ('===== FIRST IDX ======')
+							print ('===== FIRST IDX0 ======')
 							print ('idx ',idx)
 							print ('cc ',cc)
 
@@ -2576,6 +2576,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									#To avoid TOTAL AMOUNT and TOTAL being added
 									if 'TOTAL AMOUNT' in palavras_no_header and pp.upper() == 'TOTAL':
 										print ('SKIP TOTAL')
+									elif 'CODE NO' in palavras_no_header and pp.upper() == 'CODE':
+										print ('SKIP CODE and CODE NO')
 									else:
 										contapalavras_header += 1
 										print ('pode contar HEADER ', pp.upper())
@@ -2939,13 +2941,17 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					print ('en_contapalavras_header_banco ',en_contapalavras_header_banco)
 
 					evitapalavras_telefone = [ 'Telef.', 'Telef. 244', 'Telef. +244']
-					email_pattern = r"^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
+					#email_pattern = r"^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
+					#FIX 21-12-2022
+					email_pattern = r"^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,4})+$"
+
 					evitatelefone_items = False
 					for telf in evitapalavras_telefone:
 						if telf in fsup.strip():
 							evitatelefone_items = True
 						print ('EMAIL ')
-						print (re.match(email_pattern,fsup.strip()))
+						print ('fsup.strip() ', fsup.strip())
+						#print (re.match(email_pattern,fsup.strip()))
 					print ('evitatelefone_items ',evitatelefone_items)
 
 					if not evitatelefone_items:
@@ -2954,15 +2960,27 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 							if palavrasexiste_header:
 								for cc in fsup.split():
 									print ('cc ',cc)
-									print ('EMAIL ')
-									print (re.match(email_pattern,cc.strip()))
-
-									if not 'SN:' in cc and not re.match(email_pattern,cc.strip()):
+									print ('cc ',cc.strip())
+									print ('EMAIL0 ')
+									if "@" in cc.strip():
+										print (re.match(email_pattern,cc.strip()))
+									#FIX 21-12-2022
+									if not 'SN:' in cc and not "@" in cc.strip(): # re.match(email_pattern,cc.strip()):
 										print ('LEN ', len(cc))
 										if len(cc) >= 15:
 											#sao_sn = True
 											print ('SAO SNs')
 											tmp_sn += ' ' + cc.strip()
+
+											#21-12-2022; Check if are SN or just the Description
+											retornadescricao = retorna_descricao(fsup.strip())
+											print ('retornadescricao ',retornadescricao)
+											print ('TESTE if is DESCRIPTION ONLY... might be SERIAL NUMBER')
+											print (cc.strip())
+											if retornadescricao.strip().find(cc.strip()) != -1:
+												print ('FOR NOW REMOVE tmp_sn...')
+												tmp_sn = ''
+
 										elif len(cc.strip()) >= 3 and cc.strip().isnumeric():
 											#Case Numbers only and has more 3 chars with no DOT or COMMA
 											if cc.strip().find('.') == -1 and cc.strip().find(',') == -1:
@@ -2986,6 +3004,37 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 															print ('NOT SERIAL NUMBER but ITEM CODE...')
 														else:
 															tmp_sn += ' ' + cc.strip()
+
+															#FIX: Find a way to get from last column to identify Total, Price, Qtd or
+															#Total, VAT, Price, Qtd
+															print ('If len 5 means Item, description, quantity, unit price, total price ')
+															print (len(palavras_no_header))
+															#Check if last 3 ones are numbers...
+															tmp_totalprice = 0
+															tmp_unitprice = 0
+															tmp_qtd = 0
+															if len(palavras_no_header) == 5:
+																for idx_tmp,cc_tmp in reversed(list(enumerate(fsup.split()))):
+																	#Check if cash
+																	print (re.match(cash_pattern,cc_tmp))
+																	print (cc_tmp.strip().isnumeric())
+																	if re.match(cash_pattern,cc_tmp):
+																		if not tmp_totalprice:
+																			tmp_totalprice = cc_tmp
+																		elif not tmp_unitprice:
+																			tmp_unitprice = cc_tmp
+																	if cc_tmp.strip().isnumeric():
+																		if not tmp_qtd:
+																			tmp_qtd = cc_tmp.strip()
+																			if tmp_sn.strip() == tmp_qtd:
+																				print ('REMOVE tmp_sn bcs is same as Qtd')
+																				print ('tmp_sn ',tmp_sn)
+																				print ('tmp_qtd ', tmp_qtd)
+																				tmp_sn = ''
+																				break
+
+
+
 												#frappe.throw(porra)
 
 										else:
@@ -3024,6 +3073,13 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								print ('retornadescricao ',retornadescricao)
 								if not tmp_sn in retornadescricao:
 									print (len(filtered_divs['DESCRIPTION']))
+									print (filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1])
+
+									print ('If len 6 means Item, description, quantity, unit price, total price ')
+									print (len(palavras_no_header))
+									#Check if last 3 ones are numbers...
+
+
 									filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += ' SN: ' + tmp_sn
 									tmp_sn = ''
 									print ('ADDED SNs to DESCRIPTION...')
@@ -3041,7 +3097,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)'
 
 								for idx,cc in reversed(list(enumerate(fsup.split()))):
-									print ('===== IDX ======')
+									print ('===== IDX0 ======')
 									print ('idx ',idx)
 									print ('cc ',cc)
 
@@ -3086,6 +3142,14 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 											if not itemQtd and itemQtd == '':
 												itemQtd = cc.strip()
 
+											#FIX 21-12-2022; Check if SN is same as QTD
+											print ('len description')
+											print (len(filtered_divs['DESCRIPTION']))
+											if len(filtered_divs['DESCRIPTION']) > 1:
+												print (filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1])
+											#filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += ' SN: ' + tmp_sn
+
+
 											#Check if CODE NO in Headers...
 											if 'CODE NO' in palavras_no_header and idx == 1:
 												print ('itemCode ', itemCode)
@@ -3120,6 +3184,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1:
 										#Add SN JSTJPB7CX5N4008215 to Description
 										#tmpdescricao = tmpdescricao + 'SN: ' + cc
+										print ('adiciona SN: por algum motivo...')
 										tmpdescricao = ' SN: ' + cc
 										palavraexiste_item = False
 									elif len(fsup.strip().split()) == 1:
@@ -3326,6 +3391,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 							print ('itemRate ',itemRate)
 							print ('itemTotal ',itemTotal)
 							print ('itemIVA ',itemIVA)
+
+							print ('itemDescriptionXXXXXX ', itemDescription)
 
 							#frappe.throw(porra)
 							if not avoidADDING:
@@ -3884,13 +3951,16 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 					print ('en_contapalavras_header_banco ',en_contapalavras_header_banco)
 
 					evitapalavras_telefone = [ 'Telef.', 'Telef. 244', 'Telef. +244']
-					email_pattern = r"^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
+					#email_pattern = r"^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
+					#FIX 21-12-2022
+					email_pattern = r"^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,4})+$"
 					evitatelefone_items = False
 					for telf in evitapalavras_telefone:
 						if telf in fsup.strip():
 							evitatelefone_items = True
-						print ('EMAIL ')
-						print (re.match(email_pattern,fsup.strip()))
+						print ('EMAIL1 ')
+						print ('fsup.strip() ', fsup.strip())
+						#print (re.match(email_pattern,fsup.strip()))
 					print ('evitatelefone_items ',evitatelefone_items)
 
 					if not evitatelefone_items:
@@ -3899,7 +3969,8 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 							if palavrasexiste_header:
 								for cc in fsup.split():
 									print ('cc ',cc)
-									print ('EMAIL ')
+									print ('cc.strip ',cc.strip())
+									print ('EMAIL2 ')
 									print (re.match(email_pattern,cc.strip()))
 
 									if not 'SN:' in cc and not re.match(email_pattern,cc.strip()):
