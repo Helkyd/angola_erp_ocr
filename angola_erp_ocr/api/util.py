@@ -83,7 +83,13 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 				if scrapeTXT and len(scrapeTXT) >= 6:
 					#Check if Items created...
 					print (scrapeTXT[7])
-					if scrapeTXT[7]:
+
+					#FIX 21-12-2022; Check if has Invoice number.. 
+					if scrapeTXT[1] == '':
+						#TESTING....15-10-2022
+						return aprender_OCR (filefinal,"COMPRAS")
+
+					elif scrapeTXT[7]:
 						print (scrapeTXT[7][0])
 						return scrapeTXT
 					else:
