@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 21/12/2022
+#Date Changed: 22/12/2022
 
 
 from __future__ import unicode_literals
@@ -3423,10 +3423,13 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 							if not avoidADDING:
 								filtered_divs['COUNTER'].append(countlines)
 								filtered_divs['ITEM'].append(itemCode)
+								#FIX 22-12-2022; removed itemQtd
 								if len(itemCode) != len(itemDescription) and len(itemCode) > 5:
-									filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(str(itemQtd),'').replace(itemCode,'').strip())
+									#filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(str(itemQtd),'').replace(itemCode,'').strip())
+									filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(itemCode,'').strip())
 								else:
-									filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(str(itemQtd),'').strip())
+									#filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(str(itemQtd),'').strip())
+									filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').strip())
 								filtered_divs['QUANTITY'].append(itemQtd)
 								filtered_divs['RATE'].append(itemRate)
 								filtered_divs['TOTAL'].append(itemTotal)
