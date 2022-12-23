@@ -2197,7 +2197,7 @@ def pdf_scrape_txt(ficheiro):
 						#print (tmptotal)
 					elif re.match(cash_pattern,div.text_content().strip('\n').replace(',','')):
 						filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
-						print ('AQUI1 AQUI1 ', div.text_content().strip('\n'))
+						print ('AQUI1 AQUI1 X ', div.text_content().strip('\n'))
 
 
 					#Check if has $ €
@@ -2298,6 +2298,642 @@ def pdf_scrape_txt(ficheiro):
 				print ('Qty Column')
 				if div.text_content().strip('\n').isnumeric():
 					filtered_divs['QUANTITY'].append(div.text_content().strip('\n'))
+
+			if 394 < int(left) < 396:
+				#RATE Column
+				print ('RATE Column')
+				print (div.text_content().strip('\n'))
+				if re.match(cash_pattern,div.text_content().strip('\n').replace(',','')):
+					filtered_divs['RATE'].append(div.text_content().strip('\n'))
+
+
+			if 469 < int(left) < 471:
+				#TOTAL Column
+				print ('TOTAL Column')
+				print (div.text_content().split('\n'))
+				if "TOTAL" in div.text_content().strip('\n'):
+					print (len(div.text_content().split('\n')))
+					if len(div.text_content().split('\n')) >= 2:
+						print (div.text_content().split('\n')[1])
+						print (re.match(cash_pattern,div.text_content().split('\n')[1].replace(',','')))
+						if re.match(cash_pattern,div.text_content().split('\n')[1].replace(',','')):
+							filtered_divs['TOTAL'].append(div.text_content().split('\n')[1])
+			if 100 < int(left) < 102:
+				#Serial Numbers....
+				#JTGCBAB8906725029
+				print ('Serial Numbers.... ')
+				print (div.text_content().strip('\n').replace(' ',''))
+				print (len(div.text_content().strip('\n').replace(' ','')))
+				if len(div.text_content().strip('\n')) >= 17:
+					if div.text_content().strip('\n').find(' ') == -1:
+						print ('PODE SER Serial Numbers.... ')
+						print (oldIDXDescription)
+						print (filtered_divs['DESCRIPTION'][oldIDXDescription-1])
+						if filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:') == -1:
+							filtered_divs['DESCRIPTION'][oldIDXDescription-1] = filtered_divs['DESCRIPTION'][oldIDXDescription-1] + " SN: " + div.text_content().strip('\n')
+						else:
+							filtered_divs['DESCRIPTION'][oldIDXDescription-1] = filtered_divs['DESCRIPTION'][oldIDXDescription-1] + div.text_content().strip('\n')
+
+						print ('ADDICIONOU SERIAL ')
+						print (filtered_divs['DESCRIPTION'][oldIDXDescription-1])
+
+			if 252 < int(left) < 254:
+				#will or might contain Y COLOR and FUEL: 2022 black Petrol
+				print (div.text_content().split('\n'))
+				print (div.text_content().strip('\n'))
+				#check if starts with 4 digits for YEAR
+				if div.text_content().strip('\n')[:5].strip().isdigit():
+					if filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:') == -1:
+						#Append at the end
+						filtered_divs['DESCRIPTION'][oldIDXDescription-1] = filtered_divs['DESCRIPTION'][oldIDXDescription-1] + ' ' + div.text_content().strip('\n')
+					else:
+						print (filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:'))
+						print (filtered_divs['DESCRIPTION'][oldIDXDescription-1][:filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:')])
+						tmpdesc = filtered_divs['DESCRIPTION'][oldIDXDescription-1]
+						filtered_divs['DESCRIPTION'][oldIDXDescription-1] = tmpdesc.replace('SN:', div.text_content().strip('\n') + ' SN:')
+						#print (filtered_divs['DESCRIPTION'])
+
+
+			if "AED" in div.text_content().strip('\n'):
+				if moedainvoice == "":
+					moedainvoice = "AED"
+
+				#if "149,719.53 AOA" in div.text_content().strip('\n'):
+				#	frappe.throw(porra)
+
+	# Merge and clear lists with data
+	print ('ITEMs')
+	print (filtered_divs['ITEM'])
+	print (len(filtered_divs['ITEM']))
+
+	print ('DESCRIPTIONs')
+	print (filtered_divs['DESCRIPTION'])
+	print (len(filtered_divs['DESCRIPTION']))
+	print ('QUANTITY')
+	print (filtered_divs['QUANTITY'])
+	print (len(filtered_divs['QUANTITY']))
+	print ('RATE')
+	print (filtered_divs['RATE'])
+	print (len(filtered_divs['RATE']))
+	print ('TOTAL')
+	print (filtered_divs['TOTAL'])
+	print (len(filtered_divs['TOTAL']))
+
+	data = []
+	if filtered_divs['IVA']:
+		for row in zip(filtered_divs['ITEM'], filtered_divs['DESCRIPTION'], filtered_divs['QUANTITY'], filtered_divs['RATE'], filtered_divs['TOTAL'], filtered_divs['IVA']):
+			if 'ITEM' in row[0]:
+				continue
+			#data_row = {'ID': row[0].split(' ')[0], 'Description': row[1], 'Quantity': row[2], 'Rate': row[3], 'Total': row[4]}
+			data_row = {'ID': row[0].split(' ')[0], 'Description': row[1], 'Quantity': row[2], 'Rate': row[3], 'Total': row[4], 'Iva': row[5]}
+			data.append(data_row)
+	else:
+		for row in zip(filtered_divs['ITEM'], filtered_divs['DESCRIPTION'], filtered_divs['QUANTITY'], filtered_divs['RATE'], filtered_divs['TOTAL']):
+			if 'ITEM' in row[0]:
+				continue
+
+			data_row = {'ID': row[0].split(' ')[0], 'Description': row[1], 'Quantity': row[2], 'Rate': row[3], 'Total': row[4]}
+			#data_row = {'ID': row[0].split(' ')[0], 'Description': row[1], 'Quantity': row[2], 'Rate': row[3], 'Total': row[4], 'Iva': row[5]}
+			data.append(data_row)
+
+
+	print('Supplier ', empresaSupplier)
+	print ('supplieraddre ', empresaSupplierEndereco)
+	print ('supplierNIF ', empresaSupplierNIF)
+	print ('supplierPais ', empresaPais)
+
+	print('Invoice', invoicenumber)
+	print('Date ', invoicedate)
+	print('Moeda ', moedainvoice)
+
+
+	pprint(data)
+
+	return (empresaSupplier,invoicenumber,invoicedate,moedainvoice,empresaSupplierEndereco,empresaSupplierNIF,empresaPais,data)
+
+@frappe.whitelist(allow_guest=True)
+def pdf_scrape_txt_v1(ficheiro,tipodoctype = None):
+	'''
+		Modified 23-12-2022
+		Initially created to scrape item from Sales Invoice of a Supplier and create as Purchase Order or Invoice
+		Format used is from TMJ for other suppliers might need some changes...
+	'''
+
+	ID_LEFT_BORDER = 40 #56
+	ID_RIGHT_BORDER = 50 #156
+
+	#AO Modelo Factura
+	IDx_LEFT_BORDER = 48 #56
+	IDx_RIGHT_BORDER = 54 #156
+
+	DESC_LEFT_BORDER = 65 #69 #56
+	DESC_RIGHT_BORDER = 80 #156
+
+	#EN Invoices
+	INVNUM_LEFT_BORDER = 210
+	INVNUM_RIGHT_BORDER = 215
+
+	#AO Modelo Factura
+	INVNUMx_LEFT_BORDER = 497
+	INVNUMx_RIGHT_BORDER = 499
+
+	INVDATE_LEFT_BORDER = 310
+	INVDATE_RIGHT_BORDER = 315
+
+	QTY_LEFT_BORDER = 320
+	QTY_RIGHT_BORDER = 350
+
+	#AO MODELO FACTURA
+	QTYx_LEFT_BORDER = 254 #256
+	QTYx_RIGHT_BORDER = 261
+
+
+	RATE_LEFT_BORDER = 400
+	RATE_RIGHT_BORDER = 450
+
+	#AO Modelo Factura
+	RATEx_LEFT_BORDER = 303 #305
+	RATEx_RIGHT_BORDER = 318
+
+
+	TOTAL_LEFT_BORDER = 449 #500
+	TOTAL_RIGHT_BORDER = 550
+
+	#AO Modelo Factura
+	TOTALx_LEFT_BORDER = 449 #500
+	TOTALx_RIGHT_BORDER = 510
+
+
+	empresaSupplier = ""
+	empresaSupplierEndereco = ""
+	empresaSupplierNIF = ""
+	empresaPais = ""
+
+	invoicenumber = ""
+	invoicedate = ""
+	moedainvoice = ""
+
+	# Read PDF file and convert it to HTML
+	output = StringIO()
+	#with open('/tmp/SINV-2022-00021-1.pdf', 'rb') as pdf_file:
+	with open(ficheiro, 'rb') as pdf_file:
+		extract_text_to_fp(pdf_file, output, laparams=LAParams(), output_type='html', codec=None)
+	raw_html = output.getvalue()
+	# Extract all DIV tags
+	tree = html.fromstring(raw_html)
+	divs = tree.xpath('.//div')
+	# Sort and filter DIV tags
+	#filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': []}
+	#filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
+
+	filtered_divs = {'COUNTER': [], 'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
+	temitems = False
+
+	contador = 1
+
+	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|^([0-9][0-9])\-([0-9][0-9])\-([1-9][0-9][0-9][0-9])'
+	iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
+	cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)' #r'^[-+]?(?:\d*\.\d+|\d+)'
+
+	oldIDXDescription = 0;
+
+	master_headers = ['ITEM','CODE','DESCRIPTION','QUANTITY','UNIT PRICE (EUR)','TOTAL PRICE (EUR)']
+	headers_no_file = []
+	conta_headers_no_file = 0
+	fim_headers_no_file = False
+
+	#to reset...
+	oldquantity = 0
+	oldrate = 0
+	oldtotal = 0
+
+	for div in divs:
+
+		# extract styles from a tag
+		div_style = div.get('style')
+		print ('+++++++++')
+		print(div_style)
+		print (div.text_content().strip('\n').upper())
+
+		#Find headers...
+		if div.text_content().strip('\n').upper() in master_headers:
+			if div.text_content().strip('\n').upper() not in headers_no_file:
+				headers_no_file.append(div.text_content().strip('\n').upper())
+				conta_headers_no_file += 1
+				if div.text_content().strip('\n').upper() == "TOTAL PRICE" or div.text_content().strip('\n').upper() == "TOTAL":
+					fim_headers_no_file = True
+
+		#if div.text_content().strip('\n').upper().endswith('AOA'):
+		if div.text_content().strip('\n').upper().endswith('AOA'):
+			print ('contador ', contador)
+			print(div_style)
+			print (div.text_content().strip('\n').upper())
+			print ('rate_LEFT_BORDER ',TOTAL_LEFT_BORDER)
+			print ('ratex_LEFT_BORDER ',TOTALx_LEFT_BORDER)
+			contador +=1
+
+		# position:absolute; border: textbox 1px solid; writing-mode:lr-tb; left:292px; top:1157px; width:27px; height:12px;
+		# get left position
+		try:
+			left = re.findall(r'left:([0-9]+)px', div_style)[0]
+		except IndexError:
+			continue
+
+		if INVNUM_LEFT_BORDER < int(left) < INVNUM_RIGHT_BORDER:
+			#Invoice Number
+			#print (div.text_content().strip('\n').upper())
+			if 'INVOICE NO:' in div.text_content().strip('\n').upper():
+				#print (div.text_content().split('\n'))
+				tmpinv = div.text_content().strip('\n').upper()
+				invoicenumber = tmpinv[tmpinv.find('INVOICE NO:')+12:]
+				#print ('invoicenumber ',invoicenumber)
+		elif INVNUMx_LEFT_BORDER < int(left) < INVNUMx_RIGHT_BORDER:
+			#AO Modelo Factura
+			if div.text_content().strip('\n') != '':
+				#Check if starts with FT
+				if div.text_content().strip('\n').startswith('FT'):
+					tmpinv = div.text_content().strip('\n').upper()
+					invoicenumber = tmpinv
+
+
+
+		if INVDATE_LEFT_BORDER < int(left) < INVDATE_RIGHT_BORDER:
+			#Invoice DATE
+			#print (div.text_content().strip('\n').upper())
+			if 'DATE' in div.text_content().strip('\n').upper():
+				#print (div.text_content().split('\n'))
+				tmpinv = div.text_content().split('\n')[1]
+				invoicedate = tmpinv
+				#print ('invoicedate ',invoicedate)
+
+		# div contains ID if div's left position between ID_LEFT_BORDER and ID_RIGHT_BORDER
+		#print (div.text_content().strip('\n').upper())
+		if div.text_content().strip('\n') != '':
+			print ('ID_LEFT_BORDER ',ID_LEFT_BORDER)
+			print ('temitems ',temitems)
+			print ('headers_no_file ',headers_no_file)
+			print ('left ',left)
+			print ('ID_RIGHT_BORDER ',ID_RIGHT_BORDER)
+
+			if ID_LEFT_BORDER < int(left) < ID_RIGHT_BORDER or "CODE" in headers_no_file:
+				if div.text_content().strip('\n') == 'ITEM':
+					temitems = True
+				elif 'AMOUNT IN WORDS' in div.text_content().strip('\n').upper():
+					temitems = False
+				if temitems and div.text_content().strip('\n') != 'ITEM'  and 'CONSIGNEE NAME:' not in div.text_content().strip('\n').upper(): # and div.text_content().strip('\n') != '':
+					print ('Numero ', div.text_content().strip('\n').isnumeric())
+					if "CODE" in headers_no_file:
+						#Might be same line ITEM and ITEMCODE
+						print (div.text_content().strip().split())
+						print (len(div.text_content().strip().split()))
+						if len(div.text_content().strip().split()) == 2:
+							if div.text_content().strip().split()[0].isnumeric():
+								filtered_divs['COUNTER'].append(div.text_content().strip().split()[0])
+								filtered_divs['ITEM'].append(div.text_content().strip().split()[1])
+
+								#print ('Counter and ITEM')
+								#print (filtered_divs['COUNTER'])
+								#print (filtered_divs['ITEM'])
+								if "3,000.00" in div.text_content().strip('\n').upper():
+									frappe.throw(porra)
+
+						elif len(div.text_content().strip().split()) == 3:
+							#assuming numbers separated by space like Qtd Price Total
+							print ('AQUI')
+							print ('numer ', div.text_content().strip().split()[0].isnumeric())
+							print ('numer1 ', div.text_content().strip().split()[1].isnumeric())
+							print ('numer2 ', div.text_content().strip().split()[2].isnumeric())
+
+							#Can be Counter, CODE and CODE or QTD, RATE, TOTAL
+							if div.text_content().strip().split()[0].isnumeric() and re.match(cash_pattern,div.text_content().strip().split()[1].replace(',','')) and re.match(cash_pattern,div.text_content().strip().split()[2].replace(',','')):
+								print ('AQUI FAZ NADA!!!!')
+							elif div.text_content().strip().split()[0].isnumeric() and not div.text_content().strip().split()[1].isnumeric() and not div.text_content().strip().split()[2].isnumeric():
+								filtered_divs['COUNTER'].append(div.text_content().strip().split()[0])
+								filtered_divs['ITEM'].append(div.text_content().strip().split()[1] + ' ' + div.text_content().strip().split()[2])
+								if "3,000.00" in div.text_content().strip('\n').upper():
+									frappe.throw(porra)
+
+							elif div.text_content().strip().split()[0].isnumeric() and not div.text_content().strip().split()[1] and div.text_content().strip().split()[2]:
+								filtered_divs['COUNTER'].append(div.text_content().strip().split()[0])
+								filtered_divs['ITEM'].append(div.text_content().strip().split()[1] + ' ' + div.text_content().strip().split()[2])
+								if "3,000.00" in div.text_content().strip('\n').upper():
+									frappe.throw(porra)
+
+
+						elif len(div.text_content().strip().split()) == 4:
+							#assuming numbers separated by space like Qtd Price Total
+							print ('OU AQUI')
+							print ('numer ', div.text_content().strip().split()[0].isnumeric())
+							print ('numer1 ', div.text_content().strip().split()[1].isnumeric())
+							print ('numer2 ', div.text_content().strip().split()[2].isnumeric())
+							print ('numer3 ', div.text_content().strip().split()[3].isnumeric())
+
+							#Can be Counter, CODE and CODE
+							if div.text_content().strip().split()[0].isnumeric() and not div.text_content().strip().split()[1].isnumeric() and div.text_content().strip().split()[2].isnumeric() and not div.text_content().strip().split()[3].isnumeric():
+								filtered_divs['COUNTER'].append(div.text_content().strip().split()[0])
+								filtered_divs['ITEM'].append(div.text_content().strip().split()[1] + ' ' + div.text_content().strip().split()[2] + ' ' + div.text_content().strip().split()[3])
+
+						elif len(div.text_content().strip().split()) == 1:
+							#Single Number... can be Counter or ITEMCODE
+							if div.text_content().strip('\n').isnumeric() and len(div.text_content().strip('\n')) <= 3:
+								filtered_divs['COUNTER'].append(div.text_content().strip('\n'))
+							elif len(div.text_content().strip('\n')) > 3:
+								#Assuming itemCODE
+								if div.text_content().strip('\n').upper() not in headers_no_file and not re.match(cash_pattern,div.text_content().strip('\n').replace(',','')) and div.text_content().strip('\n').upper() not in ["TRANSPORTATION","INCIDENCE","TRANSPORTATION CHARGES"]:
+									podeadicionar = True
+									for fff in headers_no_file:
+										print ('fff  ', fff)
+										print (div.text_content().strip('\n').upper())
+										print (fff.find(div.text_content().strip('\n').upper()))
+										if fff.find(div.text_content().strip('\n').upper()) != -1:
+											podeadicionar = False
+											break
+									if podeadicionar:
+										filtered_divs['ITEM'].append(div.text_content().strip('\n'))
+									print (div.text_content().strip('\n').upper())
+									#print (headers_no_file)
+									#print (div.text_content().strip('\n').upper() not in headers_no_file)
+									#print (div.text_content().strip('\n'))
+									if "TOTAL" not in div.text_content().strip('\n').upper():
+										frappe.throw(porra)
+									if podeadicionar or "3,000.00" in div.text_content().strip('\n').upper():
+										frappe.throw(porra)
+
+					elif div.text_content().strip('\n').isnumeric():
+						filtered_divs['ITEM'].append(div.text_content().strip('\n'))
+
+
+				elif 'THANK YOU FOR YOUR BUSINESS' in div.text_content().strip('\n').upper():
+					#For this specific case Company name is after Thank you for you...
+					#print ('Get Empresa/Supplier...')
+					#print (div.text_content().split('\n')[1].strip('\n').upper())
+					empresaSupplier = div.text_content().split('\n')[1].strip('\n').upper()
+					#print (empresaSupplier)
+				elif ', LDA' in div.text_content().strip('\n').upper() or ',LDA' in div.text_content().strip('\n').upper():
+					#Pode ser o Forneceodr/EMPRESA
+					#print ('Pode ser o Forneceodr/EMPRESA')
+					#print ('Get Empresa/Supplier...')
+					#print (div.text_content().strip('\n').upper())
+					empresaSupplier = div.text_content().strip('\n').upper()
+					#print (empresaSupplier)
+				elif div.text_content().strip('\n').upper().startswith('RUA'):
+					empresaSupplierEndereco = div.text_content().strip('\n').upper()
+				elif div.text_content().strip('\n').upper().startswith('NIF'):
+					#print ('Get Empresa/Supplier NIF...')
+					#print (div.text_content().split(' ')[1].strip('\n').upper())
+					empresaSupplierNIF = div.text_content().split(' ')[1].strip('\n').upper()
+				elif 'DATA:' in div.text_content().strip('\n').upper():
+					#print (div.text_content().split('\n'))
+					tmpinv = div.text_content().split(' ')[1]
+					invoicedate = tmpinv
+				elif ('LUANDA' in div.text_content().strip('\n').upper() or 'ANGOLA' in div.text_content().strip('\n').upper()) and 'CONSIGNEE NAME:' not in div.text_content().strip('\n').upper():
+					empresaPais = 'Angola'
+
+			#print ('IDx_LEFT_BORDER ',IDx_LEFT_BORDER)
+			#print ('IDx_RIGHT_BORDER ',IDx_RIGHT_BORDER)
+			#print ('left ', int(left))
+			#print (IDx_LEFT_BORDER < int(left) < IDx_RIGHT_BORDER)
+
+			if IDx_LEFT_BORDER < int(left) < IDx_RIGHT_BORDER:
+				#AO Modelo Factura
+				if div.text_content().strip('\n').isnumeric():
+					filtered_divs['ITEM'].append(div.text_content().strip('\n'))
+
+
+			if DESC_LEFT_BORDER < int(left) < DESC_RIGHT_BORDER:
+				#print ('descricao...')
+				#print (div.text_content().strip('\n').upper())
+				filtered_divs['DESCRIPTION'].append(div.text_content().strip('\n'))
+
+			if QTY_LEFT_BORDER < int(left) < QTY_RIGHT_BORDER:
+				#print ('QTY...')
+				#print (div.text_content().strip('\n').upper())
+				if div.text_content().strip('\n').isnumeric():
+					if "CODE" in headers_no_file:
+						print ('tem CODE... verifica se QTD')
+					else:
+						filtered_divs['QUANTITY'].append(div.text_content().strip('\n'))
+			elif QTYx_LEFT_BORDER < int(left) < QTYx_RIGHT_BORDER:
+				#print ('QTY...')
+				#print (div.text_content().strip('\n').upper())
+				if div.text_content().strip('\n').upper().endswith('UNIDADE') or div.text_content().strip('\n').upper().endswith('UNIT'):
+					if div.text_content().split(' ')[0].strip('\n').isnumeric():
+						filtered_divs['QUANTITY'].append(div.text_content().split(' ')[0].strip('\n'))
+
+
+			if RATE_LEFT_BORDER < int(left) < RATE_RIGHT_BORDER:
+				#print ('RATE...')
+				#print (div.text_content().strip('\n').upper())
+				#print ('TRANSPORTED VALUE' not in div.text_content().strip('\n'))
+				if 'TRANSPORTED VALUE' not in div.text_content().strip('\n').upper() and 'TRANSPORTING VALUE' not in div.text_content().strip('\n').upper():
+					print ('preco ',div.text_content().strip('\n'))
+					print (div.text_content().strip('\n').isnumeric())
+					print (re.match(cash_pattern,div.text_content().strip('\n').replace(',','')))
+
+					if div.text_content().strip('\n').isnumeric():
+						filtered_divs['RATE'].append(div.text_content().strip('\n'))
+					elif re.match(cash_pattern,div.text_content().strip('\n').replace(',','')):
+						filtered_divs['RATE'].append(div.text_content().strip('\n'))
+
+				elif 'TRANSPORTING VALUE' in div.text_content().strip('\n').upper():
+					#Get the Currency of the PDF....
+					if not moedainvoice:
+						#Check if has $ €
+						if "€" in div.text_content().strip('\n'):
+							moedainvoice = "Eur"
+						elif "$" in div.text_content().strip('\n'):
+							moedainvoice = "Usd"
+
+						#print (div.text_content().strip('\n').upper())
+						#moedainvoice = div.text_content().strip('\n').upper()
+						#print (moedainvoice)
+						#frappe.throw(porra)
+			if RATEx_LEFT_BORDER < int(left) < RATEx_RIGHT_BORDER:
+				#AO Modelo Factura
+				if div.text_content().strip('\n').upper().startswith('AOA'):
+					tmprate = div.text_content().split(' ')[1]
+					filtered_divs['RATE'].append(tmprate)
+					#print ('NAO ADDED RATEX ',div.text_content().strip('\n'))
+					#print (tmprate)
+
+				if not moedainvoice:
+					#Check if has $ €
+					if "€" in div.text_content().strip('\n'):
+						moedainvoice = "Eur"
+					elif "$" in div.text_content().strip('\n'):
+						moedainvoice = "Usd"
+					elif "AOA" in div.text_content().strip('\n') or "KZ" in div.text_content().strip('\n'):
+						moedainvoice = "AOA"
+
+
+			if TOTAL_LEFT_BORDER < int(left) < TOTAL_RIGHT_BORDER:
+				#print ('TOTAL...')
+				#print (div.text_content().strip('\n').upper())
+				if "14.0%" not in div.text_content().strip('\n'):
+					print (div.text_content().strip('\n').isnumeric())
+					print (re.match(cash_pattern,div.text_content().strip('\n').replace(',','')))
+
+					if div.text_content().strip('\n').isnumeric():
+						if "CODE" in headers_no_file and div.text_content().strip().isnumeric() and oldquantity == 0:
+							filtered_divs['QUANTITY'].append(div.text_content().strip())
+							oldquantity = div.text_content().strip()
+							oldrate = 0
+							print ('aqui QTD')
+						else:
+							filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
+						print ('AQUI AQUI TOTAL ', div.text_content().strip('\n'))
+					elif div.text_content().strip('\n').upper().endswith('AOA'):
+						tmptotal = div.text_content().split(' ')[0]
+						print ('total ', re.match(cash_pattern,tmptotal.replace(',','')))
+						if re.match(cash_pattern,tmptotal.replace(',','')):
+							filtered_divs['TOTAL'].append(tmptotal)
+
+						#print ('TOTAL TOTAL ', div.text_content().strip('\n'))
+						#print (tmptotal)
+					elif re.match(cash_pattern,div.text_content().strip('\n').replace(',','')):
+						if len(div.text_content().strip().split()) == 3:
+							#assuming numbers separated by space like Qtd Price Total
+							print ('assuming numbers separated by space like Qtd Price Total')
+							print ('numer ', div.text_content().strip().split()[0].isnumeric())
+							print ('numer1 ', re.match(cash_pattern,div.text_content().strip().split()[1].replace(',','')))
+							print ('numer2 ', re.match(cash_pattern,div.text_content().strip().split()[2].replace(',','')))
+
+							if div.text_content().strip().split()[0].isnumeric() and re.match(cash_pattern,div.text_content().strip().split()[1].replace(',','')) and re.match(cash_pattern,div.text_content().strip().split()[2].replace(',','')):
+								filtered_divs['QUANTITY'].append(div.text_content().strip().split()[0])
+								filtered_divs['RATE'].append(div.text_content().strip().split()[1])
+								filtered_divs['TOTAL'].append(div.text_content().strip().split()[2])
+
+								oldquantity = 0 # div.text_content().strip().split()[0]
+								oldrate = div.text_content().strip().split()[1]
+								oldtotal = div.text_content().strip().split()[2]
+
+						else:
+							print ('numeric ', div.text_content().strip().isnumeric())
+							print ('oldquantity ',oldquantity)
+							print ('oldrate ',oldrate)
+							print ('oldtotal ',oldtotal)
+
+							print ('tem CODE in headers')
+							print ("CODE" in headers_no_file)
+							if "CODE" in headers_no_file and div.text_content().strip().isnumeric() and oldquantity == 0:
+								filtered_divs['QUANTITY'].append(div.text_content().strip())
+								oldquantity = div.text_content().strip()
+							elif "CODE" in headers_no_file and oldrate == 0:
+								filtered_divs['RATE'].append(div.text_content().strip())
+								oldrate = div.text_content().strip()
+								#Reset so next loop will be TOTAL
+								oldtotal = 0
+
+							elif "CODE" in headers_no_file and oldrate == 0:
+								filtered_divs['TOTAL'].append(div.text_content().strip())
+								oldtotal = div.text_content().strip()
+							else:
+								filtered_divs['TOTAL'].append(div.text_content().strip('\n'))
+							#frappe.throw(porra)
+						print ('AQUI1 AQUI1 ', div.text_content().strip('\n'))
+
+
+					#Check if has $ €
+					if "€" in div.text_content().strip('\n'):
+						moedainvoice = "Eur"
+					elif "$" in div.text_content().strip('\n'):
+						moedainvoice = "Usd"
+
+				#if "149,719.53 AOA" in div.text_content().strip('\n'):
+				#	frappe.throw(porra)
+			if empresaSupplier == "":
+				if "PAGE" not in div.text_content().strip('\n').upper():
+					empresaSupplier = div.text_content().strip('\n').upper()
+
+			if "INVOICE DATE:" in div.text_content().strip('\n').upper():
+				if invoicedate == "":
+					print('INVOICE DATE:')
+					print (div.text_content().upper())
+					print (div.text_content().upper().split('\n'))
+					for ii in div.text_content().upper().split('\n'):
+						print (ii)
+						print (len(ii))
+						if "INVOICE DATE:" in ii.upper():
+							if len(ii) > 13:
+								invoicedate = ii[ii.find('INVOICE DATE:')+13:].strip()
+						if "INVOICE NO:" in ii.upper():
+							if len(ii) > 11:
+								invoicenumber = ii[ii.find('INVOICE NO:')+11:].strip()
+
+			if "P.O BOX:" in div.text_content().strip('\n').upper():
+				#Address Supplier
+				if empresaSupplierEndereco == "":
+					empresaSupplierEndereco = div.text_content().strip('\n').upper()
+
+			if "SL" in div.text_content().strip('\n').upper():
+				#Some Suppliers; Order Number
+				print ('TEM SL')
+				print (div.text_content().strip('\n'))
+				if 85 < int(left) < 87:
+					#Check if has split
+					print (div.text_content().split('\n'))
+					print (len(div.text_content().split('\n')))
+					if div.text_content().split('\n')[1].isnumeric():
+						filtered_divs['ITEM'].append(div.text_content().split('\n')[1])
+					#temitems = True
+			if "DESCRIPTION" in div.text_content().strip('\n').upper():
+				#Supplier Description + Item name + Serial Number if has...
+				print ('TEM Description + Item name + Serial Number if has')
+				print (div.text_content().strip('\n'))
+				if 100 < int(left) < 102:
+					#Check if has split
+					print (div.text_content().split('\n'))
+					print (len(div.text_content().split('\n')))
+					print ('STILL NEED TO CHECK IF MORE THAN 1 SERIAL NUMBER...')
+					if len(div.text_content().split('\n')) >= 3:
+						if div.text_content().split('\n')[2] != "":
+							filtered_divs['DESCRIPTION'].append(div.text_content().split('\n')[1] + " SN: " + div.text_content().split('\n')[2])
+						else:
+							filtered_divs['DESCRIPTION'].append(div.text_content().split('\n')[1])
+						oldIDXDescription = len(filtered_divs['DESCRIPTION'])
+			if temitems == False and div.text_content().strip('\n')[:2].strip().isdigit():
+				#Starts with a Number... might be OrderNumber + Item Description
+				if 86 < int(left) < 88:
+					print (div.text_content().split('\n'))
+					print (div.text_content()[:div.text_content().find(' ')].strip())
+					print (div.text_content()[div.text_content().find(' '):].strip())
+
+					filtered_divs['ITEM'].append(div.text_content()[:div.text_content().find(' ')].strip())
+					filtered_divs['DESCRIPTION'].append(div.text_content()[div.text_content().find(' '):].strip())
+					print (len(filtered_divs['DESCRIPTION']))
+					oldIDXDescription = len(filtered_divs['DESCRIPTION'])
+					#frappe.throw(porra)
+
+
+			if "Y/M COLOR" in div.text_content().strip('\n').upper():
+				#print ('TO DO LATER')
+				#will or might contain Y COLOR and FUEL: 2022 black Petrol
+				print (div.text_content().split('\n'))
+				if filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:') == -1:
+					#Append at the end
+					filtered_divs['DESCRIPTION'][oldIDXDescription-1] = filtered_divs['DESCRIPTION'][oldIDXDescription-1] + ' ' + div.text_content().split('\n')[1]
+				else:
+					print (filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:'))
+					print (filtered_divs['DESCRIPTION'][oldIDXDescription-1][:filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:')])
+					tmpdesc = filtered_divs['DESCRIPTION'][oldIDXDescription-1]
+					filtered_divs['DESCRIPTION'][oldIDXDescription-1] = tmpdesc.replace('SN:', div.text_content().split('\n')[1] + ' SN:')
+					#print (filtered_divs['DESCRIPTION'])
+
+
+			if "FUEL QTY" in div.text_content().strip('\n').upper():
+				print ('GET QTY FUEL WILL BE LATER...')
+				print (div.text_content().split('\n'))
+				#frappe.throw(porra)
+
+
+			if 360 < int(left) < 362:
+				#Qty Column
+				print ('Qty Column')
+				if div.text_content().strip('\n').isnumeric():
+					if "CODE" in headers_no_file:
+						print ('tem CODE... verifica se QTD')
+					else:
+						filtered_divs['QUANTITY'].append(div.text_content().strip('\n'))
 
 			if 394 < int(left) < 396:
 				#RATE Column
