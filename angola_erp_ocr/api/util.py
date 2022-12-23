@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 22/12/2022
+#Date Changed: 23/12/2022
 
 
 from __future__ import unicode_literals
@@ -2485,19 +2485,73 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					en_scan = True
 
 		if en_scan:
-			#Scan in ENGLISH
-			facturaSupplier = ocr_pytesseract (filefinal,"COMPRAS",'eng',270) #180) #150) retuns line counter but not the rest...
+
 			#Check if needs Scan lower 260 to get all Numbers
 			palavras_header_counted = False
 			Qtd_isnot_number = False	#To control if needs to OCR again as 260
+
+			#Scan in ENGLISH
+			facturaSupplier = ocr_pytesseract (filefinal,"COMPRAS",'eng',270) #270) #180) #150) retuns line counter but not the rest...
+
+			#Scan 260 and checks for HEADERs more than 2
+			for fsup in facturaSupplier.split('\n'):
+				if palavras_header_counted == False:
+					palavra_total = False #TO AVOID counting 'TOTAL PRICE (EUR)' and again TOTAL
+					palavra_preco = False #TO AVOID counting 'UNIT PRICE (EUR)' and again UNIT PRICE
+					print (fsup.strip().upper())
+					for pp in terpalavras_header_EN:
+						if pp.upper() in fsup.strip().upper():
+							print ('Palavaheader ', pp.upper())
+							if pp.upper() == 'UNIT PRICE' or pp.upper() == 'TOTAL':
+								if palavra_preco:
+									print ('NAO CONTA HEADER PRECO ', pp.upper())
+								if palavra_total:
+									print ('NAO CONTA HEADER TOTAL ', pp.upper())
+
+							if not palavra_preco or not palavra_total:
+								#To avoid TOTAL AMOUNT and TOTAL being added
+								if 'TOTAL AMOUNT' in palavras_no_header and pp.upper() == 'TOTAL':
+									print ('SKIP TOTAL')
+								elif 'CODE NO' in palavras_no_header  or 'CODE' in palavras_no_header and pp.upper() == 'CODE':
+									print ('SKIP CODE and CODE NO')
+								else:
+									if not palavra_preco and pp.upper() == "PRICE":
+										print ('Pode acrescentar PRICE ao HEADER')
+									elif palavra_preco and pp.upper() == "PRICE":
+										print ('SKIP ADDING PRICE TO HEADER')
+									else:
+										contapalavras_header += 1
+										print ('pode contar HEADER ', pp.upper())
+										print ('contapalavras_header ', contapalavras_header)
+										palavras_no_header.append(pp.upper())
+							if contapalavras_header >= 6:
+								palavras_header_counted = True
+							#'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL'
+							if pp.upper() == 'UNIT PRICE (EUR)': # or pp.upper() == 'PRICE':
+								palavra_preco = True
+							if pp.upper() == 'TOTAL PRICE (EUR)' or pp.upper() == 'TOTAL AMOUNT':
+								palavra_total = True
+					if contapalavras_header <= 3:
+						print ('Scan HEADER AGAIN.... ')
+
+			print ("palavras_no_header ",palavras_no_header)
+			print (contapalavras_header)
+			#frappe.throw(porra)
+
+
+
 
 			for fsup in facturaSupplier.split('\n'):
 				print ('00000000')
 				print ('TEXTO LINHA: ', fsup)
 				for fi in en_palavras_fim_item:
+					print ('HEADRE ',fsup.strip().upper())
+					print ('fi ', fi.upper())
 					if fi.upper() in fsup.strip().upper():
 						fim_items = True
 
+				if fsup.strip == "ITEM CODE DESCRIPTION QUANTITY —_ UNIT PRICE TOTAL":
+					frappe.throw(porra)
 
 				if not fsup.strip().startswith('SN:'):
 					if contapalavras_header >= 5 and not fim_items:
@@ -2589,7 +2643,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									#To avoid TOTAL AMOUNT and TOTAL being added
 									if 'TOTAL AMOUNT' in palavras_no_header and pp.upper() == 'TOTAL':
 										print ('SKIP TOTAL')
-									elif 'CODE NO' in palavras_no_header and pp.upper() == 'CODE':
+									elif 'CODE NO' in palavras_no_header  or 'CODE' in palavras_no_header and pp.upper() == 'CODE':
 										print ('SKIP CODE and CODE NO')
 									else:
 										contapalavras_header += 1
@@ -2603,7 +2657,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									palavra_preco = True
 								if pp.upper() == 'TOTAL PRICE (EUR)' or pp.upper() == 'TOTAL AMOUNT':
 									palavra_total = True
-
+						if contapalavras_header <= 3:
+							print ('Scan HEADER AGAIN11111.... ')
 					if Qtd_isnot_number:
 						break
 
@@ -2712,9 +2767,9 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 						print ('Verificar Empresa Online')
 						procuraonline = False
 						if en_scan:
-							en_paraempresa_terpalavras = ['TRADING','LLC']
+							en_paraempresa_terpalavras = ['TRADING','LLC','L.L.C']
 							for tp in en_paraempresa_terpalavras:
-								if tp in fsup:
+								if tp in fsup.upper():
 									procuraonline = True
 									break
 							if procuraonline:
@@ -2768,15 +2823,16 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 						RUA, AVENIDA
 					'''
 					if tmpcountry.upper().strip() != "DUBAI":
-						terpalavras = ['RUA', 'AVENIDA']
-						ADDRpalavraexiste = False
-						for ff in fsup.split(' '):
-							#print (ff)
-							if ff in terpalavras:
-								#print ('TEM palavra ', ff)
-								ADDRpalavraexiste = True
-						if ADDRpalavraexiste:
-							supplierAddress = fsup.strip()
+						if empresaSupplier:
+							terpalavras = ['RUA', 'AVENIDA']
+							ADDRpalavraexiste = False
+							for ff in fsup.split(' '):
+								#print (ff)
+								if ff in terpalavras:
+									#print ('TEM palavra ', ff)
+									ADDRpalavraexiste = True
+							if ADDRpalavraexiste:
+								supplierAddress = fsup.strip()
 
 				if not supplierEmail:
 					if "EMAIL:" in fsup.upper():
@@ -2814,14 +2870,16 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 							#TODO: Remove CAMBIO and Numbers if exist on the same line...
 					else:
 						#Check words on doc if any on the list...
+						#FIX 23-12-2022
 						for mm in moedassystem:
-							tmpmoeda = ' ' + mm.upper() + ' '
-							if tmpmoeda.upper() in fsup.upper():
-								print ('TEM MOEDA NA FACTURA...')
-								print (mm.upper())
-								print ('tmpmoeda ',tmpmoeda.upper())
-								print (fsup.strip().upper())
-								supplierMoeda = tmpmoeda.upper().strip()
+							if mm.upper() != "ALL":
+								tmpmoeda = ' ' + mm.upper() + ' '
+								if tmpmoeda.upper() in fsup.upper():
+									print ('TEM MOEDA NA FACTURA...')
+									print (mm.upper())
+									print ('tmpmoeda ',tmpmoeda.upper())
+									print (fsup.strip().upper())
+									supplierMoeda = tmpmoeda.upper().strip()
 
 				if not invoiceDate:
 					print ('invoiceDate')
@@ -2989,6 +3047,12 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									print ('EMAIL0 ')
 									if "@" in cc.strip():
 										print (re.match(email_pattern,cc.strip()))
+									#FIX 23-12-2022; If starts with SN:
+									if cc.startswith('SN:') and not "@" in cc.strip():
+										#Save all and break
+										tmp_sn = fsup.strip()
+										print ('VERIFICAR SE TODOS SAO SNs.... ')
+										break
 									#FIX 21-12-2022
 									if not 'SN:' in cc and not "@" in cc.strip(): # re.match(email_pattern,cc.strip()):
 										print ('LEN ', len(cc))
@@ -3025,15 +3089,18 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 														print (cc.strip())
 
 														#Check if Code No exists in Headers...
-														if 'CODE NO' in palavras_no_header:
+														if 'CODE NO' in palavras_no_header or 'CODE' in palavras_no_header:
 															print ('NOT SERIAL NUMBER but ITEM CODE...')
 														else:
-															tmp_sn += ' ' + cc.strip()
+															#FIX 23-12-2022; Check if Code on start and not SN
+															if retornadescricao.find(cc.strip()) > 0:
+																tmp_sn += ' ' + cc.strip()
 
 															#FIX: Find a way to get from last column to identify Total, Price, Qtd or
 															#Total, VAT, Price, Qtd
 															print ('If len 5 means Item, description, quantity, unit price, total price ')
 															print (len(palavras_no_header))
+															print (palavras_no_header)
 															#Check if last 3 ones are numbers...
 															tmp_totalprice = 0
 															tmp_unitprice = 0
@@ -3070,6 +3137,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					#	frappe.throw(porra)
 					tmp_sn_added = False
 
+					print ("palavrasexiste_header ",palavrasexiste_header)
+
 					if palavrasexiste_header:
 						#Tem HEADER entao ve os ITENS...
 						for pp in terpalavras_item:
@@ -3089,23 +3158,38 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									palavraexiste_item = True
 									#frappe.throw(porra)
 
-
 						#Check if startswith a NUMBER...
-						if palavraexiste_item or fsup.strip()[0:1].isnumeric():
+						print ('XXXpalavraexiste_item ',palavraexiste_item)
+						print (fsup.strip()[0:1].isnumeric())
+						if "CODE" in palavras_no_header and tmp_sn.startswith('SN:'):
+							print ('Caso tenha CODE or CODE NO and tmp_sn')
+							print ('Caso tenha CODE or CODE NO and tmp_sn')
+							#if "CODE" in palavras_no_header and tmp_sn.startswith('SN:'):
+							print ('ANTES ', filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1])
+							filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += ' ' + tmp_sn
+							print ('DEPOIS ', filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1])
+							tmp_sn = ''
+
+						elif palavraexiste_item or fsup.strip()[0:1].isnumeric():
 							#Check if tmp_sn and add on previous ITEM and clear
 							if tmp_sn !='' and fsup.strip()[0:1].isnumeric():
 								retornadescricao = retorna_descricao(fsup.strip())
 								print ('retornadescricao ',retornadescricao)
 								if not tmp_sn in retornadescricao:
 									print (len(filtered_divs['DESCRIPTION']))
-									print (filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1])
+									if len(filtered_divs['DESCRIPTION']) > 1:
+										print (filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1])
 
 									print ('If len 6 means Item, description, quantity, unit price, total price ')
 									print (len(palavras_no_header))
 									#Check if last 3 ones are numbers...
 
-
-									filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += ' SN: ' + tmp_sn
+									if len(filtered_divs['DESCRIPTION']) > 1:
+										filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += ' SN: ' + tmp_sn
+									else:
+										print ('PARA REVER DESCRIPTION.....')
+										print (filtered_divs['DESCRIPTION'])
+										filtered_divs['DESCRIPTION'] += ' SN: ' + tmp_sn
 									tmp_sn = ''
 									print ('ADDED SNs to DESCRIPTION...')
 									print ('ADDED SNs to DESCRIPTION...')
@@ -3176,7 +3260,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 
 											#Check if CODE NO in Headers...
-											if 'CODE NO' in palavras_no_header and idx == 1:
+											if 'CODE NO' in palavras_no_header  or 'CODE' in palavras_no_header and idx == 1:
 												print ('itemCode ', itemCode)
 												if not itemCode:
 													itemCode = cc.strip()
@@ -3219,13 +3303,19 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 											print (fsup.strip())
 
 											#Check if CODE NO in header.. not SERIAL NUMBER!
-											if 'CODE NO' in palavras_no_header:
+											if 'CODE NO' in palavras_no_header or 'CODE' in palavras_no_header:
 												print ('NOT ADDING SN: bcs might not be; is Description continuation...')
 												tmpdescricao = ' ' + cc
 											else:
 												tmpdescricao = ' SN: ' + cc
 											palavraexiste_item = False
 											itemCode = ''
+									elif 'CODE NO' in palavras_no_header or 'CODE' in palavras_no_header:
+										if not itemCode and idx == 1:
+											#Check if has DOT !!!!
+											if cc.find('.') != -1:
+												itemCode = cc.strip().replace('(','')
+
 
 									print ('tmpQtd ', itemQtd)
 									print ('tmpdescricao ', tmpdescricao)
@@ -3278,7 +3368,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									print (itemDescription)
 
 									#Check if Code NO exists...
-									if 'CODE NO' in palavras_no_header:
+									if 'CODE NO' in palavras_no_header or 'CODE' in palavras_no_header:
 										if itemCode:
 											tmpdescricao = itemDescription.replace(itemCode,'').strip()
 											if tmpdescricao.startswith('-') or tmpdescricao.startswith('—'):
@@ -3419,6 +3509,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 							print ('itemDescriptionXXXXXX ', itemDescription)
 
+							print ('avoidADDING ',avoidADDING)
+
 							#frappe.throw(porra)
 							if not avoidADDING:
 								filtered_divs['COUNTER'].append(countlines)
@@ -3435,9 +3527,12 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								filtered_divs['TOTAL'].append(itemTotal)
 								filtered_divs['IVA'].append(itemIVA)
 								countlines += 1
+								print ('Added COUNTER,ITEM,DESCRIPTION,RATE,TOTAL,IVA')
+							#frappe.throw(porra)
 
 					#frappe.throw(porra)
-
+					#if tmp_sn == 'SN: 5549545':
+					#	frappe.throw(porra)
 
 					print ('contapalavras_header ',contapalavras_header)
 					if contapalavras_header >= 5:
