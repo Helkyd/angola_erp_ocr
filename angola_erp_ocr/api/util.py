@@ -2481,6 +2481,13 @@ def pdf_scrape_txt_v1(ficheiro,tipodoctype = None):
 	raw_html = output.getvalue()
 	# Extract all DIV tags
 	tree = html.fromstring(raw_html)
+
+	#TESTING
+	print (raw_html)
+	print ('\\\\\\\\\\\\\\\\')
+	print ('\\\\\\\\\\\\\\\\')
+	#frappe.throw(porra)
+
 	divs = tree.xpath('.//div')
 	# Sort and filter DIV tags
 	#filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': []}
@@ -2594,8 +2601,6 @@ def pdf_scrape_txt_v1(ficheiro,tipodoctype = None):
 								#print ('Counter and ITEM')
 								#print (filtered_divs['COUNTER'])
 								#print (filtered_divs['ITEM'])
-								if "3,000.00" in div.text_content().strip('\n').upper():
-									frappe.throw(porra)
 
 						elif len(div.text_content().strip().split()) == 3:
 							#assuming numbers separated by space like Qtd Price Total
@@ -2610,14 +2615,10 @@ def pdf_scrape_txt_v1(ficheiro,tipodoctype = None):
 							elif div.text_content().strip().split()[0].isnumeric() and not div.text_content().strip().split()[1].isnumeric() and not div.text_content().strip().split()[2].isnumeric():
 								filtered_divs['COUNTER'].append(div.text_content().strip().split()[0])
 								filtered_divs['ITEM'].append(div.text_content().strip().split()[1] + ' ' + div.text_content().strip().split()[2])
-								if "3,000.00" in div.text_content().strip('\n').upper():
-									frappe.throw(porra)
 
 							elif div.text_content().strip().split()[0].isnumeric() and not div.text_content().strip().split()[1] and div.text_content().strip().split()[2]:
 								filtered_divs['COUNTER'].append(div.text_content().strip().split()[0])
 								filtered_divs['ITEM'].append(div.text_content().strip().split()[1] + ' ' + div.text_content().strip().split()[2])
-								if "3,000.00" in div.text_content().strip('\n').upper():
-									frappe.throw(porra)
 
 
 						elif len(div.text_content().strip().split()) == 4:
@@ -2639,7 +2640,7 @@ def pdf_scrape_txt_v1(ficheiro,tipodoctype = None):
 								filtered_divs['COUNTER'].append(div.text_content().strip('\n'))
 							elif len(div.text_content().strip('\n')) > 3:
 								#Assuming itemCODE
-								if div.text_content().strip('\n').upper() not in headers_no_file and not re.match(cash_pattern,div.text_content().strip('\n').replace(',','')) and div.text_content().strip('\n').upper() not in ["TRANSPORTATION","INCIDENCE","TRANSPORTATION CHARGES"]:
+								if div.text_content().strip('\n').upper() not in headers_no_file and not re.match(cash_pattern,div.text_content().strip('\n').replace(',','')) and div.text_content().strip('\n').upper() not in ["INCIDENCE"]:
 									podeadicionar = True
 									for fff in headers_no_file:
 										print ('fff  ', fff)
@@ -2654,10 +2655,10 @@ def pdf_scrape_txt_v1(ficheiro,tipodoctype = None):
 									#print (headers_no_file)
 									#print (div.text_content().strip('\n').upper() not in headers_no_file)
 									#print (div.text_content().strip('\n'))
-									if "TOTAL" not in div.text_content().strip('\n').upper():
-										frappe.throw(porra)
-									if podeadicionar or "3,000.00" in div.text_content().strip('\n').upper():
-										frappe.throw(porra)
+									#if "TOTAL" not in div.text_content().strip('\n').upper():
+									#	frappe.throw(porra)
+									#if podeadicionar or "3,000.00" in div.text_content().strip('\n').upper():
+									#	frappe.throw(porra)
 
 					elif div.text_content().strip('\n').isnumeric():
 						filtered_divs['ITEM'].append(div.text_content().strip('\n'))
