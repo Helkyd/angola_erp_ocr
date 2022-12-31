@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 23/12/2022
+#Date Changed: 31/12/2022
 
 
 from __future__ import unicode_literals
@@ -3489,7 +3489,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 						print ('TRN aqui....')
 						supplierNIF = fsup[fsup.upper().find('TRN :')+5:].strip()
 				if not supplierMoeda:
-					terpalavras = ['Moeda','AOA','AKZ']
+					terpalavras = ['Moeda','AOA','AKZ','KZ']
 					#TODO: List of Currencies to see if on the Document to be OCR..
 
 					Moedapalavraexiste = False
@@ -3498,9 +3498,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 							Moedapalavraexiste = True
 					if Moedapalavraexiste:
 						#Check for AOA and AKZ first...
-						if "AOA" in fsup.strip():
-							supplierMoeda = 'KZ'
-						elif "AKZ" in fsup.strip():
+						if "AOA" in fsup.strip() or "AKZ" in fsup.strip() or "KZ" in fsup.strip():
 							supplierMoeda = 'KZ'
 						else:
 							supplierMoeda = fsup.strip().replace('Moeda','')
@@ -3516,7 +3514,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 									print (mm.upper())
 									print ('tmpmoeda ',tmpmoeda.upper())
 									print (fsup.strip().upper())
-									supplierMoeda = tmpmoeda.upper().strip()
+									supplierMoeda = tmpmoeda.upper().strip().replace(':','')
 
 				if not invoiceDate:
 					print ('invoiceDate')
@@ -4230,7 +4228,14 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					if not supplierPais:
 						empresaPais = 'Belgium' #DEFAULT for EUR currency
 				else:
-					tmppais =pycountry.countries.get(numeric=pycountry.currencies.get(alpha_3=supplierMoeda).numeric)
+					#FIX 31-12-2022; if KZ/AOA
+					print (supplierMoeda.upper().strip() == 'KZ')
+					print (supplierMoeda.upper().strip())
+					print (supplierMoeda.upper().replace(':',''))
+					if supplierMoeda.upper().replace(':','').strip() == 'KZ' or supplierMoeda.upper().replace(':','').strip() == 'AOA':
+						tmppais =pycountry.countries.get(alpha_3='AGO')
+					else:
+						tmppais =pycountry.countries.get(numeric=pycountry.currencies.get(alpha_3=supplierMoeda.upper().replace(':','').strip()).numeric)
 					print ('tmppais ',tmppais.name)
 					empresaPais = tmppais.name
 
@@ -5033,7 +5038,12 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 				if supplierMoeda == "EUR":
 					empresaPais = 'Belgium' #DEFAULT for EUR currency
 				else:
-					tmppais =pycountry.countries.get(numeric=pycountry.currencies.get(alpha_3=supplierMoeda).numeric)
+					#FIX 31-12-2022; if KZ/AOA
+					if supplierMoeda.upper().strip() == 'KZ' or supplierMoeda.upper().strip() == 'AOA':
+						tmppais =pycountry.countries.get(alpha_3='AGO')
+					else:
+						tmppais =pycountry.countries.get(numeric=pycountry.currencies.get(alpha_3=supplierMoeda.strip()).numeric)
+
 					print ('tmppais ',tmppais.name)
 					empresaPais = tmppais.name
 
