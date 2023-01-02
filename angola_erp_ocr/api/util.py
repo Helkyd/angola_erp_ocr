@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 31/12/2022
+#Date Changed: 02/01/2023
 
 
 from __future__ import unicode_literals
@@ -995,7 +995,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 					mes = mes0
 
-					Datapagamento = dia + "-" + mes + "-" + ano
+					Datapagamento = dia.strip() + "-" + mes.strip() + "-" + ano.strip()
 					print ('Datapagamento ',Datapagamento)
 
 					datadePAGAMENTO = Datapagamento
@@ -1025,8 +1025,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					print ('ORIGEM OU DESTINO CONTA')
 					if contaOrigem and contaOrigem.strip() != dd.strip()[dd.strip().rfind(' '):].strip():
 						#Conta DESTINO
-						contaCreditada = dd.strip()[dd.strip().rfind(' '):].strip()
-						print ('contaCreditada ',contaCreditada)
+						if not contaCreditada:
+							contaCreditada = dd.strip()[dd.strip().rfind(' '):].strip()
+						print ('contaCreditada0 ',contaCreditada)
 					elif not contaOrigem:
 						contaOrigem = dd.strip()[dd.strip().rfind(' '):].strip()
 						print ('contaOrigem ',contaOrigem)
@@ -1038,8 +1039,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					print ('origem/destino ',dd.split(' ')[12])
 					if len(dd.split(' ')[12]) == 14 and contaOrigem and contaOrigem.strip() != dd.split(' ')[12].strip():
 						#Conta DESTINO
-						contaCreditada = dd.split(' ')[12].strip()
-						print ('contaCreditada ',contaCreditada)
+						if not contaCreditada:
+							contaCreditada = dd.split(' ')[12].strip()
+						print ('contaCreditada1 ',contaCreditada)
 					elif len(dd.split(' ')[12]) == 14 and not contaOrigem:
 						contaOrigem = dd.split(' ')[12].strip()
 						print ('contaOrigem ',contaOrigem)
@@ -1246,7 +1248,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 							elif len(dd[0:dd.find(' ')].strip()) == 14:
 								ibanDestino = dd.strip()
 								print ('ibanDestino ', ibanDestino)
-							contaCreditada = ibanDestino
+							if not contaCreditada:
+								contaCreditada = ibanDestino
+								print ('contaCreditada2 ', contaCreditada)
 
 
 					if len(dd[0:dd.find(' ')].strip()) == 10:
@@ -1383,6 +1387,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 
 				#frappe.throw(porra)
+		print ('bfatransferencia ', bfatransferencia)
+		print ('valorPAGO ', valorPAGO)
+		print ('contaCreditada ', contaCreditada)
 
 		if referenciaDAR and valorPAGO: # and BeneficiarioNIF:
 			return {
@@ -1465,6 +1472,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		print ('datadePAGAMENTO ',datadePAGAMENTO)
 		print ('dataEMISSAO ', dataEMISSAO)
 		print ('referenciaDAR ', referenciaDAR)
+
 
 	elif "Modelo 6 de IVA" in ocr_tesserac:
 		print ('AINDA POR FAZER.... Modelo 6 de IVA')
