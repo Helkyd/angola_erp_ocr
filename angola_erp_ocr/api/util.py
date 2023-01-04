@@ -1187,6 +1187,23 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						#Data pagamento
 						datadePAGAMENTO = str(dd.split(' ')[4].strip()) + ' ' + str(dd.split(' ')[5].strip())
 
+					elif len(dd.split(' ')) == 4:
+						#Case len 4
+						#0 Conta:, 1 IBAN, 2 Date, 3 Hour
+						print (dd.split(' ')[1].strip())
+						if dd.split(' ')[1].strip().startswith('OO') or dd.split(' ')[1].strip().startswith('O0'):
+							contaOrigem = dd.split(' ')[1].strip().replace('OO','00').replace('O0','00')
+							print ('contaOrigem0 ',contaOrigem)
+							print (contaOrigem.isnumeric())
+						else:
+							contaOrigem = dd.split(' ')[1].strip()
+							print ('contaOrigem0 ',contaOrigem)
+							print (contaOrigem.isnumeric())
+
+						#Data pagamento
+						datadePAGAMENTO = str(dd.split(' ')[2].strip()) + ' ' + str(dd.split(' ')[3].strip())
+
+
 					elif not contaOrigem:
 						#try again...
 						print ('try again...')
@@ -1329,12 +1346,15 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 				elif "Nº REFERÊNCIA DO PAGAMENTO" in dd or "N° REFERÉNCIA DO PAGAMENTO" in dd:
 					temreferenciaDar = True
 					#frappe.throw(porra)
-				elif dd.startswith("AO06") or dd.startswith("A006") or dd.startswith("AONE") or dd.startswith("ACO6") or dd.startswith("ADOG"):
+				elif dd.startswith("AO06") or dd.startswith("A006") or dd.startswith("AONE") or dd.startswith("ACO6") or dd.startswith("ADOG") or dd.startswith("ADO6"):
 					print ('IBAN....')
 					print (len(dd))
 					print (dd)
 					print (dd.replace(',','.').replace(' ','').strip())
-					tmpiban = dd.replace(',','.').replace(' ','').replace('AONE','AO06').replace('C006','0006').replace('ACO6','AO06').replace('ADOG','AO06').strip()
+					tmpiban = dd.replace(',','.').replace(' ','').replace('AONE','AO06').replace('C006','0006').replace('ACO6','AO06').replace('ADOG','AO06').replace('ADO6','AO06').strip()
+					#Check if two or more DOTS together...
+					tmpiban1 = tmpiban.replace('..','.')
+					tmpiban = tmpiban1
 					#Check if all have 4 digits minus the last one.... if missing a ZERO just add
 					novotmpiban = ""
 					for a in tmpiban.split('.'):
