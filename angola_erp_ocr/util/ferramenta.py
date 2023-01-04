@@ -10,5 +10,5 @@ def apagar_ficheiros_uploaded():
 		To delete all files after 1 week to avoid confusion...
 	'''
 
-	frappe.db.sql(""" DELETE from `tabFiles` """,as_dict=False);
+	frappe.db.sql(""" DELETE from `tabFile` """,as_dict=False);
 	frappe.db.commit()
