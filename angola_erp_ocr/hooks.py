@@ -90,7 +90,7 @@ app_license = "MIT"
 # Scheduled Tasks
 # ---------------
 
- scheduler_events = {
+scheduler_events = {
 # 	"all": [
 # 		"angola_erp_ocr.tasks.all"
 # 	],
@@ -100,13 +100,13 @@ app_license = "MIT"
 # 	"hourly": [
 # 		"angola_erp_ocr.tasks.hourly"
 # 	],
- 	"weekly": [
- 		"angola_erp_ocr.util.ferramenta.apagar_ficheiros_uploaded"
- 	]
+    "weekly": [
+        "angola_erp_ocr.util.ferramenta.apagar_ficheiros_uploaded"
+    ]
 # 	"monthly": [
 # 		"angola_erp_ocr.tasks.monthly"
 # 	]
- }
+}
 
 # Testing
 # -------
