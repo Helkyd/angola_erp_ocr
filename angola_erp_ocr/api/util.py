@@ -762,8 +762,8 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 					print ('TERA DE FAZER O OCR......000')
 					return ocr_pdf.ocr_pdf(input_path=data)
 		else:
-			print ('IMAGE FILE')
-			print ('IMAGE FILE')
+			print ('IMAGE FILE111')
+			print ('IMAGE FILE111')
 			print ('DO OCR_READ and OCR_PDF')
 			return ocr_pytesseract (filefinal)
 
@@ -877,11 +877,16 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 		descricaoPagamento = ""
 
+		mcxdebit = False
+
 		if "MCX DEBIT" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac:
 			#Check if TRANSACÇÃO
-			if "TRANSACÇÃO:" in ocr_tesserac:
+			#FIX 04-01-2023
+			if "TRANSACÇÃO:" in ocr_tesserac or "TRANSACGAO:" in ocr_tesserac or "TRANSACÇÃD:" in ocr_tesserac:
 				print ('Transacao MCX DEBIT')
 				print ('Transacao MCX DEBIT')
+				if "MCX DEBIT" in ocr_tesserac:
+					mcxdebit = True
 
 
 			else:
@@ -927,6 +932,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 				print ('IBAns CHECK')
 				print (dd.startswith("ACO6"))
 				print (dd.startswith("ACO6.0006.0000.6671.9425"))
+				print (dd.startswith("ADOG.0006.0000.6671.9425"))
 				#frappe.throw(porra)
 
 				if "LIQUIDAÇÃO GENÉRICA DE TRIBUTO" in dd.strip():
@@ -962,7 +968,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						valorPAGO = dd.split(' ')[2].strip()
 						print ('valorPAGO ',valorPAGO)
 						frappe.throw(porra)
-				elif ("Transacção".upper() in dd.upper() or "Transacgao".upper() in dd.upper()) and multiexpress:
+				elif ("Transacção".upper() in dd.upper() or "Transacgao".upper() in dd.upper() or "TRANSACÇÃD:" in dd.upper()) and multiexpress:
 					if not numeroOperacao:
 						numeroOperacao = dd.split(' ')[2]
 						print ('numeroTransacao ',numeroOperacao)
@@ -1146,7 +1152,8 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						mcexpress = True
 						numeroTransacao = ncaixa_tmp
 
-				elif "N.CAIXA:" in dd or "N.CATXA:" in dd:
+				elif "N.CAIXA:" in dd or "N.CATXA:" in dd or "W.CAIXA:" in dd:
+					#Fix to check W.CAIXA as scan was not good...
 					print ('N. Caixa e Num Transacao')
 					if not numeroTransacao:
 						mcexpress = True
@@ -1198,7 +1205,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 
 
-					print ('contaOrigem ',contaOrigem)
+					print ('contaOrigem0000 ',contaOrigem)
 					if not datadePAGAMENTO:
 						datadePAGAMENTO = dd[find_second_last(dd, ' '):len(dd)].strip()
 					if not datadePAGAMENTO:
@@ -1322,12 +1329,12 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 				elif "Nº REFERÊNCIA DO PAGAMENTO" in dd or "N° REFERÉNCIA DO PAGAMENTO" in dd:
 					temreferenciaDar = True
 					#frappe.throw(porra)
-				elif dd.startswith("AO06") or dd.startswith("A006") or dd.startswith("AONE") or dd.startswith("ACO6"):
+				elif dd.startswith("AO06") or dd.startswith("A006") or dd.startswith("AONE") or dd.startswith("ACO6") or dd.startswith("ADOG"):
 					print ('IBAN....')
 					print (len(dd))
 					print (dd)
 					print (dd.replace(',','.').replace(' ','').strip())
-					tmpiban = dd.replace(',','.').replace(' ','').replace('AONE','AO06').replace('C006','0006').replace('ACO6','AO06').strip()
+					tmpiban = dd.replace(',','.').replace(' ','').replace('AONE','AO06').replace('C006','0006').replace('ACO6','AO06').replace('ADOG','AO06').strip()
 					#Check if all have 4 digits minus the last one.... if missing a ZERO just add
 					novotmpiban = ""
 					for a in tmpiban.split('.'):
@@ -1390,6 +1397,8 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		print ('bfatransferencia ', bfatransferencia)
 		print ('valorPAGO ', valorPAGO)
 		print ('contaCreditada ', contaCreditada)
+		print ('ibanDestino ', ibanDestino)
+		print ('contaOrigem ', contaOrigem)
 
 		if referenciaDAR and valorPAGO: # and BeneficiarioNIF:
 			return {
