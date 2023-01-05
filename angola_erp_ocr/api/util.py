@@ -5879,7 +5879,8 @@ def ocr_tables_from_image():
 
 	import fitz
 	#pdffile = "/files/FT-Impressão-FTM 1KO2022_3_A.pdf"
-	pdffile = "/home/frappe/frappe-bench/sites/tools.angolaerp.co.ao/public/files/FT-Impressão-FTM 1KO2022_3_A.pdf"
+	#pdffile = "/home/frappe/frappe-bench/sites/tools.angolaerp.co.ao/public/files/FT-Impressão-FTM 1KO2022_3_A.pdf"
+	pdffile = "/home/frappe/frappe-bench/sites/tools.angolaerp.co.ao/public/files/TESTE_CODE_SINV-2022-00043.pdf"
 	doc = fitz.open(pdffile)
 	zoom = 4
 	mat = fitz.Matrix(zoom, zoom)
@@ -5899,6 +5900,7 @@ def ocr_tables_from_image():
 	#import matplotlib.pyplot as plt
 
 	file= '/tmp/' + val
+	file= '/tmp/image_1.png'
 
 	#read your file
 	#file=r'/tmp/test_table_img.png'
@@ -5956,6 +5958,7 @@ def ocr_tables_from_image():
 	contours, hierarchy = cv2.findContours(img_vh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
 	def sort_contours(cnts, method="left-to-right"):
+	    import cv2
 	    # initialize the reverse flag and sort index
 	    reverse = False
 	    i = 0
@@ -5976,9 +5979,13 @@ def ocr_tables_from_image():
 
 	# Sort all the contours by top to bottom.
 	contours, boundingBoxes = sort_contours(contours, method="top-to-bottom")
-
+	print ('boundingBoxes ', boundingBoxes)
 	#Creating a list of heights for all detected boxes
-	heights = [boundingBoxes[i][3] for i in range(len(boundingBoxes))]
+	#heights = [boundingBoxes[i][3] for i in range(len(boundingBoxes))]
+
+	heights = []
+	for i in range(len(boundingBoxes)):
+	    heights.append(boundingBoxes[i][3])
 
 	#Get mean of heights
 	mean = np.mean(heights)
@@ -6032,7 +6039,12 @@ def ocr_tables_from_image():
 	        countcol = countcol
 
 	#Retrieving the center of each column
-	center = [int(row[i][j][0]+row[i][j][2]/2) for j in range(len(row[i])) if row[0]]
+	#center = [int(row[i][j][0]+row[i][j][2]/2) for j in range(len(row[i])) if row[0]]
+
+	center = []
+	for j in range(len(row[i])):
+	    if row[0]:
+	        center.append(int(row[i][j][0]+row[i][j][2]/2))
 
 	center=np.array(center)
 	center.sort()
