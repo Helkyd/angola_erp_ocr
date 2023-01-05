@@ -3397,9 +3397,17 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 		fim_items = False
 
+		facturaAGT = False
+
 		for fsup in facturaSupplier.split('\n'):
 			print ('=====INICIO =======')
 			print (fsup)
+
+			#Check if AGT Invoices
+			if "CONTRIBUINTE FISCAL DETALHES DO CLIENTE" in fsup.strip():
+				print ('invoiceNumber ', invoiceNumber)
+				if "FTM" in invoiceNumber:
+					facturaAGT = True
 
 			#FIX 14-12-2022
 			for fi in en_palavras_fim_item:
@@ -3517,14 +3525,30 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 						if "NIF" in fsup.upper() or "NIF:" in fsup.upper():
 							supplierNIF = fsup.replace('NIF:','').replace('NIF','').strip()
 							print ('CHECK NIF....ANGOLA')
-							nifvalido = validar_nif (supplierNIF)
-							print (nifvalido)
-							if nifvalido and nifvalido[2]:
-								print ('Empresa CORRECTA ', nifvalido[2])
-								empresaSupplier = nifvalido[2]
+							if "NIFE do Adquirente:".upper() in fsup.upper() or "NIF do Adquirente:".upper() in fsup.upper():
+								#AGT tem Nif Origem e nif DESTINO
+								if "NIFE do Adquirente:".upper() in fsup.upper():
+									niforigem = fsup[fsup.find('NIF:')+4:fsup.find('NIFE')].strip()
+									nifvalido = validar_nif (niforigem)
+									print (nifvalido)
+									if nifvalido and nifvalido[2]:
+										print ('Empresa CORRECTA ', nifvalido[2])
+										empresaSupplier = nifvalido[2]
+										supplierNIF = nifvalido[0]
+
+									#Check if is for Destiny company!!!!
+									nifdestino = fsup[fsup.find('Adquirente:')+11:].strip()
+
+							else:
+								nifvalido = validar_nif (supplierNIF)
+								print (nifvalido)
+								if nifvalido and nifvalido[2]:
+									print ('Empresa CORRECTA ', nifvalido[2])
+									empresaSupplier = nifvalido[2]
 					elif 'TRN :' in fsup.upper().strip():
 						print ('TRN aqui....')
-						supplierNIF = fsup[fsup.upper().find('TRN :')+5:].strip()
+						if not supplierNIF:
+							supplierNIF = fsup[fsup.upper().find('TRN :')+5:].strip()
 				if not supplierMoeda:
 					terpalavras = ['Moeda','AOA','AKZ','KZ']
 					#TODO: List of Currencies to see if on the Document to be OCR..
@@ -3538,7 +3562,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 						if "AOA" in fsup.strip() or "AKZ" in fsup.strip() or "KZ" in fsup.strip():
 							supplierMoeda = 'KZ'
 						else:
-							supplierMoeda = fsup.strip().replace('Moeda','')
+							supplierMoeda = fsup.strip().replace('Moeda:','').replace('Moeda','').strip()
 							#TODO: Remove CAMBIO and Numbers if exist on the same line...
 					else:
 						#Check words on doc if any on the list...
@@ -3580,18 +3604,23 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 				if not invoiceNumber:
 					#Search for PP FT FR
-					seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
+					#seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R]|[F][T][M])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
+					#FIX 05-01-2023; Included FTM from AGT site
+					seriesDocs_pattern = r"^([F][T][M]|[P][P]|[F][T]|[F][R]).{1}\s\d{1}[a-zA-Z].{1}[0-9]{4}\/.{1,4}"
 					#print (re.match(seriesDocs_pattern,fsup.upper().strip()))
 					if re.match(seriesDocs_pattern,fsup.upper().strip()):
 						invoiceNumber = fsup.upper().strip()
 					else:
-						if "FT" in fsup.upper().strip() or "PP" in fsup.upper().strip() or "FR" in fsup.upper().strip():
+						if "FT" in fsup.upper().strip() or "PP" in fsup.upper().strip() or "FR" in fsup.upper().strip() or "FTM" in fsup.upper().strip():
 							if "FT" in fsup.upper().strip():
 								tmpseries = fsup.upper().strip()[fsup.upper().strip().find('FT'):]
 							elif "PP" in fsup.upper().strip():
 								tmpseries = fsup.upper().strip()[fsup.upper().strip().find('PP'):]
 							elif "FR" in fsup.upper().strip():
 								tmpseries = fsup.upper().strip()[fsup.upper().strip().find('FR'):]
+							elif "FTM" in fsup.upper().strip():
+								#FIX 05-01-2023; Factura do portal da AGT
+								tmpseries = fsup.upper().strip()[fsup.upper().strip().find('FTM'):]
 
 							#print ('tmpseries ',tmpseries)
 							#print (re.match(seriesDocs_pattern,tmpseries))
