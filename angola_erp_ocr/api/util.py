@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 02/01/2023
+#Date Changed: 05/01/2023
 
 
 from __future__ import unicode_literals
@@ -1763,11 +1763,14 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					else:
 						#Check IF Designaçäo: Conta BIC Empresas - Moeda Nacional
 						#Check fo Conta de Origem:
+						print (val)
+						print ('Designação: Deposito a Ordem - Moeda Nacional')
+						print ('Designação: Deposito a Ordem - Moeda Nacional' in val)
 						if "Conta de Origem:" in val:
 							contaOrigem = val[val.find('Conta de Origem:')+17:].strip()
 						if "Data do movimento" in val:
 							dataEMISSAO = val[val.find('Data do movimento')+18:].strip()
-						if "Designaçäo: Conta BIC Empresas - Moeda Nacional" in val or "Designação: Conta BIC Empresas - Moeda Nacional" in val:
+						if "Designaçäo: Conta BIC Empresas - Moeda Nacional" in val or "Designação: Conta BIC Empresas - Moeda Nacional" in val or "Designação: Deposito a Ordem - Moeda Nacional" in val:
 							#BANCO BIC TRANSFERENCIA
 							bancoBic = True
 						if "Número do documento" in val:
@@ -1800,6 +1803,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					}
 
 			else:
+				print ('dataEMISSAO ',dataEMISSAO)
+				print ('contaOrigem ',contaOrigem  )
+				print ('valorPAGO ',valorPAGO)
 				if dataEMISSAO and contaOrigem and valorPAGO:
 					return {
 						"bancoBic": bancoBic,
