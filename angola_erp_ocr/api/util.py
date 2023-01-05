@@ -5863,6 +5863,8 @@ def ocr_PING():
 def ocr_tables_from_image():
 	'''
 		Requires python 3.6 or higher
+		Extracted from:
+		https://gist.github.com/huks0/e48d604fc9dd91731bc687d6e3933db4
 	'''
 
 	import cv2
