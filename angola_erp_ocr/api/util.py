@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 05/01/2023
+#Date Changed: 06/01/2023
 
 
 from __future__ import unicode_literals
@@ -3610,9 +3610,10 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 				if not invoiceNumber:
 					#Search for PP FT FR
-					#seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R]|[F][T][M])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
+					#seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R]|[F][T][M])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,4}\/\d{1,5}"
 					#FIX 05-01-2023; Included FTM from AGT site
-					seriesDocs_pattern = r"^([F][T][M]|[P][P]|[F][T]|[F][R]).{1}\s\d{1}[a-zA-Z].{1}[0-9]{4}\/.{1,4}"
+					#seriesDocs_pattern = r"^([F][T][M]|[P][P]|[F][T]|[F][R]).{1}\s\d{1}[a-zA-Z].{1}[0-9]{4}\/.{1,4}|([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
+					seriesDocs_pattern = r"^([F][T][M]|[P][P]|[F][T]|[F][R]).{1}\s\d{1}[a-zA-Z].{1}[0-9]{4}\/.{1,4}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,4}\/\d{1,5}"
 					#print (re.match(seriesDocs_pattern,fsup.upper().strip()))
 					if re.match(seriesDocs_pattern,fsup.upper().strip()):
 						invoiceNumber = fsup.upper().strip()
