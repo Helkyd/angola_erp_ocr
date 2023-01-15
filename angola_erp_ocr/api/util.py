@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 06/01/2023
+#Date Changed: 15/01/2023
 
 
 from __future__ import unicode_literals
@@ -5861,7 +5861,7 @@ def ocr_PING():
 	return 'PONG'
 
 
-def ocr_tables_from_image():
+def ocr_tables_from_image(ficheiro = None):
 	'''
 		Requires python 3.6 or higher
 		Extracted from:
@@ -5875,35 +5875,56 @@ def ocr_tables_from_image():
 	import csv
 
 	try:
-	    from PIL import Image
+		from PIL import Image
 	except ImportError:
-	    import Image
+		import Image
 	import pytesseract
 
 	import fitz
 	#pdffile = "/files/FT-Impressão-FTM 1KO2022_3_A.pdf"
 	#pdffile = "/home/frappe/frappe-bench/sites/tools.angolaerp.co.ao/public/files/FT-Impressão-FTM 1KO2022_3_A.pdf"
 	pdffile = "/home/frappe/frappe-bench/sites/tools.angolaerp.co.ao/public/files/TESTE_CODE_SINV-2022-00043.pdf"
+
+	if not ficheiro:
+		frappe.throw('Precisa de ficheiro...')
+	else:
+
+		if os.path.isfile(frappe.get_site_path('public','files') + ficheiro.replace('/files','')):
+			filefinal = frappe.get_site_path('public','files') + ficheiro.replace('/files','')
+			print ('filefinal ',filefinal)
+			if filefinal.startswith('.'):
+				filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+				filefinal = filefinal1
+			print ('filefinal1 ',filefinal)
+
+		else:
+			filefinal = ficheiro
+
+	if ".pdf" in filefinal:
+		pdffile = filefinal
+	else:
+		frappe.throw('Ficheiro tem que ser PDF...')
+
 	doc = fitz.open(pdffile)
 	zoom = 4
 	mat = fitz.Matrix(zoom, zoom)
 	count = 0
 	# Count variable is to get the number of pages in the pdf
 	for p in doc:
-	    count += 1
+		count += 1
 	for i in range(count):
-	    val = f"image_{i+1}.png"
-	    page = doc.load_page(i)
-	    pix = page.get_pixmap(matrix=mat)
-	    #pix.save('/tmp/' + val)
-	    pix.writePNG('/tmp/' + val)
+		val = f"image_{i+1}.png"
+		page = doc.load_page(i)
+		pix = page.get_pixmap(matrix=mat)
+		#pix.save('/tmp/' + val)
+		pix.writePNG('/tmp/' + val)
 	doc.close()
 
 
 	#import matplotlib.pyplot as plt
 
 	file= '/tmp/' + val
-	file= '/tmp/image_1.png'
+	#file= '/tmp/image_1.png'
 
 	#read your file
 	#file=r'/tmp/test_table_img.png'
@@ -5961,24 +5982,24 @@ def ocr_tables_from_image():
 	contours, hierarchy = cv2.findContours(img_vh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
 	def sort_contours(cnts, method="left-to-right"):
-	    import cv2
-	    # initialize the reverse flag and sort index
-	    reverse = False
-	    i = 0
-	    # handle if we need to sort in reverse
-	    if method == "right-to-left" or method == "bottom-to-top":
-	        reverse = True
-	    # handle if we are sorting against the y-coordinate rather than
-	    # the x-coordinate of the bounding box
-	    if method == "top-to-bottom" or method == "bottom-to-top":
-	        i = 1
-	    # construct the list of bounding boxes and sort them from top to
-	    # bottom
-	    boundingBoxes = [cv2.boundingRect(c) for c in cnts]
-	    (cnts, boundingBoxes) = zip(*sorted(zip(cnts, boundingBoxes),
-	    key=lambda b:b[1][i], reverse=reverse))
-	    # return the list of sorted contours and bounding boxes
-	    return (cnts, boundingBoxes)
+		import cv2
+		# initialize the reverse flag and sort index
+		reverse = False
+		i = 0
+		# handle if we need to sort in reverse
+		if method == "right-to-left" or method == "bottom-to-top":
+			reverse = True
+		# handle if we are sorting against the y-coordinate rather than
+		# the x-coordinate of the bounding box
+		if method == "top-to-bottom" or method == "bottom-to-top":
+			i = 1
+		# construct the list of bounding boxes and sort them from top to
+		# bottom
+		boundingBoxes = [cv2.boundingRect(c) for c in cnts]
+		(cnts, boundingBoxes) = zip(*sorted(zip(cnts, boundingBoxes),
+		key=lambda b:b[1][i], reverse=reverse))
+		# return the list of sorted contours and bounding boxes
+		return (cnts, boundingBoxes)
 
 	# Sort all the contours by top to bottom.
 	contours, boundingBoxes = sort_contours(contours, method="top-to-bottom")
@@ -5988,7 +6009,7 @@ def ocr_tables_from_image():
 
 	heights = []
 	for i in range(len(boundingBoxes)):
-	    heights.append(boundingBoxes[i][3])
+		heights.append(boundingBoxes[i][3])
 
 	#Get mean of heights
 	mean = np.mean(heights)
@@ -5997,10 +6018,10 @@ def ocr_tables_from_image():
 	box = []
 	# Get position (x,y), width and height for every contour and show the contour on image
 	for c in contours:
-	    x, y, w, h = cv2.boundingRect(c)
-	    if (w<1000 and h<500):
-	        image = cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
-	        box.append([x,y,w,h])
+		x, y, w, h = cv2.boundingRect(c)
+		if (w<1000 and h<500):
+			image = cv2.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
+			box.append([x,y,w,h])
 
 	#plotting = plt.imshow(image,cmap='gray')
 	#plt.show()
@@ -6013,23 +6034,23 @@ def ocr_tables_from_image():
 	#Sorting the boxes to their respective row and column
 	for i in range(len(box)):
 
-	    if(i==0):
-	        column.append(box[i])
-	        previous=box[i]
+		if(i==0):
+			column.append(box[i])
+			previous=box[i]
 
-	    else:
-	        if(box[i][1]<=previous[1]+mean/2):
-	            column.append(box[i])
-	            previous=box[i]
+		else:
+			if(box[i][1]<=previous[1]+mean/2):
+				column.append(box[i])
+				previous=box[i]
 
-	            if(i==len(box)-1):
-	                row.append(column)
+				if(i==len(box)-1):
+					row.append(column)
 
-	        else:
-	            row.append(column)
-	            column=[]
-	            previous = box[i]
-	            column.append(box[i])
+			else:
+				row.append(column)
+				column=[]
+				previous = box[i]
+				column.append(box[i])
 
 	print(column)
 	print(row)
@@ -6037,17 +6058,17 @@ def ocr_tables_from_image():
 	#calculating maximum number of cells
 	countcol = 0
 	for i in range(len(row)):
-	    countcol = len(row[i])
-	    if countcol > countcol:
-	        countcol = countcol
+		countcol = len(row[i])
+		if countcol > countcol:
+			countcol = countcol
 
 	#Retrieving the center of each column
 	#center = [int(row[i][j][0]+row[i][j][2]/2) for j in range(len(row[i])) if row[0]]
 
 	center = []
 	for j in range(len(row[i])):
-	    if row[0]:
-	        center.append(int(row[i][j][0]+row[i][j][2]/2))
+		if row[0]:
+			center.append(int(row[i][j][0]+row[i][j][2]/2))
 
 	center=np.array(center)
 	center.sort()
@@ -6056,39 +6077,39 @@ def ocr_tables_from_image():
 
 	finalboxes = []
 	for i in range(len(row)):
-	    lis=[]
-	    for k in range(countcol):
-	        lis.append([])
-	    for j in range(len(row[i])):
-	        diff = abs(center-(row[i][j][0]+row[i][j][2]/4))
-	        minimum = min(diff)
-	        indexing = list(diff).index(minimum)
-	        lis[indexing].append(row[i][j])
-	    finalboxes.append(lis)
+		lis=[]
+		for k in range(countcol):
+			lis.append([])
+		for j in range(len(row[i])):
+			diff = abs(center-(row[i][j][0]+row[i][j][2]/4))
+			minimum = min(diff)
+			indexing = list(diff).index(minimum)
+			lis[indexing].append(row[i][j])
+		finalboxes.append(lis)
 
 
 	#from every single image-based cell/box the strings are extracted via pytesseract and stored in a list
 	outer=[]
 	for i in range(len(finalboxes)):
-	    for j in range(len(finalboxes[i])):
-	        inner=''
-	        if(len(finalboxes[i][j])==0):
-	            outer.append(' ')
-	        else:
-	            for k in range(len(finalboxes[i][j])):
-	                y,x,w,h = finalboxes[i][j][k][0],finalboxes[i][j][k][1], finalboxes[i][j][k][2],finalboxes[i][j][k][3]
-	                finalimg = bitnot[x:x+h, y:y+w]
-	                kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 1))
-	                border = cv2.copyMakeBorder(finalimg,2,2,2,2, cv2.BORDER_CONSTANT,value=[255,255])
-	                resizing = cv2.resize(border, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-	                dilation = cv2.dilate(resizing, kernel,iterations=1)
-	                erosion = cv2.erode(dilation, kernel,iterations=2)
+		for j in range(len(finalboxes[i])):
+			inner=''
+			if(len(finalboxes[i][j])==0):
+				outer.append(' ')
+			else:
+				for k in range(len(finalboxes[i][j])):
+					y,x,w,h = finalboxes[i][j][k][0],finalboxes[i][j][k][1], finalboxes[i][j][k][2],finalboxes[i][j][k][3]
+					finalimg = bitnot[x:x+h, y:y+w]
+					kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 1))
+					border = cv2.copyMakeBorder(finalimg,2,2,2,2, cv2.BORDER_CONSTANT,value=[255,255])
+					resizing = cv2.resize(border, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+					dilation = cv2.dilate(resizing, kernel,iterations=1)
+					erosion = cv2.erode(dilation, kernel,iterations=2)
 
-	                out = pytesseract.image_to_string(erosion)
-	                if(len(out)==0):
-	                    out = pytesseract.image_to_string(erosion, config='--psm 3')
-	                inner = inner +" "+ out
-	            outer.append(inner)
+					out = pytesseract.image_to_string(erosion)
+					if(len(out)==0):
+						out = pytesseract.image_to_string(erosion, config='--psm 3')
+					inner = inner +" "+ out
+				outer.append(inner)
 
 	#Creating a dataframe of the generated OCR list
 	arr = np.array(outer)
@@ -6096,18 +6117,146 @@ def ocr_tables_from_image():
 	print(dataframe)
 	#for dd in dataframe.split('\n'):
 	for dd in range(len(dataframe)):
-	    print ('----')
-	    print (dd)
-	    print ('dataframe.loc[dd]')
-	    print (dataframe.loc[dd])
-	    print ('[dd][0]')
-	    for a,b in enumerate(dataframe.loc[dd]):
-	        if len(b.strip()) >0:
-	            print ('====')
-	            print (a)
-	            print (b)
-	            print ('tamanho ', len(b.strip()))
+		print ('----')
+		print (dd)
+		print ('dataframe.loc[dd]')
+		print (dataframe.loc[dd])
+		print ('[dd][0]')
+		for a,b in enumerate(dataframe.loc[dd]):
+			if len(b.strip()) >0:
+				print ('====')
+				print (a)
+				print (b)
+				print ('tamanho ', len(b.strip()))
 
 	#data = dataframe.style.set_properties(align="left")
 	#Converting it in a excel-file
 	#data.to_excel("/Users/marius/Desktop/output.xlsx")
+
+
+
+def ocr_pdf_to_image(ficheiro = None):
+	'''
+		Requires python 3.6 or higher
+		Extracted from:
+		https://towardsdatascience.com/read-a-multi-column-pdf-with-pytesseract-in-python-1d99015f887a
+	'''
+
+	# for manipulating the PDF
+	import fitz
+
+	# for OCR using PyTesseract
+	import cv2                              # pre-processing images
+	import pytesseract                      # extracting text from images
+	import numpy as np
+	#import matplotlib.pyplot as plt         # displaying output images
+
+	from PIL import Image
+
+	if not ficheiro:
+		frappe.throw('Precisa de ficheiro...')
+	else:
+
+		if os.path.isfile(frappe.get_site_path('public','files') + ficheiro.replace('/files','')):
+			filefinal = frappe.get_site_path('public','files') + ficheiro.replace('/files','')
+			print ('filefinal ',filefinal)
+			if filefinal.startswith('.'):
+				filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+				filefinal = filefinal1
+			print ('filefinal1 ',filefinal)
+
+		else:
+			filefinal = ficheiro
+
+	#pdffile = filefinal
+	if ".pdf" in filefinal:
+		SCANNED_FILE = filefinal
+	else:
+		frappe.throw('Ficheiro tem que ser PDF...')
+
+	#SCANNED_FILE = 'SINV-2022-00009_1_CC.pdf'
+
+
+	img = cv2.imread(SCANNED_FILE)
+
+	zoom_x = 2.0 # horizontal zoom
+	zoom_y = 2.0 # vertical zoom
+	mat = fitz.Matrix(zoom_x, zoom_y)
+
+	doc = fitz.open(SCANNED_FILE)
+
+	#Delete tmp files first
+	if os.path.exists('/tmp/input-page-*.png'):
+		os.remove('/tmp/input-page-*.png')
+
+
+	print("Generated pages: ")
+	for page in doc:
+		pix = page.get_pixmap(matrix=mat)
+		print ('SCANNED_FILE.split')
+		print (SCANNED_FILE.split('\\'))
+		#png = '/tmp/input-' + SCANNED_FILE.split('\\')[-1].split('.')[0] + 'page-%i.png' % page.number
+		png = '/tmp/input-page-%i.png' % page.number
+		print(png)
+		#pix.save(png)
+		pix.writePNG(png)
+
+	original_image = cv2.imread('/tmp/input-page-0.png')
+	#original_image = cv2.imread('/tmp/input-page-3.png')
+
+	# convert the image to grayscale
+	gray_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
+	#plt.figure(figsize=(25, 15))
+	#plt.imshow(gray_image, cmap='gray')
+	#plt.show()
+
+
+	# Performing OTSU threshold
+	ret, threshold_image = cv2.threshold(gray_image, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
+	#plt.figure(figsize=(25, 15))
+	#plt.imshow(threshold_image, cmap='gray')
+	#plt.show()
+
+
+	rectangular_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (66, 66))
+
+	# Applying dilation on the threshold image
+	dilated_image = cv2.dilate(threshold_image, rectangular_kernel, iterations = 1)
+	#plt.figure(figsize=(25, 15))
+	#plt.imshow(dilated_image)
+	#plt.show()
+
+	# Finding contours
+	contours, hierarchy = cv2.findContours(dilated_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+	# Creating a copy of the image
+	copied_image = original_image.copy()
+
+	with open("/tmp/recognized-kernel-66-66.txt", "w+") as f:
+		f.write("")
+	f.close()
+
+	mask = np.zeros(original_image.shape, np.uint8)
+
+	# Looping through the identified contours
+	# Then rectangular part is cropped and passed on to pytesseract
+	# pytesseract extracts the text inside each contours
+	# Extracted text is then written into a text file
+	for cnt in contours:
+		x, y, w, h = cv2.boundingRect(cnt)
+
+		# Cropping the text block for giving input to OCR
+		cropped = copied_image[y:y + h, x:x + w]
+
+		with open("/tmp/recognized-kernel-66-66.txt", "a") as f:
+			# Apply OCR on the cropped image
+			text = pytesseract.image_to_string(cropped, lang='eng', config='--oem 3 --psm 1')
+			print(text)
+			f.write(text)
+		f.close()
+
+		masked = cv2.drawContours(mask, [cnt], 0, (255, 255, 255), -1)
+
+	#plt.figure(figsize=(25, 15))
+	#plt.imshow(masked, cmap='gray')
+	#plt.show()
