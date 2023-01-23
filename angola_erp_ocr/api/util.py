@@ -6768,8 +6768,8 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 						if match.group():
 							print('TEM DATA.... ',match.group())
 							invoiceDate = match.group()
-				if proximalinha_data:
-					invoiceDate = fsup.strip()
+					if proximalinha_data:
+						invoiceDate = fsup.strip()
 
 			if not invoiceNumber:
 				#Search for PP FT FR
