@@ -7508,11 +7508,13 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 								#Check if Starts with $ can be Unitprice or SUM
 								if fsup.strip().startswith('$') and linhaAnterior == 'DESCRIPTION':
 									#Rate
-									filtered_divs['RATE'].append(fsup.strip())
+									filtered_divs['RATE'].append(fsup.strip().replace('$',''))
 									linhaAnterior = 'RATE'
+									if not supplierMoeda:
+										supplierMoeda = "USD"
 								elif fsup.strip().startswith('$') and linhaAnterior == 'QUANTITY':
 									#TOTAL /SUM
-									filtered_divs['TOTAL'].append(fsup.strip())
+									filtered_divs['TOTAL'].append(fsup.strip().replace('$',''))
 									linhaAnterior = 'TOTAL'
 								elif linhaAnterior == 'QUANTITY' and fsup.strip() == 'SET':
 									print ('SET SET SET SET ', fsup.strip())
@@ -7536,7 +7538,7 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 									if linhaem_branco and fsup.strip() != 'CARTON':
 										if linhaAnterior == 'TOTAL' and fsup.strip().startswith('$'):
 											#Add on RATE
-											filtered_divs['RATE'].append(fsup.strip())
+											filtered_divs['RATE'].append(fsup.strip().replace('$',''))
 											linhaAnterior = 'RATE'
 										else:
 											filtered_divs['DESCRIPTION'].append(fsup.strip())
