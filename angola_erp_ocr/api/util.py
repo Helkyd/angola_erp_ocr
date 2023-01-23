@@ -6883,9 +6883,9 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 				#palavrasexiste_header = False
 				if en_scan:
 					for pp in terpalavras_header_EN:
-						print ('CONTAR terpalavras_header_EN')
-						print ('pp.upper() ',pp.upper())
-						print (fsup.strip().upper())
+						#print ('CONTAR terpalavras_header_EN')
+						#print ('pp.upper() ',pp.upper())
+						#print (fsup.strip().upper())
 						if pp.upper() in fsup.strip().upper():
 							contapalavras_header += 1
 					for pp1 in en_palavras_banco:
@@ -6953,7 +6953,11 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 						evitatelefone_items = True
 					print ('EMAIL ')
 					print ('fsup.strip() ', fsup.strip())
-					#print (re.match(email_pattern,fsup.strip()))
+					print (re.match(email_pattern,fsup.strip()))
+					if not supplierEmail or supplierEmail == 'Ainda por fazer....':
+						if re.match(email_pattern,fsup.strip()):
+							supplierEmail = re.match(email_pattern,fsup.strip()).group()
+
 				print ('evitatelefone_items ',evitatelefone_items)
 				print ('linhaem_branco ',linhaem_branco)
 				if not evitatelefone_items and linhaem_branco:
