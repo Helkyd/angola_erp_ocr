@@ -3412,6 +3412,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 				#frappe.throw(porra)
 			else:
+				print ('AQUI PORQUE !!!!!')
+				frappe.throw(porra)
 				for fsup in facturaSupplier.split('\n'):
 					print ('00000000')
 					print ('TEXTO LINHA: ', fsup)
@@ -3800,8 +3802,10 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 				print ('en_scan ', en_scan)
 				print ('terpalavras_header ',terpalavras_header)
 				print ('palavras_no_header ',palavras_no_header)
+				print ('filefinal ', filefinal)
+
 				palavras_fim_item = ['Metodo de Pagamento','Incidência','Total Retenção']
-				return ocr_ocr_ocr (facturaSupplier_tmp,palavras_fim_item,en_scan,supplierMoeda,terpalavras_header,palavras_no_header,palavras_no_header_ultimoHeader)
+				return ocr_ocr_ocr (facturaSupplier_tmp,palavras_fim_item,en_scan,supplierMoeda,terpalavras_header,palavras_no_header,filefinal,palavras_no_header_ultimoHeader)
 
 			frappe.throw(porra)
 		'''
@@ -6799,7 +6803,7 @@ def ocr_pdf_to_image(ficheiro = None):
 	#plt.imshow(masked, cmap='gray')
 	#plt.show()
 
-def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpalavras_header_EN,palavras_no_header,palavras_no_header_ultimoHeader = None):
+def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpalavras_header_EN,palavras_no_header,filefinal = None,palavras_no_header_ultimoHeader = None):
 	print ('Running ocr_ocr_ocr ')
 	print ('Running ocr_ocr_ocr ')
 	print ('Running ocr_ocr_ocr ')
@@ -7011,7 +7015,7 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 			if not supplierNIF:
 				if not en_scan:
 					if "NIF" in fsup.upper() or "NIF:" in fsup.upper():
-						supplierNIF = fsup.replace('NIF:','').replace('NIF','').strip()
+						supplierNIF = fsup.replace('NIF:','').replace('NIF','').replace(':','').strip()
 						print ('CHECK NIF....ANGOLA3')
 						if "NIFE do Adquirente:".upper() in fsup.upper() or "NIF do Adquirente:".upper() in fsup.upper():
 							#AGT tem Nif Origem e nif DESTINO
@@ -8250,6 +8254,167 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 	print (len(filtered_divs['IVA']))
 	print (filtered_divs['IVA'])
 	print ('!!!!!!!!!!')
+
+	#Check if More DESCRIPTION than QUANT and TOTAL
+	'''
+		TODO:
+		Run
+		ocr_pytesseract --args="['/files/FT19-132.pdf','COMPRAS','por',200]"
+		to get Items on single line and compare Description + Price + IVA +  TOTAL
+		If all 3 (price + iva + total) on same line and Equal means is one Record and the next TEXT/DESCRIPTION is part of the previous Line
+	'''
+	if not en_scan:
+		print (len(filtered_divs['DESCRIPTION']))
+		print (filtered_divs['DESCRIPTION'])
+		print (len(filtered_divs['QUANTITY']))
+		print (filtered_divs['QUANTITY'])
+
+		if len(filtered_divs['DESCRIPTION']) > len(filtered_divs['QUANTITY']):
+			print ('RECORDS not the SAME.... ')
+
+			factSupplier_tmp = ocr_pytesseract (filefinal,"COMPRAS",'por',200)
+			nextline_items = False
+			contaheaders = 0
+
+			cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)'
+
+			contadordescricao = ''
+			linha_embranco = False
+			linha_apagada = False
+
+			for ff_tmp in factSupplier_tmp.split('\n'):
+				print ('VERIFICAR AONDE COMECA HEADER....')
+				print (ff_tmp)
+				if (ff_tmp.strip() == '' or ff_tmp.strip() == None) and nextline_items:
+					linha_embranco = True
+
+				if linha_apagada:
+					print ('TERMINOU.... verify if QUANTITY and DESCRIPTION MATCH')
+					print (len(filtered_divs['DESCRIPTION']))
+					print (filtered_divs['DESCRIPTION'])
+					print (len(filtered_divs['QUANTITY']))
+					print (filtered_divs['QUANTITY'])
+
+					if len(filtered_divs['DESCRIPTION']) == len(filtered_divs['QUANTITY']):
+						print ('TERMINOU DELETING LINES... THEY ARE THE SAME... ENDINGGGGG')
+						break
+					else:
+						linha_apagada = False
+						#To continue searching for more lines to delete....
+
+				if ff_tmp.strip() != '' and ff_tmp.strip() != None:
+					for hh in palavras_no_header:
+						if hh in ff_tmp:
+							contaheaders += 1
+					for ffitem in en_palavras_fim_item: # = ['Metodo de Pagamento','Incidência','Total Retenção']
+						if ffitem in ff_tmp:
+							print ('FIM dos ITENS')
+							nextline_items = False
+							contaheaders = 0
+
+					if nextline_items:
+						#Sao itens da Tabela...
+						print ('Sao itens da Tabela... ')
+						print (ff_tmp)
+						temcash = 0
+						for idx,cc in reversed(list(enumerate(ff_tmp.split()))):
+							if cc == "AOA" or cc == "ACA":
+								print ('Moeda...')
+							elif re.match(cash_pattern,cc):
+								temcash += 1
+						if temcash >= 2:
+							#Linha tem Price and TOTAL
+							#Now checks the DESCRIPTION saved and compares to see if empty line or line with not Cash belongs to where...
+
+							for ffdivs in filtered_divs['DESCRIPTION']:
+								print ('filtered_divs')
+								print (ffdivs)
+								print ('ff_tmp')
+								print (ff_tmp)
+								if ffdivs in ff_tmp:
+									contadordescricao = ffdivs
+									break
+								else:
+									tamanho = len(ffdivs.split())
+									palavrasiguais = 0
+									for vvv in ffdivs.split():
+										if vvv in ff_tmp:
+											palavrasiguais += 1
+									print ('palavrasiguais ',palavrasiguais)
+									print (tamanho)
+									print (tamanho - palavrasiguais)
+									if (tamanho - palavrasiguais) == 1:
+										contadordescricao = ffdivs
+										break
+
+							print ('contadordescricao')
+							print (contadordescricao)
+						elif contadordescricao and linha_embranco:
+							print ('JUNTA AS DESCRICOES....')
+							contadordescricao1 = contadordescricao + "\n" + ff_tmp
+							print ('contadordescricao1')
+							print (contadordescricao1)
+						else:
+							print ('Might be continuity text from the previous LINE...')
+							print ('Might be continuity text from the previous LINE...')
+							print (ff_tmp)
+							#for now if no split skip
+							if len(ff_tmp.split()) >= 3:
+								linha_embranco = True
+								if contadordescricao and linha_embranco:
+									print ('JUNTA AS DESCRICOES....')
+									contadordescricao1 = contadordescricao + "\n" + ff_tmp
+									print ('contadordescricao1')
+									print (contadordescricao1)
+
+									for idx,fffdivs in enumerate(filtered_divs['DESCRIPTION']):
+										print ('filtered_divs00000')
+										print (fffdivs)
+										print ('ff_tmp0000')
+										print (ff_tmp)
+										if ffdivs in ff_tmp:
+											print ('MOVER PARA O ANTERIOR...')
+											print ('MOVER PARA O ANTERIOR...')
+											frappe.throw(porra)
+										else:
+											tamanho = len(fffdivs.split())
+											palavrasiguais = 0
+											for vvv in fffdivs.split():
+												if vvv in ff_tmp:
+													palavrasiguais += 1
+											print ('palavrasiguais ',palavrasiguais)
+											print (tamanho)
+											print (tamanho - palavrasiguais)
+											if (tamanho - palavrasiguais) == 1:
+												contadordescricao2 = fffdivs
+												print ('MOVER PARA O ANTERIOR...')
+												print ('MOVER PARA O ANTERIOR...')
+												print (idx)
+												print (contadordescricao + '\n' + contadordescricao2)
+												print (filtered_divs['DESCRIPTION'])
+												print ('UPDATE filtered_divs')
+												filtered_divs['DESCRIPTION'][idx-1] = contadordescricao + ' ' + contadordescricao2
+												print (filtered_divs['DESCRIPTION'])
+												filtered_divs['DESCRIPTION'].remove(filtered_divs['DESCRIPTION'][idx])
+												print ('depois ', filtered_divs['DESCRIPTION'])
+												#frappe.throw(porra)
+												linha_apagada = True
+
+												break
+
+
+
+
+
+					if contaheaders >= 2:
+						print ('Proxima linha TRUe')
+						nextline_items = True
+
+		#frappe.throw(porra)
+
+	#Check if header has 'DESCRIÇÃO and VALOR LIQ.' means next record are itens
+	#Check if line has Metodo de Pagamento means END OF Items
+
 	data = []
 	if len(filtered_divs['IVA']) > 0:
 		for row in zip(filtered_divs['ITEM'], filtered_divs['DESCRIPTION'], filtered_divs['QUANTITY'], filtered_divs['RATE'], filtered_divs['TOTAL'], filtered_divs['IVA'], filtered_divs['COUNTER']):
