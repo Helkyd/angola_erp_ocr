@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 23/01/2023
+#Date Changed: 28/01/2023
 
 
 from __future__ import unicode_literals
@@ -34,7 +34,15 @@ import json
 #PyCountry ISO TESTE
 import pycountry
 
+import bs4
 from bs4 import BeautifulSoup as bs
+
+#Timeout requests to try again
+import requests
+from requests.adapters import HTTPAdapter
+import urllib3
+from urllib3 import Retry
+import time
 
 @frappe.whitelist(allow_guest=True)
 def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
@@ -3098,7 +3106,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 	'''
 
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-	terpalavras_header = ['UNIDADE', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido','%Imp.']
+	terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Cód. Artigo', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'IVA']
 
 	terpalavras_header_EN = ['CODE NO','CODE', 'DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL AMOUNT', 'AMOUNT', 'TOTAL', 'VAT', 'PRICE']
 
@@ -3112,6 +3120,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 	filtered_divs = {'COUNTER': [], 'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
 
 	palavras_no_header = []
+	palavras_no_header_ultimoHeader = ['VALOR LIQ.']
 
 	supplierMoeda = ''
 
@@ -3164,11 +3173,14 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					print ('DOC is ENGLISH....SCAN again ')
 					en_scan = True
 
+		palavras_header_counted = False
+		Qtd_isnot_number = False	#To control if needs to OCR again as 260
+
 		if en_scan:
 
 			#Check if needs Scan lower 260 to get all Numbers
-			palavras_header_counted = False
-			Qtd_isnot_number = False	#To control if needs to OCR again as 260
+			#palavras_header_counted = False
+			#Qtd_isnot_number = False	#To control if needs to OCR again as 260
 
 			#Scan in ENGLISH
 			facturaSupplier = ocr_pytesseract (filefinal,"COMPRAS",'eng',270) #270) #180) #150) retuns line counter but not the rest...
@@ -3236,7 +3248,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 				print ('facturaSupplier')
 				print (facturaSupplier_tmp)
 				for fsup in facturaSupplier_tmp:
-					print ('TEXTOOOOOOaaaa')
+					print ('1- TEXTOOOOOOaaaa *********')
 					print (fsup.strip())
 
 					print ('00000000')
@@ -3532,7 +3544,266 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 				print (facturaSupplier.split('\n'))
 				print ('palavras_no_header ', palavras_no_header)
 				#frappe.throw(porra)
+		else:
+			#Palavras PT no Header
+			print ('Palavras PT no Header')
+			for fsup in facturaSupplier.split('\n'):
+				if palavras_header_counted == False:
+					palavra_total = False #TO AVOID counting 'TOTAL PRICE (EUR)' and again TOTAL
+					palavra_preco = False #TO AVOID counting 'UNIT PRICE (EUR)' and again UNIT PRICE
+					print (fsup.strip().upper())
+					for pp in terpalavras_header_EN:
+						if pp.upper() in fsup.strip().upper():
+							print ('Palavaheader ', pp.upper())
+							if pp.upper() == 'UNIT PRICE' or pp.upper() == 'TOTAL':
+								if palavra_preco:
+									print ('NAO CONTA HEADER PRECO ', pp.upper())
+								if palavra_total:
+									print ('NAO CONTA HEADER TOTAL ', pp.upper())
 
+							if not palavra_preco or not palavra_total:
+								#To avoid TOTAL AMOUNT and TOTAL being added
+								if 'TOTAL AMOUNT' in palavras_no_header and pp.upper() == 'TOTAL':
+									print ('SKIP TOTAL')
+								elif 'CODE NO' in palavras_no_header  or 'CODE' in palavras_no_header and pp.upper() == 'CODE':
+									print ('SKIP CODE and CODE NO')
+								else:
+									if not palavra_preco and pp.upper() == "PRICE":
+										print ('Pode acrescentar PRICE ao HEADER')
+									elif palavra_preco and pp.upper() == "PRICE":
+										print ('SKIP ADDING PRICE TO HEADER')
+									else:
+										contapalavras_header += 1
+										print ('pode contar HEADER ', pp.upper())
+										print ('contapalavras_header ', contapalavras_header)
+										palavras_no_header.append(pp.upper())
+							if contapalavras_header >= 6:
+								palavras_header_counted = True
+							#'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL'
+							if pp.upper() == 'UNIT PRICE (EUR)': # or pp.upper() == 'PRICE':
+								palavra_preco = True
+							if pp.upper() == 'TOTAL PRICE (EUR)' or pp.upper() == 'TOTAL AMOUNT':
+								palavra_total = True
+					if contapalavras_header <= 3:
+						print ('Scan HEADER AGAIN.... ')
+
+			print ("palavras_no_header ",palavras_no_header)
+			print (contapalavras_header)
+			#FIX 22-01-2023; Scan table using pd2txt.comecar ...
+			print ('Scan table using pd2txt.comecar PORTUGUES...')
+			if contapalavras_header <= 4:
+				contapalavras_header = 0
+				palavras_header_counted = False
+				palavras_no_header = []
+				adicionapalavra_FIM = False	#To end adding to Header
+
+				print ('Scan table using pd2txt.comecar ...')
+				from angola_erp_ocr.api.pdf2txt import extrair_texto
+				print ('FILEFINAL')
+				print (filefinal)
+				textotabela = extrair_texto(filefinal)
+				print ('Read file generated....')
+
+				#print (textotabela)
+				#print (textotabela[0].split('\n'))
+				facturaSupplier_tmp = textotabela
+				terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'IVA']
+				print ('facturaSupplier')
+				print (facturaSupplier_tmp)
+				for fsup in facturaSupplier_tmp:
+					print ('2 - TEXTOOOOOOaaaa *********')
+					print (fsup.strip())
+
+					print ('00000000')
+					print ('TEXTO LINHA: ', fsup)
+					for fi in en_palavras_fim_item:
+						print ('HEADRE ',fsup.strip().upper())
+						print ('fi ', fi.upper())
+						if fi.upper() in fsup.strip().upper():
+							fim_items = True
+
+					if fsup.strip == "ITEM CODE DESCRIPTION QUANTITY —_ UNIT PRICE TOTAL":
+						frappe.throw(porra)
+
+					if not fsup.strip().startswith('SN:'):
+						print ('conta PALAVRAS HEADER ', contapalavras_header)
+						print ('fim items ', fim_items)
+						if contapalavras_header >= 5 and not fim_items:
+							#Now check if all Columns for Items are correct ....
+							#ITEM| DESCRIPTION| QUANTITY| UNIT PRICE (EUR)| TOTAL PRICE (EUR)
+							#this case must have 5 columns with TEXTs...
+							totalgeral = ''
+							precounitario = ''
+							quantidade = ''
+
+
+							for idx,cc in reversed(list(enumerate(fsup.split()))):
+								print ('contapalavras_header ',contapalavras_header)
+								print (len(fsup.split()))
+								if len(fsup.split()) > contapalavras_header:
+									print ('TEM ESPACO nos ITENS.... ')
+									print ('TODO: IDX: last must be Number, LAST-1 also, last-2 also')
+									print ('TODO: IDX: First can be Number or TEXT')
+									print ('TODO: if NOT IDX: First and not LAST-1 and not LAST-2 than is DESCRIPTION')
+									#frappe.throw(porra)
+								elif len(fsup.split()) <= 3:
+									print ('PODE SER SNs.... CANCEL QTD CHECK')
+									break
+
+
+
+								print ('===== FIRST IDX0 ======')
+								print ('idx ',idx)
+								print ('cc ',cc)
+
+								#Check if cash
+								print (re.match(cash_pattern,cc))
+								print (cc.strip().isnumeric())
+								#If startswith SN: skip
+
+
+								if re.match(cash_pattern,cc):
+									if not totalgeral:
+										totalgeral = cc
+									elif not precounitario:
+										precounitario = cc
+								elif contapalavras_header == 5:
+									#Check QTD is a Number...
+									if len(fsup.split()) > 1:
+										print ('size fsup ',len(fsup.split()))
+										#FIX 21-12-2022; Check if Currency Symbol...
+										if cc.strip() == "€":
+											if not supplierMoeda:
+												supplierMoeda = 'EUR'
+
+										elif not cc.strip().isnumeric():
+											#Gera novamente o OCR bcs QTD is not a Number...
+											if quantidade == '':
+												#Qtd_isnot_number = True
+												print ('QTD is not a NUMBER ', cc)
+												#frappe.throw(porra)
+												#break
+												#SET to ZERO and after Rate and Total added divide to find the QTD
+												quantidade = 0
+
+								if cc.strip().isnumeric():
+									if contapalavras_header == 5:
+										#Assuming that 5 is Total, 4 is Unit Price, 3 is Qtd
+										if not idx == 0:
+											if not quantidade:
+												quantidade = cc
+												Qtd_isnot_number = False
+
+							print ('totalgeral ', totalgeral)
+							print ('precounitario ', precounitario)
+							print ('quantidade ', quantidade)
+
+							#if "0.15065" in fsup:
+							#	frappe.throw(porra)
+
+						#Must be last to avoid running on the top first and still on the HEADER TEXT...
+						print ('VERIFICAR palavras_header_counted ', palavras_header_counted)
+						if palavras_header_counted == False:
+							palavra_total = False #TO AVOID counting 'TOTAL PRICE (EUR)' and again TOTAL
+							palavra_preco = False #TO AVOID counting 'UNIT PRICE (EUR)' and again UNIT PRICE
+
+							for pp in terpalavras_header:
+								if pp.upper() in fsup.strip().upper():
+									print ('fsup.strip')
+									print (fsup.strip().upper())
+									print ('Palavaheader ', pp.upper())
+									if pp.upper() == 'PREÇO' or pp.upper() == 'VALOR LIQ.' or pp.upper() == 'Pr.Unit'.upper():
+										if palavra_preco:
+											print ('NAO CONTA HEADER PRECO ', pp.upper())
+										if palavra_total:
+											print ('NAO CONTA HEADER TOTAL ', pp.upper())
+										if pp.upper() == 'PREÇO':
+											print (palavras_no_header)
+											print ('palavra_preco ', palavra_preco)
+											print ('+++++ AAAAAAAA +++++ ')
+
+										#if ('UNIT PRICE' in palavras_no_header  or 'PRICE' in palavras_no_header or 'UNIT' in palavras_no_header) and (pp.upper() == 'UNIT PRICE' or pp.upper() == 'UNIT' or pp.upper() == 'PRICE'):
+										if ('UNIT PRICE' in palavras_no_header  or 'PRICE' in palavras_no_header) and (pp.upper() == 'UNIT PRICE' or pp.upper() == 'PRICE'):
+											palavra_preco = True
+											print ('Skip Unit Price or Unit')
+
+									print ('palavra_preco ', palavra_preco)
+									print ('palavra_total ', palavra_total)
+									if not palavra_preco or not palavra_total:
+										#To avoid TOTAL AMOUNT and TOTAL being added
+										if 'VALOR LIQ.' in palavras_no_header and pp.upper() == 'VALOR LIQ.':
+											print ('SKIP VALOR LIQ.')
+										elif 'CODE NO' in palavras_no_header  or 'CODE' in palavras_no_header and pp.upper() == 'CODE':
+											print ('SKIP CODE and CODE NO')
+										elif ('DESCRIPTION OF GOODS' in palavras_no_header  or 'DESCRIPTION' in palavras_no_header) and (pp.upper() == 'DESCRIPTION OF GOODS' or pp.upper() == 'DESCRIPTION'):
+											print ('SKIP DESCRIPTION OF GOODS and DESCRIPTION')
+											print (palavras_no_header)
+
+										else:
+											if pp.upper() == 'PRICE':
+												print ('palavras no header ', palavras_no_header)
+											if not palavra_preco:
+												#Check if word is... ex. cooperativa is not part of header but IVA exists inside....
+												if len(pp.split()) == 1:
+													adicionapalavra = False
+													for ffsup in fsup.split():
+														if ffsup.upper().strip() == pp.upper():
+															adicionapalavra = True
+												else:
+													#Case Palavra do Header is a single one but has a space...  ex. 'VALOR LIQ.'
+													adicionapalavra = True
+
+
+												if adicionapalavra:
+													#check if last HEADER
+													if pp.upper() in palavras_no_header_ultimoHeader:
+														adicionapalavra_FIM = True
+														palavras_no_header.append(pp.upper())
+														contapalavras_header += 1
+														print ('pode contar HEADER ', pp.upper())
+														print ('contapalavras_header ', contapalavras_header)
+													elif adicionapalavra_FIM == False:
+														palavras_no_header.append(pp.upper())
+														contapalavras_header += 1
+														print ('pode contar HEADER ', pp.upper())
+														print ('contapalavras_header ', contapalavras_header)
+
+
+
+											#frappe.throw(porra)
+
+									#palavras_header_counted = True
+									if contapalavras_header >= 9:
+										#palavras_header_counted = True
+										print ('palavras_header_counted SET FALSE')
+										print ('contapalavras_header')
+										print (palavras_no_header)
+									if 'PICTURE' in palavras_no_header:
+										palavras_header_counted = True
+										print ('PICTURE no HEADER COUNT')
+									#'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL'
+									if pp.upper() == 'UNIT PRICE (EUR)': # or pp.upper() == 'PRICE':
+										palavra_preco = True
+									if pp.upper() == 'TOTAL PRICE (EUR)' or pp.upper() == 'TOTAL AMOUNT':
+										palavra_total = True
+							if contapalavras_header <= 3:
+								print ('Scan HEADER AGAIN22222.... ')
+						if Qtd_isnot_number:
+							break
+
+				print ('palavras_no_header')
+				print (palavras_no_header)
+				print ('CALLED OCR_OCR_OCR')
+				print ('Qtd_isnot_number ',Qtd_isnot_number)
+				#terpalavras_header_EN = terpalavras_header
+				print ('PORTUGUES ocr_ocr_ocr =======')
+				print ('en_scan ', en_scan)
+				print ('terpalavras_header ',terpalavras_header)
+				print ('palavras_no_header ',palavras_no_header)
+				palavras_fim_item = ['Metodo de Pagamento','Incidência','Total Retenção']
+				return ocr_ocr_ocr (facturaSupplier_tmp,palavras_fim_item,en_scan,supplierMoeda,terpalavras_header,palavras_no_header,palavras_no_header_ultimoHeader)
+
+			frappe.throw(porra)
 		'''
 			TODO: Get MUST fields from OCR
 		'''
@@ -3717,7 +3988,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					if not en_scan:
 						if "NIF" in fsup.upper() or "NIF:" in fsup.upper():
 							supplierNIF = fsup.replace('NIF:','').replace('NIF','').strip()
-							print ('CHECK NIF....ANGOLA')
+							print ('CHECK NIF....ANGOLA1')
 							if "NIFE do Adquirente:".upper() in fsup.upper() or "NIF do Adquirente:".upper() in fsup.upper():
 								#AGT tem Nif Origem e nif DESTINO
 								if "NIFE do Adquirente:".upper() in fsup.upper():
@@ -4853,7 +5124,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 					if not en_scan:
 						if "NIF" in fsup.upper() or "NIF:" in fsup.upper():
 							supplierNIF = fsup.replace('NIF:','').replace('NIF','').strip()
-							print ('CHECK NIF....ANGOLA')
+							print ('CHECK NIF....ANGOLA2')
 							nifvalido = validar_nif (supplierNIF)
 							print (nifvalido)
 							if nifvalido and nifvalido[2]:
@@ -5357,8 +5628,8 @@ def search_company_online(empresa):
 
 	# Import the beautifulsoup
 	# and request libraries of python.
-	import requests
-	import bs4
+	#import requests
+	#import bs4
 
 	# Make two strings with default google search URL
 	# 'https://google.com/search?q=' and
@@ -5389,12 +5660,58 @@ def search_company_online(empresa):
 			return 'INVALIDO'
 
 def validar_nif(nif):
-	import requests
+
 	if nif:
 		print ('verifying... ', nif)
+		#FIX 02-01-2023; if timeout tries again
+		class TimeoutHTTPAdapter(HTTPAdapter):
+			def __init__(self, *args, **kwargs):
+				if "timeout" in kwargs:
+					self.timeout = kwargs["timeout"]
+					del kwargs["timeout"]
+				else:
+					self.timeout = 5   # or whatever default you want
+				super().__init__(*args, **kwargs)
+			def send(self, request, **kwargs):
+				kwargs["timeout"] = self.timeout
+				return super().send(request, **kwargs)
+
+		'''
+		NOT YET REQUIRED STILL USING THE OLD
+		session = requests.Session()
+		adapter = TimeoutHTTPAdapter(timeout=(3, 60), max_retries=Retry(total=2, backoff_factor=1.5, status_forcelist=[429, 500, 502, 503, 504]))
+		session.mount("http://", adapter)
+		session.mount("https://", adapter)
+		start_time = time.monotonic()
+
+		headers= {
+			'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36',
+		}
+		site = "https://invoice.minfin.gov.ao/commonServer/common/taxpayer/get/" + str(nif.replace(':','').replace('.','').replace(',','').strip())
+		print ('site ',site + '****')
+
 		try:
-			response  = requests.get("https://invoice.minfin.gov.ao/commonServer/common/taxpayer/get/" + str(nif),verify=False, timeout=5)
+			#r = session.get("http://httpbin.org/status/503")
+			response = session.get(site,headers=headers,verify=False)
+			#response = session.post(site1,headers=headers,files={'file': open(ficheiro,'rb')}) #.json()
+			print ('response')
+			print (response.json())
+			frappe.throw(porra)
+
+		except Exception as e:
+			print(type(e))
+			print(e)
+
+		stop_time = time.monotonic()
+		print(round(stop_time-start_time, 2), "seconds")
+		response.close()
+		session.close()
+		'''
+
+		try:
+			response  = requests.get("https://invoice.minfin.gov.ao/commonServer/common/taxpayer/get/" + str(nif.replace(':','').replace('.','').replace(',','').strip()),verify=False, timeout=20)
 			#check if Response is 502; Does not Exist the site...
+			print ('response.status_code ',response.status_code)
 			if response.status_code == 502:
 				print ('Nao existe o SITE!!!!')
 				return ('SITE EM BAIXO.')
@@ -5947,7 +6264,7 @@ def liquidacao_generica_tributo(ficheiro):
 
 @frappe.whitelist(allow_guest=True)
 def validar_dlinumber(dlinumber):
-	import requests
+	#import requests
 	if dlinumber:
 		print ('verifying... ', dlinumber)
 		try:
@@ -6482,7 +6799,11 @@ def ocr_pdf_to_image(ficheiro = None):
 	#plt.imshow(masked, cmap='gray')
 	#plt.show()
 
-def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpalavras_header_EN,palavras_no_header):
+def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpalavras_header_EN,palavras_no_header,palavras_no_header_ultimoHeader = None):
+	print ('Running ocr_ocr_ocr ')
+	print ('Running ocr_ocr_ocr ')
+	print ('Running ocr_ocr_ocr ')
+
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
 	cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)|(?:\d*\,\d+)'
 	filtered_divs = {'COUNTER': [], 'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
@@ -6691,7 +7012,7 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 				if not en_scan:
 					if "NIF" in fsup.upper() or "NIF:" in fsup.upper():
 						supplierNIF = fsup.replace('NIF:','').replace('NIF','').strip()
-						print ('CHECK NIF....ANGOLA')
+						print ('CHECK NIF....ANGOLA3')
 						if "NIFE do Adquirente:".upper() in fsup.upper() or "NIF do Adquirente:".upper() in fsup.upper():
 							#AGT tem Nif Origem e nif DESTINO
 							if "NIFE do Adquirente:".upper() in fsup.upper():
@@ -6879,7 +7200,6 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 
 
 
-
 				#palavrasexiste_header = False
 				if en_scan:
 					for pp in terpalavras_header_EN:
@@ -6893,7 +7213,11 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 							en_contapalaterpalavras_header_ENvras_header_banco += 1
 
 				else:
-					for pp in terpalavras_header:
+					print ('SCAN PORTUGUES.....')
+					#for pp in terpalavras_header:
+					print ('terpalavras_header_EN')
+					print (terpalavras_header_EN)
+					for pp in terpalavras_header_EN:
 						#print ('tamho ',len(fsup.strip()))
 						#print ('pp ', pp)
 						print (len(fsup.strip()) - fsup.strip().upper().find(pp.upper()))
@@ -6903,7 +7227,30 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 							#frappe.throw(porra)
 
 						if pp.upper() in fsup.strip().upper():
-							contapalavras_header += 1
+							#contapalavras_header += 1
+							print ('REMOVED FROM HERE THE COUNTER')
+
+						if len(pp.split()) == 1:
+							#adicionapalavra = False
+							for ffsup in fsup.split():
+								if ffsup.upper().strip() == pp.upper():
+									#adicionapalavra = True
+									print ('VERIFICAR ')
+									print (ffsup.upper().strip())
+									print (pp.upper())
+									#frappe.throw(porra)
+									contapalavras_header += 1
+						else:
+							#Is two words; ex. VALOR LIQ.
+							if fsup.upper().strip() == pp.upper():
+								#adicionapalavra = True
+								print ('VERIFICAR ')
+								print (fsup.upper().strip())
+								print (pp.upper())
+								#frappe.throw(porra)
+								contapalavras_header += 1
+
+
 						#if "%Imp." == pp:
 						#	if "%Imp." in fsup.strip():
 						#		print ('posicao')
@@ -7068,10 +7415,16 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 
 				print ("palavrasexiste_header ",palavrasexiste_header)
 
+				if fsup.strip().upper() in terpalavras_item:
+					if linhaAnterior == "TOTAL":
+						#Para adicionar o PRECO...
+						linhaAnterior = 'RATE'
+
+
 				if palavrasexiste_header:
 					#Tem HEADER entao ve os ITENS...
 					for pp in terpalavras_item:
-						if pp in fsup.strip():
+						if pp.upper() in fsup.strip().upper():
 							#IS an ITEMS so add
 							palavraexiste_item = True
 
@@ -7131,7 +7484,7 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 							contaLinhas = fsup.strip()[0:1]
 						#if EN; testing to start from TOTAL, PRICE, QTD in order to prices and Qtd correct
 						tmpdescricao = ''
-
+						print ('AQUI INGLES OU PT')
 						if en_scan:
 							cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)'
 
@@ -7295,6 +7648,249 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 										avoidADDING = True
 										print ('FEZ BREAK')
 										break
+						else:
+							print ('=====PORTUGUES')
+							cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)'
+
+							for idx,cc in reversed(list(enumerate(fsup.split()))):
+								print ('===== IDX0 PORTUGUES ======')
+								print ('idx ',idx)
+								print ('cc ',cc)
+
+								#Check if cash
+								print (re.match(cash_pattern,cc))
+								print (cc.strip().isnumeric())
+
+								#If last(first) is not Numeric; No longer ITEMs...
+								#if primeiroRegisto == False:
+								#	palavrasexiste_header = False
+								#	break
+
+								#More than 1 can be Items...
+								print ('fsup.strip().split() ', fsup.strip().split())
+								print ('len(fsup.strip().split()) ', len(fsup.strip().split()))
+								print ('palavras_no_header ', palavras_no_header)
+
+								#Check if AOA at end
+								if len(fsup.split()) > 1:
+									if fsup.split()[1] == 'AOA' or fsup.split()[1] == 'AKZ' or fsup.split()[1] == 'KZ':
+										#cc = fsup.split()[0]
+										print ('REMOVED CURRENCY AOA from cc')
+
+								if len(fsup.strip().split()) > 1:
+									if re.match(cash_pattern,cc):
+										if not itemTotal:
+											itemTotal = cc.strip()
+										elif not itemRate:
+											#Check if has VAT
+											if 'IVA' in palavras_no_header and not itemIVA:
+												itemIVA = cc.strip()
+												print ('aqui add itemIVA')
+											elif 'PREÇO' in palavras_no_header and 'TOTAL' in palavras_no_header and 'IVA' in palavras_no_header and ('VALOR LIQ.' in palavras_no_header or 'VALOR LIQUIDO' in palavras_no_header):
+												if not tmpamount:
+													tmpamount = cc.strip()
+													print ('aqui add tmpamount')
+												elif not itemRate:
+													itemRate = cc.strip()
+													print ('aqui add itemRate II')
+
+											else:
+												itemRate = cc.strip()
+												print ('aqui add itemRate')
+										primeiroRegisto = False
+									elif cc.strip().isnumeric():
+										#Qtd
+										print ('Qtd ',itemQtd)
+										if not itemQtd and itemQtd == '':
+											itemQtd = cc.strip()
+
+										#FIX 21-12-2022; Check if SN is same as QTD
+										print ('len description')
+										print (len(filtered_divs['DESCRIPTION']))
+										if len(filtered_divs['DESCRIPTION']) > 1:
+											print (filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1])
+										#filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += ' SN: ' + tmp_sn
+
+
+										#Check if CODE NO in Headers...
+										if 'CODE NO' in palavras_no_header  or 'CODE' in palavras_no_header and idx == 1:
+											print ('itemCode ', itemCode)
+											if not itemCode:
+												itemCode = cc.strip()
+
+									else:
+										print('String...')
+										if idx == 0:
+											#First is a Number but OCR was wrong... FIX
+											print ('First is a Number but OCR was wrong... FIX ')
+											print ('itemCode ',itemCode)
+											print ('tmpitemCode ',tmpitemCode)
+											if not itemCode and tmpitemCode:
+												itemCode = tmpitemCode
+										elif not itemQtd and not tmpdescricao:
+											itemQtd = 0	#Has ERROR WHEN OCR so no QTD as number returned...
+
+										else:
+											#Check if header Code No exists... and if idx 1
+											if idx == 1 and 'CODE NO' in palavras_no_header:
+												print ('itemCode ', itemCode)
+												if not itemCode:
+													itemCode = cc.strip().replace('©','').replace('«','')
+												#frappe.throw(porra)
+											else:
+												#Avoid -
+												if cc.strip() == '-' or cc.strip() == '—':
+													print (' SKIP adding this —')
+												else:
+													tmpdescricao = cc.strip() + ' ' + tmpdescricao
+								if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1:
+									#Add SN JSTJPB7CX5N4008215 to Description
+									#tmpdescricao = tmpdescricao + 'SN: ' + cc
+									print ('adiciona SN: por algum motivo...')
+									tmpdescricao = ' SN: ' + cc
+									palavraexiste_item = False
+								elif len(fsup.strip().split()) <= 2:	#Was 1 but might be 1000 AOA
+									#Has SN bu might be with a DOT the SN
+
+									#Because Header has Description of Goods...
+									print ('NOT itemCode ', itemCode)
+									if not itemCode:
+										#itemcode = cc.strip()
+										if cc.isnumeric() or cc[:1].isnumeric():
+											print ('PODE SER CODIGO ou QUANTIDADE ou PRECO, TOTAL.... dos ITENS')
+											if len(cc) <= 2: # or len(cc) == 3:
+												print ('contaLinhas ', contaLinhas)
+												print ('countlines ', countlines)
+												print ('cc.strip() ',cc.strip())
+												print ('linhaAnterior ',linhaAnterior)
+												print ('Quantity ', len(filtered_divs['QUANTITY']))
+
+												#if linhaem_branco and linhaAnterior == 'TOTAL':
+													#Contador...
+												#	filtered_divs['COUNTER'].append(cc.strip())
+												if not linhaAnterior == 'RATE' and not linhaAnterior == 'TOTAL' and not len(filtered_divs['QUANTITY']) == 0:
+													if not linhaAnterior == 'QUANTITY':
+														filtered_divs['COUNTER'].append(cc.strip())
+
+												if linhaAnterior == 'RATE':
+													filtered_divs['QUANTITY'].append(cc.strip())
+													linhaAnterior = 'QUANTITY'
+												elif linhaAnterior == 'TOTAL':
+													print ('Carton Carton Carton ', cc.strip())
+													linhaAnterior = 'CARTON'
+													if linhaem_branco:
+														linhaem_branco = False
+														print ('SET linhaem_branco FALSE')
+												elif int(cc.strip()) > 6:
+													print (filtered_divs['COUNTER'])
+													#frappe.throw(porra)
+												elif linhaAnterior == 'DESCRIPTION' and len(filtered_divs['QUANTITY']) == 0:
+													filtered_divs['QUANTITY'].append(cc.strip())
+													linhaAnterior = 'QUANTITY'
+													print ('111 Added QUANTITY')
+												elif linhaAnterior == 'QUANTITY' and len(filtered_divs['QUANTITY']) > 0:
+													filtered_divs['QUANTITY'].append(cc.strip())
+													linhaAnterior = 'QUANTITY'
+													print ('222 Added QUANTITY')
+											elif len(cc) > 2:
+												#Pode ser Preco ou TOTAL
+												print ('Pode ser Preco ou TOTAL')
+												print ('contaLinhas ', contaLinhas)
+												print ('countlines ', countlines)
+												print ('cc.strip() ',cc.strip())
+												print ('linhaAnterior ',linhaAnterior)
+												print ('Rate ', len(filtered_divs['RATE']))
+												print (filtered_divs['RATE'])
+												print ('+++++')
+												if linhaAnterior == 'QUANTITY' and len(filtered_divs['RATE']) == 0:
+													filtered_divs['RATE'].append(cc.strip())
+													linhaAnterior = 'RATE'
+													print ('111 Added RATE')
+													avoidADDING = True
+												elif linhaAnterior == 'RATE' and len(filtered_divs['RATE']) >= 1 and not '%' in cc.strip():
+													#Avoid adding IVA %
+													filtered_divs['RATE'].append(cc.strip())
+													linhaAnterior = 'RATE'
+													print ('2222 Added RATE')
+													avoidADDING = True
+												elif linhaAnterior == 'RATE' and '%' in cc.strip():
+													#Check if 14/7/5 means IVA
+													if cc.strip() == '14%' or cc.strip() == '7%' or cc.strip() == '5%':
+														#IVA
+														print ('IVA but has no DESCOUNT BEFORE..')
+														filtered_divs['IVA'].append(cc.strip())
+														linhaAnterior = 'IVA'
+														print ('0000 Added IVA')
+														avoidADDING = True
+
+													else:
+														linhaAnterior = 'DEC'	#DEsconto
+														print ('DESCONTOs.....')
+														avoidADDING = True
+
+												elif linhaAnterior == 'DEC' and '%' in cc.strip():
+													#IVA because of %
+													print ('IVA because of % ')
+													filtered_divs['IVA'].append(cc.strip())
+													linhaAnterior = 'IVA'
+													print ('1111 Added IVA')
+													avoidADDING = True
+
+												elif linhaAnterior == 'IVA': # and len(filtered_divs['TOTAL']) == 0:
+													filtered_divs['TOTAL'].append(cc.strip())
+													linhaAnterior = 'TOTAL'
+													print ('1111 Added TOTAL')
+													avoidADDING = True
+
+
+										elif len(cc.strip()) > 5:
+											print ('Descricao.... dos ITENS')
+											print ('Verifica se UNIDADE/UNI -> CX, KG, etc ')
+											print (cc.strip().upper())
+											print ('terpalavras_item ',terpalavras_item)
+											if cc.strip().upper() in terpalavras_item:
+												print ('FAZ PARTE DAS UNIDADES DE MEDIDA.....')
+												avoidADDING = True
+											print (cc.strip().upper())
+
+											#frappe.throw(porra)
+
+									elif not tmp_sn_added:
+										print ('Has SN bu might be with a DOT the SN')
+										print (fsup.strip())
+
+										#Check if CODE NO in header.. not SERIAL NUMBER!
+										if 'CODE NO' in palavras_no_header or 'CODE' in palavras_no_header:
+											print ('NOT ADDING SN: bcs might not be; is Description continuation...')
+											tmpdescricao = ' ' + cc
+										else:
+											tmpdescricao = ' SN: ' + cc
+										palavraexiste_item = False
+										itemCode = ''
+								elif 'CODE NO' in palavras_no_header or 'CODE' in palavras_no_header:
+									if not itemCode and idx == 1:
+										#Check if has DOT !!!!
+										if cc.find('.') != -1:
+											itemCode = cc.strip().replace('(','')
+
+
+								print ('tmpQtd ', itemQtd)
+								print ('tmpdescricao ', tmpdescricao)
+								print ('primeiroRegisto ',primeiroRegisto)
+								print (len(fsup.split()))
+								if idx == len(fsup.split())-1:
+									print ('para')
+									if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1:
+										print('continua')
+									elif len(fsup.strip()) >= 3 and len(fsup.strip().split()) == 1:
+										print ('NUMERO SERIE.... ADD to DESCRIPTION')
+									elif not re.match(cash_pattern,cc):
+										#TEM CURRENCY; Continua o loop
+										if cc.strip() != 'AOA':
+											tmpdescricao = ''
+											avoidADDING = True
+											print ('FEZ BREAK')
+											break
 
 						#frappe.throw(porra)
 						print (tmpdescricao)
@@ -7501,95 +8097,117 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 						print ('filtered_divs COUNTER')
 						print (filtered_divs['COUNTER'])
 						print (len(filtered_divs['COUNTER']))
-						if filtered_divs['COUNTER']:
-							print (len(filtered_divs['DESCRIPTION']))
-							print ('linhaem_branco ', linhaem_branco)
-							if linhaem_branco:
-								print ('Mudou de REGISTO....')
-								print ('Mudou de REGISTO....')
+						#FIX 27-01-2023; REMOVED FOR NOW
+						#if filtered_divs['COUNTER']:
+						print (len(filtered_divs['DESCRIPTION']))
+						print ('linhaem_branco ', linhaem_branco)
+						if linhaem_branco:
+							print ('Mudou de REGISTO....')
+							print ('Mudou de REGISTO....')
 
-								print ('linhaAnterior ',linhaAnterior)
-								#Check if Starts with $ can be Unitprice or SUM
-								if fsup.strip().startswith('$') and linhaAnterior == 'DESCRIPTION':
-									#Rate
-									filtered_divs['RATE'].append(fsup.strip().replace('$',''))
-									linhaAnterior = 'RATE'
-									if not supplierMoeda:
-										supplierMoeda = "USD"
-								elif fsup.strip().startswith('$') and linhaAnterior == 'QUANTITY':
-									#TOTAL /SUM
-									filtered_divs['TOTAL'].append(fsup.strip().replace('$',''))
-									linhaAnterior = 'TOTAL'
-								elif linhaAnterior == 'QUANTITY' and fsup.strip() == 'SET':
-									print ('SET SET SET SET ', fsup.strip())
-									print ('WHERE to ADD SET')
-									#linhaAnterior = 'UNIT'
-								elif fsup.strip() == 'TOTAL':
-									#End of Items Table...
-									print ('End of Items Table... ')
-									fim_items = True
+							print ('linhaAnterior ',linhaAnterior)
+							#Check if Starts with $ can be Unitprice or SUM
+							if fsup.strip().startswith('$') and linhaAnterior == 'DESCRIPTION':
+								#Rate
+								filtered_divs['RATE'].append(fsup.strip().replace('$',''))
+								linhaAnterior = 'RATE'
+								if not supplierMoeda:
+									supplierMoeda = "USD"
+							elif fsup.strip().startswith('$') and linhaAnterior == 'QUANTITY':
+								#TOTAL /SUM
+								filtered_divs['TOTAL'].append(fsup.strip().replace('$',''))
+								linhaAnterior = 'TOTAL'
+							elif linhaAnterior == 'QUANTITY' and fsup.strip() == 'SET':
+								print ('SET SET SET SET ', fsup.strip())
+								print ('WHERE to ADD SET')
+								#linhaAnterior = 'UNIT'
+							elif fsup.strip() == 'TOTAL':
+								#End of Items Table...
+								print ('End of Items Table... ')
+								fim_items = True
 
-									#Reset Counter to be same as Item
-									rr = 0
-									filtered_divs['COUNTER'] = []
-									while rr < len(filtered_divs['ITEM']):
-										filtered_divs['COUNTER'].append(rr+1)
-										rr += 1
+								#Reset Counter to be same as Item
+								rr = 0
+								filtered_divs['COUNTER'] = []
+								while rr < len(filtered_divs['ITEM']):
+									filtered_divs['COUNTER'].append(rr+1)
+									rr += 1
 
 
-								else:
-									#elif linhaAnterior != 'CARTON':
-									if linhaem_branco and fsup.strip() != 'CARTON':
-										if linhaAnterior == 'TOTAL' and fsup.strip().startswith('$'):
-											#Add on RATE
-											filtered_divs['RATE'].append(fsup.strip().replace('$',''))
-											linhaAnterior = 'RATE'
-										else:
-											filtered_divs['DESCRIPTION'].append(fsup.strip())
-											#For this case assume First split() as CODE
-											print ('Codigo ITEM')
-											print (fsup.split()[0].strip())
-											#If has - is a code otherwise add all Text
-											if fsup.split()[0].strip().find('-') != -1:
-												filtered_divs['ITEM'].append(fsup.split()[0].strip())
-											else:
-												filtered_divs['ITEM'].append(fsup.strip())
-											linhaAnterior = 'DESCRIPTION'
-
-											#Check if Counter is less
-											if len(filtered_divs['COUNTER']) < len(filtered_divs['ITEM']):
-												filtered_divs['COUNTER'].append(len(filtered_divs['COUNTER'])+1)
-												print ('Aumenta o Counter....')
-								linhaem_branco = False
 							else:
-								print ('linhaAnterior ',linhaAnterior)
-								if linhaAnterior == 'CARTON':
-									print ('Linha CARTON tem MAIS QUE NUMEROS...')
-								elif len(filtered_divs['DESCRIPTION']) >= 1:
-									#filtered_divs['DESCRIPTION'].append(fsup.strip())
-									filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += ' ' + fsup.strip()
-								else:
-									filtered_divs['DESCRIPTION'].append(fsup.strip())
-								linhaAnterior = 'DESCRIPTION'
-								#print (filtered_divs['DESCRIPTION'])
-								#frappe.throw(porra)
-							print (filtered_divs['COUNTER'])
-							print (filtered_divs['DESCRIPTION'])
-							print (filtered_divs['ITEM'])
-							print (filtered_divs['QUANTITY'])
-							print (filtered_divs['RATE'])
-							print (filtered_divs['TOTAL'])
+								#elif linhaAnterior != 'CARTON':
+								if linhaem_branco and fsup.strip() != 'CARTON':
+									if linhaAnterior == 'TOTAL' and fsup.strip().startswith('$'):
+										#Add on RATE
+										filtered_divs['RATE'].append(fsup.strip().replace('$',''))
+										linhaAnterior = 'RATE'
+									else:
+										filtered_divs['DESCRIPTION'].append(fsup.strip())
+										#For this case assume First split() as CODE
+										print ('Codigo ITEM')
+										print (fsup.split()[0].strip())
+										#If has - is a code otherwise add all Text
+										if fsup.split()[0].strip().find('-') != -1:
+											filtered_divs['ITEM'].append(fsup.split()[0].strip())
+										else:
+											filtered_divs['ITEM'].append(fsup.strip())
+										linhaAnterior = 'DESCRIPTION'
 
-							#if 'BUTTON SET FOR RANG' in fsup.strip(): # or 'cruiser LC200 upgrade to 2022' in fsup.strip(): # or 'F142-B1-Bodykit For Land' in fsup.strip():
-							#	frappe.throw(porra)
+										#Check if Counter is less
+										if len(filtered_divs['COUNTER']) < len(filtered_divs['ITEM']):
+											filtered_divs['COUNTER'].append(len(filtered_divs['COUNTER'])+1)
+											print ('Aumenta o Counter....')
+							linhaem_branco = False
+						else:
+							print ('linhaAnterior ',linhaAnterior)
+							if linhaAnterior == 'CARTON':
+								print ('Linha CARTON tem MAIS QUE NUMEROS...')
+							elif len(filtered_divs['DESCRIPTION']) >= 1:
+								#filtered_divs['DESCRIPTION'].append(fsup.strip())
+								filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += ' ' + fsup.strip()
+							else:
+								filtered_divs['DESCRIPTION'].append(fsup.strip())
+							linhaAnterior = 'DESCRIPTION'
+							#print (filtered_divs['DESCRIPTION'])
+							#frappe.throw(porra)
+						print (filtered_divs['COUNTER'])
+						print (filtered_divs['DESCRIPTION'])
+						print (filtered_divs['ITEM'])
+						print (filtered_divs['QUANTITY'])
+						print (filtered_divs['RATE'])
+						print (filtered_divs['TOTAL'])
+
+						#if 'BUTTON SET FOR RANG' in fsup.strip(): # or 'cruiser LC200 upgrade to 2022' in fsup.strip(): # or 'F142-B1-Bodykit For Land' in fsup.strip():
+						#	frappe.throw(porra)
 
 				#frappe.throw(porra)
 				#if tmp_sn == 'SN: 5549545':
 				#	frappe.throw(porra)
-
+				print ('NO FIM contapalavras_header')
 				print ('contapalavras_header ',contapalavras_header)
+				print ('TEM linhaem_branco ',linhaem_branco)
 				if contapalavras_header >= 5:
 					palavrasexiste_header = True
+					if fsup.strip() in palavras_no_header_ultimoHeader:
+						if palavrasexiste_header:
+							palavrasexiste_header = True
+						else:
+							palavrasexiste_header = False
+							print ('palavrasexiste_header SET TO FALSE ')
+							frappe.throw(porra)
+					else:
+						if not linhaem_branco:
+							#TO Add TEXT to previous Description...
+							palavrasexiste_header = True
+						else:
+							palavrasexiste_header = False
+							print ('REMOVED HERE palavrasexiste_header = False ')
+							print ('linhaAnterior ', linhaAnterior)
+							if linhaAnterior == 'DESCRIPTION' or linhaAnterior == 'QUANTITY':
+								palavrasexiste_header = True
+							elif linhaAnterior == 'RATE' or linhaAnterior == 'DEC' or linhaAnterior == 'IVA':
+								palavrasexiste_header = True
+
 
 				#if "527041" in fsup.strip() or "KS 527041 K" in fsup.strip():
 				#	frappe.throw(porra)
@@ -7618,12 +8236,19 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 
 	print ('!!!!!!!!!!')
 	print (len(filtered_divs['COUNTER']))
+	print (filtered_divs['COUNTER'])
 	print (len(filtered_divs['ITEM']))
+	print (filtered_divs['ITEM'])
 	print (len(filtered_divs['DESCRIPTION']))
+	print (filtered_divs['DESCRIPTION'])
 	print (len(filtered_divs['QUANTITY']))
+	print (filtered_divs['QUANTITY'])
 	print (len(filtered_divs['RATE']))
+	print (filtered_divs['RATE'])
 	print (len(filtered_divs['TOTAL']))
+	print (filtered_divs['TOTAL'])
 	print (len(filtered_divs['IVA']))
+	print (filtered_divs['IVA'])
 	print ('!!!!!!!!!!')
 	data = []
 	if len(filtered_divs['IVA']) > 0:
