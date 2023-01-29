@@ -821,6 +821,8 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 	#Podemos fazer OCR with tesseract before trying with pytesseract
 	# File, Language, DPI
 	#cash to include . and , ex. 44.123,00 / 44.123,97
+	start_time = time.monotonic()
+
 	#cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)' #r'^[-+]?(?:\d*\.\d+|\d+)'
 	cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)|(?:\d*\,\d+)'
 
@@ -1812,6 +1814,8 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 							valorPAGO = val[val.find('Valor a debitar')+16:].strip()
 
 
+			stop_time = time.monotonic()
+			print(round(stop_time-start_time, 2), "seconds")
 
 			#Return values if
 			if bancoBAIDIRECTO:
@@ -1859,6 +1863,8 @@ def lerdocumento(dados):
 	print ('===== lerdocumento ======= ')
 	print ('===== lerdocumento ======= ')
 	print ('===== lerdocumento ======= ')
+
+	start_time = time.monotonic()
 
 	cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)' #r'^[-+]?(?:\d*\.\d+|\d+)'
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
@@ -1994,6 +2000,9 @@ def lerdocumento(dados):
 			"valorPAGO": valorPAGO
 		}
 		'''
+		stop_time = time.monotonic()
+		print(round(stop_time-start_time, 2), "seconds")
+
 		return mcexpress,numeroTransacao,dataEMISSAO,contaOrigem,ibanDestino,valorPAGO
 
 
@@ -2135,6 +2144,10 @@ def pdf_scrape_txt(ficheiro):
 		if div.text_content().strip('\n') != '':
 			print ('ID_LEFT_BORDER ',ID_LEFT_BORDER)
 			print ('temitems ',temitems)
+			print ('div.text_content()')
+			print (div.text_content())
+			print ('left ', left)
+
 			if ID_LEFT_BORDER < int(left) < ID_RIGHT_BORDER:
 				if div.text_content().strip('\n') == 'ITEM':
 					temitems = True
@@ -2369,14 +2382,18 @@ def pdf_scrape_txt(ficheiro):
 			if 394 < int(left) < 396:
 				#RATE Column
 				print ('RATE Column')
+				print (div.text_content())
 				print (div.text_content().strip('\n'))
-				if re.match(cash_pattern,div.text_content().strip('\n').replace(',','')):
-					filtered_divs['RATE'].append(div.text_content().strip('\n'))
-
+				print ('REMOVED FOR NOW...GIVING ERRROR')
+				if len(div.text_content().split('\n')) >= 2:
+					#if re.match(cash_pattern,div.text_content().strip('\n').replace(',','')) != None:
+					t = div.text_content().strip('\n')[1].replace(',','')
+					if re.match(cash_pattern,t) != None:
+						filtered_divs['RATE'].append(t)
 
 			if 469 < int(left) < 471:
 				#TOTAL Column
-				print ('TOTAL Column')
+				print ('TOTAL Column ERRRRRRRRRR')
 				print (div.text_content().split('\n'))
 				if "TOTAL" in div.text_content().strip('\n'):
 					print (len(div.text_content().split('\n')))
@@ -2487,6 +2504,7 @@ def pdf_scrape_txt_v1(ficheiro,tipodoctype = None):
 		Initially created to scrape item from Sales Invoice of a Supplier and create as Purchase Order or Invoice
 		Format used is from TMJ for other suppliers might need some changes...
 	'''
+	start_time = time.monotonic()
 
 	ID_LEFT_BORDER = 40 #56
 	ID_RIGHT_BORDER = 50 #156
@@ -3114,6 +3132,8 @@ def pdf_scrape_txt_v1(ficheiro,tipodoctype = None):
 
 
 	pprint(data)
+	stop_time = time.monotonic()
+	print(round(stop_time-start_time, 2), "seconds")
 
 	return (empresaSupplier,invoicenumber,invoicedate,moedainvoice,empresaSupplierEndereco,empresaSupplierNIF,empresaPais,data)
 
@@ -3122,6 +3142,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 	Last modified: 14-12-2022
 	Using to Train or LEARN OCR from PDF files not configurated on the System....
 	'''
+	start_time = time.monotonic()
 
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
 	terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'IVA']
@@ -4846,6 +4867,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 
 		pprint(data)
+		stop_time = time.monotonic()
+		print(round(stop_time-start_time, 2), "seconds")
 
 		return (empresaSupplier,invoiceNumber,invoiceDate,supplierMoeda,supplierAddress,supplierNIF,empresaPais,data)
 
@@ -4855,6 +4878,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 	Last modified: 16-10-2022
 	Using to Train or LEARN OCR from PDF files not configurated on the System....
 	'''
+	start_time = time.monotonic()
 
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
 	terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'TAXA', 'IVA']
@@ -5655,6 +5679,8 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 
 
 		pprint(data)
+		stop_time = time.monotonic()
+		print(round(stop_time-start_time, 2), "seconds")
 
 		return (empresaSupplier,invoiceNumber,invoiceDate,supplierMoeda,supplierAddress,supplierNIF,empresaPais,data)
 
@@ -5670,6 +5696,8 @@ def search_company_online(empresa):
 	# 'https://google.com/search?q=' and
 	# our customized search keyword.
 	# Concatenate them
+	start_time = time.monotonic()
+
 	resultados = []
 	if empresa:
 		text= empresa #"I 1 TMJ EXPRESSO GENERAL TRADING LLC" # "c++ linear search program"
@@ -5690,12 +5718,18 @@ def search_company_online(empresa):
 			resultados.append(filter[i].get_text())
 
 		if resultados:
+			stop_time = time.monotonic()
+			print(round(stop_time-start_time, 2), "seconds")
+
 			return resultados
 		else:
+			stop_time = time.monotonic()
+			print(round(stop_time-start_time, 2), "seconds")
+
 			return 'INVALIDO'
 
 def validar_nif(nif):
-
+	start_time = time.monotonic()
 	if nif:
 		print ('verifying... ', nif)
 		#FIX 02-01-2023; if timeout tries again
@@ -5816,8 +5850,14 @@ def validar_nif(nif):
 						print ('Regime GERAL')
 
 					if data['data']['companyName']:
+						stop_time = time.monotonic()
+						print(round(stop_time-start_time, 2), "seconds")
+
 						return nifvalido, regimeiva, data['data']['companyName']
 					else:
+						stop_time = time.monotonic()
+						print(round(stop_time-start_time, 2), "seconds")
+
 						return nifvalido, regimeiva, data['data']['nameAbb']
 
 
@@ -5835,6 +5875,7 @@ def aprender_OCR_v2(data,action = "SCRAPE",tipodoctype = None):
 	Last modified: 16-10-2022
 	Using to Train or LEARN OCR from PDF files not configurated on the System....
 	'''
+	start_time = time.monotonic()
 
 	empresaSupplier = ''
 	invoiceNumber = ''
@@ -6117,12 +6158,16 @@ def aprender_OCR_v2(data,action = "SCRAPE",tipodoctype = None):
 		#print (filtered_divs)
 		print ('!!!!!!!!!!')
 
+		stop_time = time.monotonic()
+		print(round(stop_time-start_time, 2), "seconds")
 
 def retorna_descricao(fsup):
 	'''
 		Last Modified 18-10-2022
 		To return DESCRICAO of the Item ....
 	'''
+	start_time = time.monotonic()
+
 	tmpitemTotal = ''
 	tmpitemCode = ''
 	tmpitemQtd = ''
@@ -6199,6 +6244,9 @@ def retorna_descricao(fsup):
 	#print ('itemTotal',tmpitemTotal)
 	#print ('tmpdescricao',tmpdescricao00)
 
+	stop_time = time.monotonic()
+	print(round(stop_time-start_time, 2), "seconds")
+
 	return tmpdescricao00.strip()
 
 
@@ -6225,6 +6273,7 @@ def liquidacao_generica_tributo(ficheiro):
 	import cv2
 	import pytesseract
 
+	start_time = time.monotonic()
 
 	if os.path.isfile(frappe.get_site_path('public','files') + ficheiro.replace('/files','')):
 		filefinal = frappe.get_site_path('public','files') + ficheiro.replace('/files','')
@@ -6294,6 +6343,10 @@ def liquidacao_generica_tributo(ficheiro):
 			#validar_dlinumber(refdocumento)
 			pdf_notaliquidacao = agt_lgt(refdocumento)
 			print ('TEM pdf_notaliquidacao ', pdf_notaliquidacao)
+
+			stop_time = time.monotonic()
+			print(round(stop_time-start_time, 2), "seconds")
+
 			return pdf_notaliquidacao
 
 
@@ -6301,6 +6354,7 @@ def liquidacao_generica_tributo(ficheiro):
 @frappe.whitelist(allow_guest=True)
 def validar_dlinumber(dlinumber):
 	#import requests
+	start_time = time.monotonic()
 	if dlinumber:
 		print ('verifying... ', dlinumber)
 		try:
@@ -6383,8 +6437,14 @@ def validar_dlinumber(dlinumber):
 						print ('Regime GERAL')
 
 					if data['data']['companyName']:
+						stop_time = time.monotonic()
+						print(round(stop_time-start_time, 2), "seconds")
+
 						return nifvalido, regimeiva, data['data']['companyName']
 					else:
+						stop_time = time.monotonic()
+						print(round(stop_time-start_time, 2), "seconds")
+
 						return nifvalido, regimeiva, data['data']['nameAbb']
 
 
@@ -6403,6 +6463,8 @@ def agt_lgt(dlinumber):
 	'''
 	import subprocess
 
+	start_time = time.monotonic()
+
 	if dlinumber:
 		#p = subprocess.Popen(['node','../agt_lgt.js', dlinumber], stdout=subprocess.PIPE)
 		p = subprocess.Popen(['/home/frappe/.nvm/versions/node/v14.17.3/bin/node','../agt_lgt.js', dlinumber], stdout=subprocess.PIPE)
@@ -6420,12 +6482,18 @@ def agt_lgt(dlinumber):
 				tmpficheiroPDF = out.decode("utf-8").split('\n')[12]
 				ficheiroPDF = tmpficheiroPDF[tmpficheiroPDF.find('VERIFICAR PASTA ')+16:]
 
+				stop_time = time.monotonic()
+				print(round(stop_time-start_time, 2), "seconds")
+
 				return out.decode("utf-8") #ficheiroPDF
 
 		else:
 			#return out #.decode("utf-8")
 			tmpficheiroPDF = out.decode("utf-8").split('\n')[12]
 			ficheiroPDF = tmpficheiroPDF[tmpficheiroPDF.find('VERIFICAR PASTA ')+16:]
+
+			stop_time = time.monotonic()
+			print(round(stop_time-start_time, 2), "seconds")
 
 			return out.decode("utf-8") # ficheiroPDF
 
@@ -6455,6 +6523,9 @@ def ocr_tables_from_image(ficheiro = None):
 	import pytesseract
 
 	import fitz
+
+	start_time = time.monotonic()
+
 	#pdffile = "/files/FT-Impressão-FTM 1KO2022_3_A.pdf"
 	#pdffile = "/home/frappe/frappe-bench/sites/tools.angolaerp.co.ao/public/files/FT-Impressão-FTM 1KO2022_3_A.pdf"
 	pdffile = "/home/frappe/frappe-bench/sites/tools.angolaerp.co.ao/public/files/TESTE_CODE_SINV-2022-00043.pdf"
@@ -6707,6 +6778,9 @@ def ocr_tables_from_image(ficheiro = None):
 	#Converting it in a excel-file
 	#data.to_excel("/Users/marius/Desktop/output.xlsx")
 
+	stop_time = time.monotonic()
+	print(round(stop_time-start_time, 2), "seconds")
+
 
 
 def ocr_pdf_to_image(ficheiro = None):
@@ -6726,6 +6800,8 @@ def ocr_pdf_to_image(ficheiro = None):
 	#import matplotlib.pyplot as plt         # displaying output images
 
 	from PIL import Image
+
+	start_time = time.monotonic()
 
 	if not ficheiro:
 		frappe.throw('Precisa de ficheiro...')
@@ -6831,6 +6907,9 @@ def ocr_pdf_to_image(ficheiro = None):
 
 		masked = cv2.drawContours(mask, [cnt], 0, (255, 255, 255), -1)
 
+	stop_time = time.monotonic()
+	print(round(stop_time-start_time, 2), "seconds")
+
 	#plt.figure(figsize=(25, 15))
 	#plt.imshow(masked, cmap='gray')
 	#plt.show()
@@ -6839,6 +6918,8 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 	print ('Running ocr_ocr_ocr ')
 	print ('Running ocr_ocr_ocr ')
 	print ('Running ocr_ocr_ocr ')
+
+	start_time = time.monotonic()
 
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
 	cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)|(?:\d*\,\d+)'
@@ -8275,8 +8356,10 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 	print ('!!!!!!!!!!')
 	print (len(filtered_divs['COUNTER']))
 	print (filtered_divs['COUNTER'])
+	print ('ITEM')
 	print (len(filtered_divs['ITEM']))
 	print (filtered_divs['ITEM'])
+	print ('DESCRIPTION')
 	print (len(filtered_divs['DESCRIPTION']))
 	print (filtered_divs['DESCRIPTION'])
 	print (len(filtered_divs['QUANTITY']))
@@ -8285,8 +8368,14 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 	print (filtered_divs['RATE'])
 	print (len(filtered_divs['TOTAL']))
 	print (filtered_divs['TOTAL'])
+	print ('IVA +++++++')
 	print (len(filtered_divs['IVA']))
 	print (filtered_divs['IVA'])
+	if len(filtered_divs['IVA']) == 1:
+		#Check if empty or null
+		if filtered_divs['IVA'][0] == "" or filtered_divs['IVA'][0] == None:
+			filtered_divs['IVA'].remove(filtered_divs['IVA'][0])
+			print ('Deleted empty IVA')
 	print ('!!!!!!!!!!')
 
 	#Check if More DESCRIPTION than QUANT and TOTAL
@@ -8426,11 +8515,16 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 												print (idx)
 												print (contadordescricao + '\n' + contadordescricao2)
 												print (filtered_divs['DESCRIPTION'])
-												print ('UPDATE filtered_divs')
+												print ('UPDATE filtered_divs ++++++++')
 												filtered_divs['DESCRIPTION'][idx-1] = contadordescricao + ' ' + contadordescricao2
+												if len(filtered_divs['DESCRIPTION']) == len(filtered_divs['ITEM']):
+													#FIX ITEM TOO
+													filtered_divs['ITEM'].remove(filtered_divs['ITEM'][idx])
+
 												print (filtered_divs['DESCRIPTION'])
 												filtered_divs['DESCRIPTION'].remove(filtered_divs['DESCRIPTION'][idx])
 												print ('depois ', filtered_divs['DESCRIPTION'])
+												print ('depois ITEM ', filtered_divs['ITEM'])
 												#frappe.throw(porra)
 												linha_apagada = True
 
@@ -8507,4 +8601,8 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 
 	#return (empresaSupplier,invoiceNumber,invoiceDate,supplierMoeda,supplierAddress,supplierNIF,empresaPais,data)
 	#FIX 23-01-2023
+
+	stop_time = time.monotonic()
+	print(round(stop_time-start_time, 2), "seconds")
+
 	return (empresaSupplier,invoiceNumber,invoiceDate,supplierMoeda,supplierAddress,supplierNIF,supplierPais,data)
