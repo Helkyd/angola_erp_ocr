@@ -274,7 +274,7 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 									'''
 									contapalavras_header = 0
 									#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-									terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'TAXA', 'IVA']
+									terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC', 'DEC', 'TAXA', 'IVA']
 
 
 
@@ -3145,7 +3145,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 	start_time = time.monotonic()
 
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-	terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'IVA']
+	terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC', 'DEC', 'TAXA', 'IVA']
 
 	terpalavras_header_EN = ['CODE NO','CODE', 'DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL AMOUNT', 'AMOUNT', 'TOTAL', 'VAT', 'PRICE']
 
@@ -3649,7 +3649,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 				#print (textotabela)
 				#print (textotabela[0].split('\n'))
 				facturaSupplier_tmp = textotabela
-				terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'TAXA', 'IVA']
+				terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC', 'DEC', 'TAXA', 'IVA']
 
 				print ('facturaSupplier')
 				print (facturaSupplier_tmp)
@@ -4881,7 +4881,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 	start_time = time.monotonic()
 
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-	terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'TAXA', 'IVA']
+	terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC', 'DEC', 'TAXA', 'IVA']
 	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
 
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
@@ -5897,7 +5897,7 @@ def aprender_OCR_v2(data,action = "SCRAPE",tipodoctype = None):
 	itemIVA = ''
 
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-	terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'TAXA', 'IVA']
+	terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC', 'DEC', 'TAXA', 'IVA']
 	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
 
 	en_palavras_banco = ['BANK','ACCOUNT']
@@ -7883,6 +7883,10 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 												print ('cc.strip() ',cc.strip())
 												print ('linhaAnterior ',linhaAnterior)
 												print ('Quantity ', len(filtered_divs['QUANTITY']))
+												print ('Quantity ',filtered_divs['QUANTITY'])
+												if len(filtered_divs['QUANTITY']) == 1 and filtered_divs['QUANTITY'][0] == '':
+													filtered_divs['QUANTITY'].remove(filtered_divs['QUANTITY'][0])
+													print ('Deleted QUANTIty EMPTY...')
 
 												#if linhaem_branco and linhaAnterior == 'TOTAL':
 													#Contador...
@@ -7920,6 +7924,10 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 												print ('linhaAnterior ',linhaAnterior)
 												print ('Rate ', len(filtered_divs['RATE']))
 												print (filtered_divs['RATE'])
+												if len(filtered_divs['RATE']) == 1 and filtered_divs['RATE'][0] == '':
+													filtered_divs['RATE'].remove(filtered_divs['RATE'][0])
+													print ('REMOVED EMPTY RATE ... ')
+
 												print ('+++++')
 												if linhaAnterior == 'QUANTITY' and len(filtered_divs['RATE']) == 0:
 													filtered_divs['RATE'].append(cc.strip())
@@ -7937,6 +7945,12 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 													if cc.strip() == '14%' or cc.strip() == '7%' or cc.strip() == '5%':
 														#IVA
 														print ('IVA but has no DESCOUNT BEFORE..')
+														print (len(filtered_divs['IVA']))
+														print (filtered_divs['IVA'])
+														if len(filtered_divs['IVA']) == 1 and filtered_divs['IVA'][0] == '':
+															filtered_divs['IVA'].remove(filtered_divs['IVA'][0])
+															print ('***** REMOVED EMPTY IVA.... ')
+
 														filtered_divs['IVA'].append(cc.strip())
 														linhaAnterior = 'IVA'
 														print ('0000 Added IVA')
@@ -7955,10 +7969,34 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 													print ('1111 Added IVA')
 													avoidADDING = True
 
+												elif linhaAnterior == 'IVA' and '%' in cc.strip():
+													#Check if 14/7/5 means IVA
+													if cc.strip() == '14%' or cc.strip() == '7%' or cc.strip() == '5%':
+														#IVA
+														print ('IVA but has no DESCOUNT BEFORE..')
+														filtered_divs['IVA'].append(cc.strip())
+														linhaAnterior = 'IVA'
+														print ('2222 Added IVA')
+														avoidADDING = True
+
 												elif linhaAnterior == 'IVA': # and len(filtered_divs['TOTAL']) == 0:
+													if len(filtered_divs['TOTAL']) == 1 and filtered_divs['TOTAL'][0] == '':
+														filtered_divs['TOTAL'].remove(filtered_divs['TOTAL'][0])
+														print ('REMOVED TOTAL EMPY..... ')
+
 													filtered_divs['TOTAL'].append(cc.strip())
 													linhaAnterior = 'TOTAL'
 													print ('1111 Added TOTAL')
+													avoidADDING = True
+
+												elif linhaAnterior == 'TOTAL': # and len(filtered_divs['TOTAL']) == 0:
+													if len(filtered_divs['TOTAL']) == 1 and filtered_divs['TOTAL'][0] == '':
+														filtered_divs['TOTAL'].remove(filtered_divs['TOTAL'][0])
+														print ('REMOVED TOTAL EMPY..... ')
+
+													filtered_divs['TOTAL'].append(cc.strip())
+													linhaAnterior = 'TOTAL'
+													print ('2222 Added TOTAL')
 													avoidADDING = True
 
 
@@ -8181,6 +8219,7 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 						print ('contaLinhas ',contaLinhas)
 						print ('countlines ',countlines)
 						print ('itemCode ',itemCode)
+						print ('itemDescription N/REPLACE ',itemDescription)
 						print ('itemDescription ',itemDescription.replace(str(itemQtd),''))
 						print ('itemQtd ',itemQtd)
 						print ('itemRate ',itemRate)
@@ -8196,18 +8235,28 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 							filtered_divs['COUNTER'].append(countlines)
 							filtered_divs['ITEM'].append(itemCode)
 							#FIX 22-12-2022; removed itemQtd
-							if len(itemCode) != len(itemDescription) and len(itemCode) > 5:
-								#filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(str(itemQtd),'').replace(itemCode,'').strip())
-								filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(itemCode,'').strip())
-							else:
-								#filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(str(itemQtd),'').strip())
-								filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').strip())
+							if itemDescription:
+								if len(itemCode) != len(itemDescription) and len(itemCode) > 5:
+									#filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(str(itemQtd),'').replace(itemCode,'').strip())
+									filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(itemCode,'').strip())
+								else:
+									#filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').replace(str(itemQtd),'').strip())
+									filtered_divs['DESCRIPTION'].append(itemDescription.replace('|','').replace(';','').strip())
 							filtered_divs['QUANTITY'].append(itemQtd)
 							filtered_divs['RATE'].append(itemRate)
 							filtered_divs['TOTAL'].append(itemTotal)
 							filtered_divs['IVA'].append(itemIVA)
 							countlines += 1
 							print ('Added COUNTER,ITEM,DESCRIPTION,RATE,TOTAL,IVA')
+						elif linhaAnterior == 'DESCRIPTION' and 'CODIGO' in palavras_no_header and linhaem_branco:
+							#Add only ITEM and DESCRIPTION
+							filtered_divs['COUNTER'].append(countlines)
+							filtered_divs['ITEM'].append(itemCode)
+							if fsup.strip() != '':
+								filtered_divs['DESCRIPTION'].append(fsup.strip())
+							countlines += 1
+							print ('Added COUNTER,ITEM,DESCRIPTION')
+
 						#frappe.throw(porra)
 					else:
 						print ('Descricao do ITEM....')
@@ -8261,7 +8310,8 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 										filtered_divs['RATE'].append(fsup.strip().replace('$',''))
 										linhaAnterior = 'RATE'
 									else:
-										filtered_divs['DESCRIPTION'].append(fsup.strip())
+										if fsup.strip() != '':
+											filtered_divs['DESCRIPTION'].append(fsup.strip())
 										#For this case assume First split() as CODE
 										print ('Codigo ITEM')
 										print (fsup.split()[0].strip())
@@ -8269,7 +8319,11 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 										if fsup.split()[0].strip().find('-') != -1:
 											filtered_divs['ITEM'].append(fsup.split()[0].strip())
 										else:
-											filtered_divs['ITEM'].append(fsup.strip())
+											#Check if COdigo on Header
+											if 'CODIGO' in palavras_no_header:
+												filtered_divs['ITEM'].append(fsup.split()[0].strip())
+											else:
+												filtered_divs['ITEM'].append(fsup.strip())
 										linhaAnterior = 'DESCRIPTION'
 
 										#Check if Counter is less
@@ -8285,7 +8339,8 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 								#filtered_divs['DESCRIPTION'].append(fsup.strip())
 								filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += ' ' + fsup.strip()
 							else:
-								filtered_divs['DESCRIPTION'].append(fsup.strip())
+								if fsup.strip() != '':
+									filtered_divs['DESCRIPTION'].append(fsup.strip())
 							linhaAnterior = 'DESCRIPTION'
 							#print (filtered_divs['DESCRIPTION'])
 							#frappe.throw(porra)
@@ -8325,6 +8380,8 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 							if linhaAnterior == 'DESCRIPTION' or linhaAnterior == 'QUANTITY':
 								palavrasexiste_header = True
 							elif linhaAnterior == 'RATE' or linhaAnterior == 'DEC' or linhaAnterior == 'IVA':
+								palavrasexiste_header = True
+							elif linhaAnterior == 'TOTAL':
 								palavrasexiste_header = True
 
 
@@ -8408,6 +8465,8 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 			for ff_tmp in factSupplier_tmp.split('\n'):
 				print ('VERIFICAR AONDE COMECA HEADER....')
 				print (ff_tmp)
+				print ('linha_embranco ',linha_embranco)
+				print ('nextline_items ',nextline_items)
 				if (ff_tmp.strip() == '' or ff_tmp.strip() == None) and nextline_items:
 					linha_embranco = True
 
@@ -8420,6 +8479,17 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 
 					if len(filtered_divs['DESCRIPTION']) == len(filtered_divs['QUANTITY']):
 						print ('TERMINOU DELETING LINES... THEY ARE THE SAME... ENDINGGGGG')
+
+						print (len(filtered_divs['DESCRIPTION']))
+						print (filtered_divs['DESCRIPTION'])
+						print ('Qtd')
+						print (len(filtered_divs['QUANTITY']))
+						print (filtered_divs['QUANTITY'])
+						print ('ITEM')
+						print (len(filtered_divs['ITEM']))
+						print (filtered_divs['ITEM'])
+
+
 						break
 					else:
 						linha_apagada = False
@@ -8477,58 +8547,107 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 							contadordescricao1 = contadordescricao + "\n" + ff_tmp
 							print ('contadordescricao1')
 							print (contadordescricao1)
+
+							print ('JUNTA AS DESCRICOES 1111....')
+							contadordescricao1 = contadordescricao + "\n" + ff_tmp
+							print ('contadordescricao1')
+							print (contadordescricao1)
+
+							for idx,fffdivs in enumerate(filtered_divs['DESCRIPTION']):
+								print ('filtered_divs00000')
+								print (fffdivs)
+								print ('ff_tmp0000')
+								print (ff_tmp)
+								if ffdivs in ff_tmp:
+									print ('MOVER PARA O ANTERIOR...')
+									print ('MOVER PARA O ANTERIOR...')
+									frappe.throw(porra)
+								else:
+									tamanho = len(fffdivs.split())
+									palavrasiguais = 0
+									for vvv in fffdivs.split():
+										if vvv in ff_tmp:
+											palavrasiguais += 1
+									print ('palavrasiguais ',palavrasiguais)
+									print (tamanho)
+									print (tamanho - palavrasiguais)
+									if (tamanho - palavrasiguais) == 1:
+										contadordescricao2 = fffdivs
+										print ('MOVER PARA O ANTERIOR...')
+										print ('MOVER PARA O ANTERIOR...')
+										print (idx)
+										print (contadordescricao + '\n' + contadordescricao2)
+										print (filtered_divs['DESCRIPTION'])
+										print ('UPDATE filtered_divs **********')
+										filtered_divs['DESCRIPTION'][idx-1] = contadordescricao + ' ' + contadordescricao2
+										if len(filtered_divs['DESCRIPTION']) == len(filtered_divs['ITEM']) or len(filtered_divs['ITEM']) > len(filtered_divs['DESCRIPTION']):
+											#FIX ITEM TOO
+											print ('ITEM TO REMOVE')
+											print (filtered_divs['ITEM'][idx])
+											print ('OU ', filtered_divs['ITEM'][idx-1])
+											filtered_divs['ITEM'].remove(filtered_divs['ITEM'][idx])
+
+										print (filtered_divs['DESCRIPTION'])
+										filtered_divs['DESCRIPTION'].remove(filtered_divs['DESCRIPTION'][idx])
+										print ('depois ', filtered_divs['DESCRIPTION'])
+										print ('depois ITEM ', filtered_divs['ITEM'])
+										#frappe.throw(porra)
+										linha_apagada = True
+
+										break
 						else:
 							print ('Might be continuity text from the previous LINE...')
 							print ('Might be continuity text from the previous LINE...')
 							print (ff_tmp)
-							#for now if no split skip
-							if len(ff_tmp.split()) >= 3:
-								linha_embranco = True
-								if contadordescricao and linha_embranco:
-									print ('JUNTA AS DESCRICOES....')
-									contadordescricao1 = contadordescricao + "\n" + ff_tmp
-									print ('contadordescricao1')
-									print (contadordescricao1)
+							#REMOVED FOR NOW; for now if no split skip
+							#if len(ff_tmp.split()) >= 3:
 
-									for idx,fffdivs in enumerate(filtered_divs['DESCRIPTION']):
-										print ('filtered_divs00000')
-										print (fffdivs)
-										print ('ff_tmp0000')
-										print (ff_tmp)
-										if ffdivs in ff_tmp:
+							linha_embranco = True
+							if contadordescricao and linha_embranco:
+								print ('JUNTA AS DESCRICOES 000....')
+								contadordescricao1 = contadordescricao + "\n" + ff_tmp
+								print ('contadordescricao1')
+								print (contadordescricao1)
+
+								for idx,fffdivs in enumerate(filtered_divs['DESCRIPTION']):
+									print ('filtered_divs00000')
+									print (fffdivs)
+									print ('ff_tmp0000')
+									print (ff_tmp)
+									if ffdivs in ff_tmp:
+										print ('MOVER PARA O ANTERIOR...')
+										print ('MOVER PARA O ANTERIOR...')
+										frappe.throw(porra)
+									else:
+										tamanho = len(fffdivs.split())
+										palavrasiguais = 0
+										for vvv in fffdivs.split():
+											if vvv in ff_tmp:
+												palavrasiguais += 1
+										print ('palavrasiguais ',palavrasiguais)
+										print (tamanho)
+										print (tamanho - palavrasiguais)
+										if (tamanho - palavrasiguais) == 1:
+											contadordescricao2 = fffdivs
 											print ('MOVER PARA O ANTERIOR...')
 											print ('MOVER PARA O ANTERIOR...')
-											frappe.throw(porra)
-										else:
-											tamanho = len(fffdivs.split())
-											palavrasiguais = 0
-											for vvv in fffdivs.split():
-												if vvv in ff_tmp:
-													palavrasiguais += 1
-											print ('palavrasiguais ',palavrasiguais)
-											print (tamanho)
-											print (tamanho - palavrasiguais)
-											if (tamanho - palavrasiguais) == 1:
-												contadordescricao2 = fffdivs
-												print ('MOVER PARA O ANTERIOR...')
-												print ('MOVER PARA O ANTERIOR...')
-												print (idx)
-												print (contadordescricao + '\n' + contadordescricao2)
-												print (filtered_divs['DESCRIPTION'])
-												print ('UPDATE filtered_divs ++++++++')
-												filtered_divs['DESCRIPTION'][idx-1] = contadordescricao + ' ' + contadordescricao2
-												if len(filtered_divs['DESCRIPTION']) == len(filtered_divs['ITEM']):
-													#FIX ITEM TOO
-													filtered_divs['ITEM'].remove(filtered_divs['ITEM'][idx])
+											print (idx)
+											print (contadordescricao + '\n' + contadordescricao2)
+											print (filtered_divs['DESCRIPTION'])
+											print ('UPDATE filtered_divs ++++++++')
+											filtered_divs['DESCRIPTION'][idx-1] = contadordescricao + ' ' + contadordescricao2
+											if len(filtered_divs['DESCRIPTION']) == len(filtered_divs['ITEM']):
+												#FIX ITEM TOO
+												filtered_divs['ITEM'].remove(filtered_divs['ITEM'][idx])
 
-												print (filtered_divs['DESCRIPTION'])
-												filtered_divs['DESCRIPTION'].remove(filtered_divs['DESCRIPTION'][idx])
-												print ('depois ', filtered_divs['DESCRIPTION'])
-												print ('depois ITEM ', filtered_divs['ITEM'])
-												#frappe.throw(porra)
-												linha_apagada = True
+											print (filtered_divs['DESCRIPTION'])
+											filtered_divs['DESCRIPTION'].remove(filtered_divs['DESCRIPTION'][idx])
+											print ('depois ', filtered_divs['DESCRIPTION'])
+											print ('depois ITEM ', filtered_divs['ITEM'])
+											#frappe.throw(porra)
+											linha_apagada = True
 
-												break
+											break
 
 
 
