@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 28/01/2023
+#Date Changed: 29/01/2023
 
 
 from __future__ import unicode_literals
@@ -48,7 +48,7 @@ import time
 def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 	#default is SCRAPE
 	#tipodoctype if Compras means will create a Purchase Order or Invoice.
-
+	start_time = time.monotonic()
 
 	if tipodoctype != None and tipodoctype.upper() == "COMPRAS":
 		print ('Gerar TXT from PDF file to Purchase Order or Invoice...')
@@ -95,13 +95,22 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 					#FIX 21-12-2022; Check if has Invoice number..
 					if scrapeTXT[1] == '':
 						#TESTING....15-10-2022
+						stop_time = time.monotonic()
+						print(round(stop_time-start_time, 2), "seconds")
+
 						return aprender_OCR (filefinal,"COMPRAS")
 
 					elif scrapeTXT[7]:
 						print (scrapeTXT[7][0])
+						stop_time = time.monotonic()
+						print(round(stop_time-start_time, 2), "seconds")
+
 						return scrapeTXT
 					else:
 						#TESTING....15-10-2022
+						stop_time = time.monotonic()
+						print(round(stop_time-start_time, 2), "seconds")
+
 						return aprender_OCR (filefinal,"COMPRAS")
 
 						print ('FAZ OCR COMPRAS')
@@ -264,7 +273,8 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 										UN, UNIDADE, CAIXA, CX, Artigo, Descrição, Qtd., Pr.Unit, Cód. Artigo, V.Líquido
 									'''
 									contapalavras_header = 0
-									terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
+									#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
+									terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'TAXA', 'IVA']
 
 
 
@@ -420,10 +430,16 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 
 						pprint(data)
 
+						stop_time = time.monotonic()
+						print(round(stop_time-start_time, 2), "seconds")
+
 						return (empresaSupplier,invoiceNumber,invoiceDate,supplierMoeda,supplierAddress,supplierNIF,empresaPais,data)
 
 
 				else:
+					stop_time = time.monotonic()
+					print(round(stop_time-start_time, 2), "seconds")
+
 					return scrapeTXT
 				#return pdf_scrape_txt(filefinal)
 
@@ -2394,15 +2410,17 @@ def pdf_scrape_txt(ficheiro):
 				print (div.text_content().strip('\n'))
 				#check if starts with 4 digits for YEAR
 				if div.text_content().strip('\n')[:5].strip().isdigit():
-					if filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:') == -1:
-						#Append at the end
-						filtered_divs['DESCRIPTION'][oldIDXDescription-1] = filtered_divs['DESCRIPTION'][oldIDXDescription-1] + ' ' + div.text_content().strip('\n')
-					else:
-						print (filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:'))
-						print (filtered_divs['DESCRIPTION'][oldIDXDescription-1][:filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:')])
-						tmpdesc = filtered_divs['DESCRIPTION'][oldIDXDescription-1]
-						filtered_divs['DESCRIPTION'][oldIDXDescription-1] = tmpdesc.replace('SN:', div.text_content().strip('\n') + ' SN:')
-						#print (filtered_divs['DESCRIPTION'])
+					print ('oldIDXDescription ',oldIDXDescription)
+					if oldIDXDescription >= 1:
+						if filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:') == -1:
+							#Append at the end
+							filtered_divs['DESCRIPTION'][oldIDXDescription-1] = filtered_divs['DESCRIPTION'][oldIDXDescription-1] + ' ' + div.text_content().strip('\n')
+						else:
+							print (filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:'))
+							print (filtered_divs['DESCRIPTION'][oldIDXDescription-1][:filtered_divs['DESCRIPTION'][oldIDXDescription-1].find('SN:')])
+							tmpdesc = filtered_divs['DESCRIPTION'][oldIDXDescription-1]
+							filtered_divs['DESCRIPTION'][oldIDXDescription-1] = tmpdesc.replace('SN:', div.text_content().strip('\n') + ' SN:')
+							#print (filtered_divs['DESCRIPTION'])
 
 
 			if "AED" in div.text_content().strip('\n'):
@@ -3106,7 +3124,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 	'''
 
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-	terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Cód. Artigo', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'IVA']
+	terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'IVA']
 
 	terpalavras_header_EN = ['CODE NO','CODE', 'DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL AMOUNT', 'AMOUNT', 'TOTAL', 'VAT', 'PRICE']
 
@@ -3120,7 +3138,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 	filtered_divs = {'COUNTER': [], 'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
 
 	palavras_no_header = []
-	palavras_no_header_ultimoHeader = ['VALOR LIQ.']
+	palavras_no_header_ultimoHeader = ['VALOR LIQ.','VALOR TOTAL']
 
 	supplierMoeda = ''
 
@@ -3549,6 +3567,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 		else:
 			#Palavras PT no Header
 			print ('Palavras PT no Header')
+			'''
 			for fsup in facturaSupplier.split('\n'):
 				if palavras_header_counted == False:
 					palavra_total = False #TO AVOID counting 'TOTAL PRICE (EUR)' and again TOTAL
@@ -3588,7 +3607,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								palavra_total = True
 					if contapalavras_header <= 3:
 						print ('Scan HEADER AGAIN.... ')
-
+			'''
 			print ("palavras_no_header ",palavras_no_header)
 			print (contapalavras_header)
 			#FIX 22-01-2023; Scan table using pd2txt.comecar ...
@@ -3609,7 +3628,8 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 				#print (textotabela)
 				#print (textotabela[0].split('\n'))
 				facturaSupplier_tmp = textotabela
-				terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'IVA']
+				terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'TAXA', 'IVA']
+
 				print ('facturaSupplier')
 				print (facturaSupplier_tmp)
 				for fsup in facturaSupplier_tmp:
@@ -3740,6 +3760,16 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 										elif ('DESCRIPTION OF GOODS' in palavras_no_header  or 'DESCRIPTION' in palavras_no_header) and (pp.upper() == 'DESCRIPTION OF GOODS' or pp.upper() == 'DESCRIPTION'):
 											print ('SKIP DESCRIPTION OF GOODS and DESCRIPTION')
 											print (palavras_no_header)
+										elif 'Descrição'.upper() in palavras_no_header and pp.upper() == 'Descrição'.upper():
+											print ('SKIP Descrição')
+											print (palavras_no_header)
+										elif 'TAXA' in palavras_no_header and pp.upper() == 'TAXA':
+											print ('SKIP TAXA')
+											print (palavras_no_header)
+										elif ('UNI' in palavras_no_header and pp.upper() == 'UNI') or ('UNI' in palavras_no_header and pp.upper() == 'UNIDADE'):
+											print ('SKIP UNI or UNIDADE')
+											print (palavras_no_header)
+
 
 										else:
 											if pp.upper() == 'PRICE':
@@ -3795,7 +3825,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 				print ('palavras_no_header')
 				print (palavras_no_header)
-				print ('CALLED OCR_OCR_OCR')
+				print ('CALLED OCR_OCR_OCR 0000')
 				print ('Qtd_isnot_number ',Qtd_isnot_number)
 				#terpalavras_header_EN = terpalavras_header
 				print ('PORTUGUES ocr_ocr_ocr =======')
@@ -4826,7 +4856,8 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 	Using to Train or LEARN OCR from PDF files not configurated on the System....
 	'''
 
-	terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
+	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
+	terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'TAXA', 'IVA']
 	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
 
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
@@ -5824,7 +5855,8 @@ def aprender_OCR_v2(data,action = "SCRAPE",tipodoctype = None):
 	itemTotal = ''
 	itemIVA = ''
 
-	terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
+	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
+	terpalavras_header = ['UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DEC', 'TAXA', 'IVA']
 	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
 
 	en_palavras_banco = ['BANK','ACCOUNT']
@@ -6897,6 +6929,8 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 
 		if fsup.strip() == None or fsup.strip() == '':
 			linhaem_branco = True
+			#palavrasexiste_header = True
+
 		if fsup.strip() != None and fsup.strip() != "":
 			if not empresaSupplier:
 				'''
