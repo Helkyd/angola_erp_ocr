@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 29/01/2023
+#Date Changed: 30/01/2023
 
 
 from __future__ import unicode_literals
@@ -8489,6 +8489,12 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 						print (len(filtered_divs['ITEM']))
 						print (filtered_divs['ITEM'])
 
+						print ('Reorder Counter')
+						filtered_divs['COUNTER'] = []
+						contador = 0
+						while contador < len(filtered_divs['ITEM']):
+							filtered_divs['COUNTER'].append(contador+1)
+							contador += 1
 
 						break
 					else:
