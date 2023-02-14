@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 30/01/2023
+#Date Changed: 14/02/2023
 
 
 from __future__ import unicode_literals
@@ -482,7 +482,8 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 			print ('RESULTADO temScrape')
 			print (temScrape)
 			if temScrape == None:
-				return
+				#FIX 14-02-2023
+				return "INVALIDO"
 
 			print ('datahora' in temScrape)
 
