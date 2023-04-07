@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 14/02/2023
+#Date Changed: 08/04/2023
 
 
 from __future__ import unicode_literals
@@ -906,6 +906,8 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 		mcxdebit = False
 
+		empresaOrigem0 = ""
+
 		if "MCX DEBIT" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac:
 			#Check if TRANSACÇÃO
 			#FIX 04-01-2023
@@ -1005,7 +1007,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						ibanOrigem = dd.split(' ')[1]
 						print ('ibanOrigem ',ibanOrigem)
 
-				elif "Net Empresas por" in dd and bfatransferencia or "Nect Empresas por" in dd and bfatransferencia:
+				elif "Net Empresas por" in dd and bfatransferencia or "Nect Empresas por" in dd and bfatransferencia or "Netrt Empresas por" in dd and bfatransferencia:
 					print ('dd ', dd)
 					print (dd.strip()[dd.strip().find('Net Empresas por')+16:])
 					print ('find ', dd.strip().find('Net Empresas por'))
