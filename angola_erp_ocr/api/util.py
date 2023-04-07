@@ -985,11 +985,23 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						nomeDestinatario = dd[dd.find('|')+1:len(dd)].strip()
 						print ('nomeDestinatario ',nomeDestinatario)
 				elif "IBAN" in dd and multiexpress:
-					print ('IBAN DEST. ',re.match(iban_pattern,dd.split(' ')[2].strip()))
-					if not ibanDestino:
-						if re.match(iban_pattern,dd.split(' ')[2].strip()):
-							ibanDestino = dd.split(' ')[2].strip()
-							print ('ibanDestino ',ibanDestino)
+					if len(dd.split(' ')) > 2:
+						print ('IBAN DEST. ',re.match(iban_pattern,dd.split(' ')[2].strip()))
+						if not ibanDestino:
+							if re.match(iban_pattern,dd.split(' ')[2].strip()):
+								ibanDestino = dd.split(' ')[2].strip()
+								print ('ibanDestino ',ibanDestino)
+					elif len(dd.split(' ')) == 2:
+						print ('IBAN DEST. ',re.match(iban_pattern,dd.split(' ')[1].strip()))
+						if not ibanDestino:
+							tmp_iban = dd.split(' ')[1]
+							if dd.split(' ')[1].startswith('AOQ06'):
+								tmp_iban = dd.split(' ')[1].replace('AOQ06','AO06')
+							
+							if re.match(iban_pattern,tmp_iban.strip()):
+								ibanDestino = tmp_iban.strip()
+								print ('ibanDestino ',ibanDestino)
+
 					#frappe.throw(porra)
 				elif "Montante" in dd and multiexpress:
 					print ('Montante ',re.match(cash_pattern,dd.split(' ')[2].strip()))
