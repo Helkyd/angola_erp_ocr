@@ -42,7 +42,9 @@ import requests
 from requests.adapters import HTTPAdapter
 import urllib3
 from urllib3 import Retry
-import time
+import time, datetime
+from datetime import datetime, date, timedelta
+
 
 #FOR CHECKING BANK....
 
@@ -216,15 +218,13 @@ class BancoKeve_mov():
 
 
 @frappe.whitelist(allow_guest=True)
-def banco_keve_movimentos(usuario, senha):
+def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtro = None):
 	'''
 		Reads movimento Banco Keve
-		Last Modified: 02-05-2023
+		Last Modified: 04-05-2023
+
+
 	'''
-	#bancokevemov = BancoKeve_mov('asilva148','akcwfyp')
-	#bancokevemov.bancokeve_setup
-	#asyncio.run(bancokevemov.pagina_bancokeve())
-	#bancokevemov.fechar_bancokeve()
 
 
 	if not usuario and not senha:
@@ -233,8 +233,23 @@ def banco_keve_movimentos(usuario, senha):
 	chrome_options = Options()
 	chrome_options.add_argument('--headless')
 	chrome_options.add_argument('--no-sandbox')
-	chrome_options.add_argument('--disable-dev-shm-usage')
+	#chrome_options.add_argument('--disable-dev-shm-usage')
+
+	chrome_options.add_argument("--disable-notifications")
+	chrome_options.add_argument('--verbose')
+	chrome_options.add_experimental_option("prefs", {
+	        "download.default_directory": "/tmp/teste>",
+	        "download.prompt_for_download": False,
+	        "download.directory_upgrade": True,
+	        "safebrowsing_for_trusted_sources_enabled": False,
+	        "safebrowsing.enabled": False
+	})
+
+	#chrome_options.add_argument('download.default_directory=/tmp')
+	#prefs = {"download.default_directory" : "/tmp/teste"}
+
 	chrome_options.add_experimental_option('w3c', True)
+	#chrome_options.add_experimental_option('prefs', prefs)
 
 	d = webdriver.Chrome('/usr/bin/chromedriver',chrome_options=chrome_options)
 	d.implicitly_wait(10)
@@ -268,11 +283,92 @@ def banco_keve_movimentos(usuario, senha):
 	#click Movimentos button
 	d.find_elements(By.CLASS_NAME,'link.movement-link')
 	d.get('https://corporate.bancokeve.ao/cmov_co.htm')
+	d.implicitly_wait(10)
 
-	'''
-	for aa in d.find_elements(By.CLASS_NAME,'current-number'):
-		if "Dep. Ordem Empresas - Kwanzas" in aa.text:
-	'''
+	#Get based on Date ....
+	d.execute_script("document.getElementsByClassName('tab tab0')[0].className.replace(' active','')")
+	d.execute_script("document.getElementsByClassName('tab tab1')[0].className.replace(' tab1',' tab1 active')")
+	d.execute_script("document.getElementsByClassName('tab tab1')[0].click()")
+
+	print (d.find_elements(By.CLASS_NAME,'tab.tab1'))
+
+	#d.find_element(By.XPATH,"//span[text()='Pesquisar']").click()
+	#print (d.find_element(By.XPATH,"//span[text()='Pesquisar']"))
+	#for aa in d.find_elements(By.CLASS_NAME,'tab.tab1'):
+	#	print ('click...')
+	#	aa.click()
+
+	#aa = d.find_element(By.XPATH,"//span[text()='Pesquisar']")
+	#aa.click()
+
+
+	datainicio = d.find_element(By.ID,'CalendarDateFrom')
+	if datainicio_filtro:
+		print ('datainicio ', datainicio_filtro)
+		datainicio.send_keys(str(datainicio_filtro))
+	else:
+		#Gets current Month less 1
+		datainicio_filtro = get_first_day(frappe.utils.add_months(datetime.today(),-1))
+		print ('datainicio_filtro ', datainicio_filtro)
+		print (datetime.strptime(str(datainicio_filtro), "%Y-%m-%d").strftime("%d-%m-%Y"))
+		tmp = datetime.strptime(str(datainicio_filtro), "%Y-%m-%d").strftime("%d-%m-%Y")
+		datainicio_filtro = tmp
+
+		datainicio.send_keys(str(datainicio_filtro))
+
+
+	datafim = d.find_element(By.ID,'CalendarDateTo')
+	if datafim_filtro:
+		print ('datafim ', datafim_filtro)
+		datafim.send_keys(str(datafim_filtro))
+	else:
+		datafim_filtro = get_last_day(frappe.utils.add_months(datetime.today(),-1))
+		print ('datafim_filtro ', datafim_filtro)
+		print (datetime.strptime(str(datafim_filtro), "%Y-%m-%d").strftime("%d-%m-%Y"))
+		tmp = datetime.strptime(str(datafim_filtro), "%Y-%m-%d").strftime("%d-%m-%Y")
+		datafim_filtro = tmp
+
+		datafim.send_keys(str(datafim_filtro))
+
+	#Trying to increase the number of results returned...
+	#d.execute_script("document.getElementById('nregcmov').type= ''")
+	#d.execute_script("document.getElementById('nregcmov').value= '100'")
+
+	#datafim_hidden = d.find_element(By.ID,'hidden_CalendarDateTo')
+	#datafim_hidden.send_keys('20230228')
+
+	d.find_elements(By.ID,'list-by-date')
+
+	#Click Pesquisar
+	d.execute_script("document.getElementById('list-by-date').click()")
+	#d.implicitly_wait(10)
+	print ('Check BOTAO VER MAIS....')
+	print (d.find_elements(By.ID,'load-next-movements'))
+
+	#print ('Check BOTAO VER MAIS CLASS....')
+	#d.find_elements(By.CLASS_NAME,'nav-button next hollow')
+
+	print ('botao Exportar')
+	#print (d.find_elements(By.XPATH("//li[contains(@title,'???exportExcel???')]/ul/li")))
+	print (d.find_element_by_xpath("//li[@title='???exportExcel???']"))
+	#d.find_element_by_xpath("//li[@title='???exportExcel???']").click()
+	#d.execute_script("""document.querySelector('[title="???exportExcel???"]').click()""")
+
+
+
+	if d.find_elements(By.ID,'load-next-movements'):
+		#Get more records....
+		#d.find_elements(By.ID,'load-next-movements').click()
+		d.execute_script("document.getElementById('load-next-movements').click()")
+		'''
+		TODO: If report does not get to last date... and this button exists...
+			Should generate again from the last date DATA received to last day of the Month...
+			ex. if from 01 of March to 31 and received only until 29th so,
+			Generate again from 29th until 31
+		'''
+
+
+
 
 	print ('Tenho os Movimentos...')
 	num_rows = len (d.find_elements_by_xpath("//*[@id='cmov_co']/tbody/tr"))
@@ -314,6 +410,7 @@ def banco_keve_movimentos(usuario, senha):
 			FinalXPath = before_XPath + str(t_row) + aftertd_XPath + str(t_column) + aftertr_XPath
 			cell_text = d.find_element_by_xpath(FinalXPath).text
 			# print(cell_text, end = '               ')
+			print (' ============')
 			print(cell_text)
 
 			#Verifica se formato Data
@@ -363,3 +460,14 @@ def banco_keve_movimentos(usuario, senha):
 	print (montante_akz[0].split('\n')[0])
 
 	return (datavalor,numero_documento,numero_operacao,descricao_operacao,montante_akz)
+
+
+
+def get_first_day(dt, d_years=0, d_months=0):
+    # d_years, d_months are "deltas" to apply to dt
+    y, m = dt.year + d_years, dt.month + d_months
+    a, m = divmod(m-1, 12)
+    return date(y+a, m+1, 1)
+
+def get_last_day(dt):
+    return get_first_day(dt, 0, 1) + timedelta(-1)
