@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 02/05/2023
+#Date Changed: 05/05/2023
 
 
 from __future__ import unicode_literals
@@ -221,7 +221,7 @@ class BancoKeve_mov():
 def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtro = None):
 	'''
 		Reads movimento Banco Keve
-		Last Modified: 04-05-2023
+		Last Modified: 05-05-2023
 
 
 	'''
@@ -452,45 +452,63 @@ def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtr
 			descoper = False
 			montanteakz = False
 
+			stop_for = False
+
 			for t_column in range(1, (num_cols + 1)):
 				FinalXPath = before_XPath + str(t_row) + aftertd_XPath + str(t_column) + aftertr_XPath
 				FinalXPath00 = before_XPath + str(t_row) + aftertr_XPath
-				if d.find_element_by_xpath(FinalXPath00):
-					cell_text = d.find_element_by_xpath(FinalXPath).text
-					# print(cell_text, end = '               ')
-					print (' ============')
-					print(cell_text)
+				#document.querySelectorAll("#cmov_co>tbody>tr:nth-child(20)")
 
-					#Verifica se formato Data
-					#print (re.match(date_pattern,cell_text))
-					if re.match(date_pattern,cell_text):
-						gravar_dados = True
-						datavalor.append(cell_text)
-						numerodoc = True
+				try:
+					d.find_element_by_xpath(FinalXPath00)
+					print ('***** ',d.find_element(By.XPATH,FinalXPath00))
+					print ('+++++ ',d.find_element_by_xpath(FinalXPath00))
 
-					elif gravar_dados == True:
-						#Verifica se termina com AKZ
-						if cell_text == "AKZ":
-							gravar_dados = False
+				except Exception as e:
+					if "no such element: Unable to locate element" in str(e):
+						print ('means NO MORE ITENS....')
+						stop_for = True
+						break
+				finally:
+					if stop_for == False:
+						if d.find_element_by_xpath(FinalXPath00):
+							cell_text = d.find_element_by_xpath(FinalXPath).text
+							# print(cell_text, end = '               ')
+							print (' ============')
+							print(cell_text)
 
-						elif numerodoc:
-							numero_documento.append(cell_text)
-							numerodoc = False
-							numerooper = True
-						elif numerooper:
-							numero_operacao.append(cell_text)
-							numerooper = False
-							descoper = True
-						elif descoper:
-							descricao_operacao.append(cell_text)
-							descoper = False
-							montanteakz = True
-						elif montanteakz:
-							montante_akz.append(cell_text)
-							montanteakz = False
-							gravar_dados = False
+							#Verifica se formato Data
+							#print (re.match(date_pattern,cell_text))
+							if re.match(date_pattern,cell_text):
+								gravar_dados = True
+								datavalor.append(cell_text)
+								numerodoc = True
 
-			print()
+							elif gravar_dados == True:
+								#Verifica se termina com AKZ
+								if cell_text == "AKZ":
+									gravar_dados = False
+
+								elif numerodoc:
+									numero_documento.append(cell_text)
+									numerodoc = False
+									numerooper = True
+								elif numerooper:
+									numero_operacao.append(cell_text)
+									numerooper = False
+									descoper = True
+								elif descoper:
+									descricao_operacao.append(cell_text)
+									descoper = False
+									montanteakz = True
+								elif montanteakz:
+									montante_akz.append(cell_text)
+									montanteakz = False
+									gravar_dados = False
+
+			#print()
+			if stop_for:
+				break
 		print ('Terminou de ler a TABELA com o extracto.....')
 		#Now check if last record date is == last day of the month
 		print ('verificar se terminou de ler o mes....')
@@ -525,7 +543,7 @@ def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtr
 	print (montante_akz[0].split('\n'))
 	print (montante_akz[0].split('\n')[0])
 
-	return (datavalor,numero_documento,numero_operacao,descricao_operacao,montante_akz)
+	return {'datavalor':datavalor,'numero_documento':numero_documento,'numero_operacao':numero_operacao,'descricao_operacao':descricao_operacao,'montante_akz':montante_akz}
 
 
 
