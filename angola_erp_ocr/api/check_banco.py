@@ -233,8 +233,9 @@ def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtr
 	chrome_options = Options()
 	chrome_options.add_argument('--headless')
 	chrome_options.add_argument('--no-sandbox')
-	#chrome_options.add_argument('--disable-dev-shm-usage')
+	chrome_options.add_argument('--disable-dev-shm-usage')
 
+	'''
 	chrome_options.add_argument("--disable-notifications")
 	chrome_options.add_argument('--verbose')
 	chrome_options.add_experimental_option("prefs", {
@@ -244,7 +245,7 @@ def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtr
 	        "safebrowsing_for_trusted_sources_enabled": False,
 	        "safebrowsing.enabled": False
 	})
-
+	'''
 	#chrome_options.add_argument('download.default_directory=/tmp')
 	#prefs = {"download.default_directory" : "/tmp/teste"}
 
@@ -348,9 +349,9 @@ def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtr
 	#print ('Check BOTAO VER MAIS CLASS....')
 	#d.find_elements(By.CLASS_NAME,'nav-button next hollow')
 
-	print ('botao Exportar')
+	#print ('botao Exportar')
 	#print (d.find_elements(By.XPATH("//li[contains(@title,'???exportExcel???')]/ul/li")))
-	print (d.find_element_by_xpath("//li[@title='???exportExcel???']"))
+	#print (d.find_element_by_xpath("//li[@title='???exportExcel???']"))
 	#d.find_element_by_xpath("//li[@title='???exportExcel???']").click()
 	#d.execute_script("""document.querySelector('[title="???exportExcel???"]').click()""")
 
@@ -360,6 +361,7 @@ def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtr
 		#Get more records....
 		#d.find_elements(By.ID,'load-next-movements').click()
 		d.execute_script("document.getElementById('load-next-movements').click()")
+		d.implicitly_wait(10)
 		'''
 		TODO: If report does not get to last date... and this button exists...
 			Should generate again from the last date DATA received to last day of the Month...
