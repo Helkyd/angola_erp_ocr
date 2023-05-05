@@ -302,89 +302,11 @@ def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtr
 	#aa = d.find_element(By.XPATH,"//span[text()='Pesquisar']")
 	#aa.click()
 
-
-	datainicio = d.find_element(By.ID,'CalendarDateFrom')
-	if datainicio_filtro:
-		print ('datainicio ', datainicio_filtro)
-		datainicio.send_keys(str(datainicio_filtro))
-	else:
-		#Gets current Month less 1
-		datainicio_filtro = get_first_day(frappe.utils.add_months(datetime.today(),-1))
-		print ('datainicio_filtro ', datainicio_filtro)
-		print (datetime.strptime(str(datainicio_filtro), "%Y-%m-%d").strftime("%d-%m-%Y"))
-		tmp = datetime.strptime(str(datainicio_filtro), "%Y-%m-%d").strftime("%d-%m-%Y")
-		datainicio_filtro = tmp
-
-		datainicio.send_keys(str(datainicio_filtro))
-
-
-	datafim = d.find_element(By.ID,'CalendarDateTo')
-	if datafim_filtro:
-		print ('datafim ', datafim_filtro)
-		datafim.send_keys(str(datafim_filtro))
-	else:
-		datafim_filtro = get_last_day(frappe.utils.add_months(datetime.today(),-1))
-		print ('datafim_filtro ', datafim_filtro)
-		print (datetime.strptime(str(datafim_filtro), "%Y-%m-%d").strftime("%d-%m-%Y"))
-		tmp = datetime.strptime(str(datafim_filtro), "%Y-%m-%d").strftime("%d-%m-%Y")
-		datafim_filtro = tmp
-
-		datafim.send_keys(str(datafim_filtro))
-
-	#Trying to increase the number of results returned...
-	#d.execute_script("document.getElementById('nregcmov').type= ''")
-	#d.execute_script("document.getElementById('nregcmov').value= '100'")
-
-	#datafim_hidden = d.find_element(By.ID,'hidden_CalendarDateTo')
-	#datafim_hidden.send_keys('20230228')
-
-	d.find_elements(By.ID,'list-by-date')
-
-	#Click Pesquisar
-	d.execute_script("document.getElementById('list-by-date').click()")
-	#d.implicitly_wait(10)
-	print ('Check BOTAO VER MAIS....')
-	print (d.find_elements(By.ID,'load-next-movements'))
-
-	#print ('Check BOTAO VER MAIS CLASS....')
-	#d.find_elements(By.CLASS_NAME,'nav-button next hollow')
-
-	#print ('botao Exportar')
-	#print (d.find_elements(By.XPATH("//li[contains(@title,'???exportExcel???')]/ul/li")))
-	#print (d.find_element_by_xpath("//li[@title='???exportExcel???']"))
-	#d.find_element_by_xpath("//li[@title='???exportExcel???']").click()
-	#d.execute_script("""document.querySelector('[title="???exportExcel???"]').click()""")
-
-
-
-	if d.find_elements(By.ID,'load-next-movements'):
-		#Get more records....
-		#d.find_elements(By.ID,'load-next-movements').click()
-		print ('Does not click on Next movements / VER MAIS')
-		#d.execute_script("document.getElementById('load-next-movements').click()")
-		d.implicitly_wait(5)
-		'''
-		TODO: If report does not get to last date... and this button exists...
-			Should generate again from the last date DATA received to last day of the Month...
-			ex. if from 01 of March to 31 and received only until 29th so,
-			Generate again from 29th until 31
-		'''
-
-
-
-
-	print ('Tenho os Movimentos...')
-	num_rows = len (d.find_elements_by_xpath("//*[@id='cmov_co']/tbody/tr"))
-	#num_rows1 = d.execute_script("return document.getElementById('cmov_co').rows.length") # d.execute_script("$('#cmov_co tbody tr').length")
-	print("Rows in table are " + repr(num_rows))
-	#print (num_rows1)
-
-	num_cols = len (d.find_elements_by_xpath("//*[@id='cmov_co']/tbody/tr[1]/td"))
-	print("Columns in table are " + repr(num_cols))
-
-	before_XPath = "//*[@id='cmov_co']/tbody/tr["
-	aftertd_XPath = "]/td["
-	aftertr_XPath = "]"
+	#Para correr varias vezes mas com datas diferentes....
+	vermais_movimentos = True
+	#If filled must be with the next date Statement...
+	datainicio_next = ""
+	datafim_next = ""	#Will always be last day of the Month
 
 	#Colunas
 	#Data Valor, Numero do Documento, Numero de Operacao, Descricao, Montante AKZ
@@ -394,64 +316,201 @@ def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtr
 	descricao_operacao = []
 	montante_akz = []
 
-	gravar_dados = False
-
-	numerodoc = False
-	numerooper = False
-	descoper = False
+	contaloop = 0
 
 
+	while vermais_movimentos == True:
+		if datainicio_next:
+			d.get('https://corporate.bancokeve.ao/cmov_co.htm')
+			d.implicitly_wait(10)
 
-	import re
-	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
+			d.execute_script("document.getElementsByClassName('tab tab0')[0].className.replace(' active','')")
+			d.execute_script("document.getElementsByClassName('tab tab1')[0].className.replace(' tab1',' tab1 active')")
+			d.execute_script("document.getElementsByClassName('tab tab1')[0].click()")
 
-	for t_row in range(1, (num_rows + 1)):
+			#This date will be assinged at the end of the list... if last Record date not == last day of the month
+			print ('Continuacao do Statement... ', datainicio_next)
+			#datainicio_hidden = d.find_element(By.ID,'hidden_CalendarDateFrom')
+			#datainicio_hidden.send_keys("")
+			datainicio = d.find_element(By.ID,'CalendarDateFrom')
+			datafim = d.find_element(By.ID,'CalendarDateTo')
+
+			datafim_next = datafim_filtro
+			datainicio.send_keys(str(datainicio_next))
+			datafim.send_keys("31-03-2023")
+		else:
+			datainicio = d.find_element(By.ID,'CalendarDateFrom')
+			datafim = d.find_element(By.ID,'CalendarDateTo')
+
+			if datainicio_filtro:
+				print ('datainicio ', datainicio_filtro)
+				datainicio.send_keys(str(datainicio_filtro))
+			else:
+				#Gets current Month less 1
+				datainicio_filtro = get_first_day(frappe.utils.add_months(datetime.today(),-1))
+				print ('datainicio_filtro ', datainicio_filtro)
+				print (datetime.strptime(str(datainicio_filtro), "%Y-%m-%d").strftime("%d-%m-%Y"))
+				tmp = datetime.strptime(str(datainicio_filtro), "%Y-%m-%d").strftime("%d-%m-%Y")
+				datainicio_filtro = tmp
+
+				datainicio.send_keys(str(datainicio_filtro))
+
+			if datafim_filtro:
+				print ('datafim ', datafim_filtro)
+				datafim.send_keys(str(datafim_filtro))
+			else:
+				datafim_filtro = get_last_day(frappe.utils.add_months(datetime.today(),-1))
+				print ('datafim_filtro ', datafim_filtro)
+				print (datetime.strptime(str(datafim_filtro), "%Y-%m-%d").strftime("%d-%m-%Y"))
+				tmp = datetime.strptime(str(datafim_filtro), "%Y-%m-%d").strftime("%d-%m-%Y")
+				datafim_filtro = tmp
+
+				datafim.send_keys(str(datafim_filtro))
+
+		#Trying to increase the number of results returned...
+		#d.execute_script("document.getElementById('nregcmov').type= ''")
+		#d.execute_script("document.getElementById('nregcmov').value= '100'")
+
+		#datafim_hidden = d.find_element(By.ID,'hidden_CalendarDateTo')
+		#datafim_hidden.send_keys('20230228')
+
+		d.find_elements(By.ID,'list-by-date')
+
+		#Click Pesquisar
+		d.execute_script("document.getElementById('list-by-date').click()")
+		#d.implicitly_wait(10)
+		print ('Check BOTAO VER MAIS....')
+		print (d.find_elements(By.ID,'load-next-movements'))
+
+		#print ('Check BOTAO VER MAIS CLASS....')
+		#d.find_elements(By.CLASS_NAME,'nav-button next hollow')
+
+		#print ('botao Exportar')
+		#print (d.find_elements(By.XPATH("//li[contains(@title,'???exportExcel???')]/ul/li")))
+		#print (d.find_element_by_xpath("//li[@title='???exportExcel???']"))
+		#d.find_element_by_xpath("//li[@title='???exportExcel???']").click()
+		#d.execute_script("""document.querySelector('[title="???exportExcel???"]').click()""")
+		print ('HIDDeNNNNNNN')
+		print (d.find_elements(By.CLASS_NAME,'nav-button.next.hollow.hidden'))
+		print ('NAO HIDDENNNN')
+		print (d.find_elements(By.CLASS_NAME,'nav-button.next.hollow'))
+
+		if d.find_elements(By.CLASS_NAME,'nav-button.next.hollow.hidden'):
+			print ('Botao VER MAIS ESCONDIDO.....')
+			print ('Botao VER MAIS ESCONDIDO.....')
+			print ('Botao VER MAIS ESCONDIDO.....')
+			#No need to loop...
+			vermais_movimentos = False
+
+		elif d.find_elements(By.ID,'load-next-movements'):
+			print ('By class botao not ESCONDIDO')
+			print (d.find_elements(By.CLASS_NAME,'nav-button.next.hollow'))
+			#d.find_elements(By.CLASS_NAME,'nav-button.next.hollow').click()
+			#Get more records....
+			#d.find_elements(By.ID,'load-next-movements').click()
+			print ('Does not click on Next movements / VER MAIS')
+			#d.execute_script("document.getElementById('load-next-movements').click()")
+			d.implicitly_wait(5)
+			'''
+			TODO: If report does not get to last date... and this button exists...
+				Should generate again from the last date DATA received to last day of the Month...
+				ex. if from 01 of March to 31 and received only until 29th so,
+				Generate again from 29th until 31
+			'''
+
+
+
+
+		print ('Tenho os Movimentos...')
+		num_rows = len (d.find_elements_by_xpath("//*[@id='cmov_co']/tbody/tr"))
+		#num_rows1 = d.execute_script("return document.getElementById('cmov_co').rows.length") # d.execute_script("$('#cmov_co tbody tr').length")
+		print("Rows in table are " + repr(num_rows))
+		#print (num_rows1)
+
+		num_cols = len (d.find_elements_by_xpath("//*[@id='cmov_co']/tbody/tr[1]/td"))
+		print("Columns in table are " + repr(num_cols))
+
+		before_XPath = "//*[@id='cmov_co']/tbody/tr["
+		aftertd_XPath = "]/td["
+		aftertr_XPath = "]"
+
+
+		gravar_dados = False
+
 		numerodoc = False
 		numerooper = False
 		descoper = False
-		montanteakz = False
 
-		for t_column in range(1, (num_cols + 1)):
-			FinalXPath = before_XPath + str(t_row) + aftertd_XPath + str(t_column) + aftertr_XPath
-			FinalXPath00 = before_XPath + str(t_row) + aftertr_XPath
-			if d.find_element_by_xpath(FinalXPath00):
-				cell_text = d.find_element_by_xpath(FinalXPath).text
-				# print(cell_text, end = '               ')
-				print (' ============')
-				print(cell_text)
 
-				#Verifica se formato Data
-				print (re.match(date_pattern,cell_text))
-				if re.match(date_pattern,cell_text):
-					gravar_dados = True
-					datavalor.append(cell_text)
-					numerodoc = True
 
-				elif gravar_dados == True:
-					#Verifica se termina com AKZ
-					if cell_text == "AKZ":
-						gravar_dados = False
 
-					elif numerodoc:
-						numero_documento.append(cell_text)
-						numerodoc = False
-						numerooper = True
-					elif numerooper:
-						numero_operacao.append(cell_text)
-						numerooper = False
-						descoper = True
-					elif descoper:
-						descricao_operacao.append(cell_text)
-						descoper = False
-						montanteakz = True
-					elif montanteakz:
-						montante_akz.append(cell_text)
-						montanteakz = False
-						gravar_dados = False
+		date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
 
-		print()
+		for t_row in range(1, (num_rows + 1)):
+			numerodoc = False
+			numerooper = False
+			descoper = False
+			montanteakz = False
 
-	print ('TERMINOU.......')
+			for t_column in range(1, (num_cols + 1)):
+				FinalXPath = before_XPath + str(t_row) + aftertd_XPath + str(t_column) + aftertr_XPath
+				FinalXPath00 = before_XPath + str(t_row) + aftertr_XPath
+				if d.find_element_by_xpath(FinalXPath00):
+					cell_text = d.find_element_by_xpath(FinalXPath).text
+					# print(cell_text, end = '               ')
+					print (' ============')
+					print(cell_text)
+
+					#Verifica se formato Data
+					#print (re.match(date_pattern,cell_text))
+					if re.match(date_pattern,cell_text):
+						gravar_dados = True
+						datavalor.append(cell_text)
+						numerodoc = True
+
+					elif gravar_dados == True:
+						#Verifica se termina com AKZ
+						if cell_text == "AKZ":
+							gravar_dados = False
+
+						elif numerodoc:
+							numero_documento.append(cell_text)
+							numerodoc = False
+							numerooper = True
+						elif numerooper:
+							numero_operacao.append(cell_text)
+							numerooper = False
+							descoper = True
+						elif descoper:
+							descricao_operacao.append(cell_text)
+							descoper = False
+							montanteakz = True
+						elif montanteakz:
+							montante_akz.append(cell_text)
+							montanteakz = False
+							gravar_dados = False
+
+			print()
+		print ('Terminou de ler a TABELA com o extracto.....')
+		#Now check if last record date is == last day of the month
+		print ('verificar se terminou de ler o mes....')
+		print ("datafim_filtro ",datafim_filtro)
+		print (datavalor[len(datavalor)-1])
+		print (datafim_filtro == datavalor[len(datavalor)-1])
+		if datafim_filtro == datavalor[len(datavalor)-1]:
+			#End While
+			vermais_movimentos = False
+		else:
+			#Set start date again..
+			datainicio_next = datavalor[len(datavalor)-1]
+			print ('datainicio_next ', datainicio_next)
+			print ('contaloop ', contaloop)
+			if contaloop == 2:
+				vermais_movimentos = False
+
+		contaloop += 1
+
+	print ('TERMINOU ========================')
 	print ('datavalor ', len(datavalor))
 	#print (datavalor)
 	print ('numero_document ', len(numero_documento))
