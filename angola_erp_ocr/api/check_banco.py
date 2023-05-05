@@ -375,7 +375,9 @@ def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtr
 
 	print ('Tenho os Movimentos...')
 	num_rows = len (d.find_elements_by_xpath("//*[@id='cmov_co']/tbody/tr"))
+	#num_rows1 = d.execute_script("return document.getElementById('cmov_co').rows.length") # d.execute_script("$('#cmov_co tbody tr').length")
 	print("Rows in table are " + repr(num_rows))
+	#print (num_rows1)
 
 	num_cols = len (d.find_elements_by_xpath("//*[@id='cmov_co']/tbody/tr[1]/td"))
 	print("Columns in table are " + repr(num_cols))
@@ -411,39 +413,41 @@ def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtr
 
 		for t_column in range(1, (num_cols + 1)):
 			FinalXPath = before_XPath + str(t_row) + aftertd_XPath + str(t_column) + aftertr_XPath
-			cell_text = d.find_element_by_xpath(FinalXPath).text
-			# print(cell_text, end = '               ')
-			print (' ============')
-			print(cell_text)
+			FinalXPath00 = before_XPath + str(t_row) + aftertr_XPath
+			if d.find_element_by_xpath(FinalXPath00):
+				cell_text = d.find_element_by_xpath(FinalXPath).text
+				# print(cell_text, end = '               ')
+				print (' ============')
+				print(cell_text)
 
-			#Verifica se formato Data
-			print (re.match(date_pattern,cell_text))
-			if re.match(date_pattern,cell_text):
-				gravar_dados = True
-				datavalor.append(cell_text)
-				numerodoc = True
+				#Verifica se formato Data
+				print (re.match(date_pattern,cell_text))
+				if re.match(date_pattern,cell_text):
+					gravar_dados = True
+					datavalor.append(cell_text)
+					numerodoc = True
 
-			elif gravar_dados == True:
-				#Verifica se termina com AKZ
-				if cell_text == "AKZ":
-					gravar_dados = False
+				elif gravar_dados == True:
+					#Verifica se termina com AKZ
+					if cell_text == "AKZ":
+						gravar_dados = False
 
-				elif numerodoc:
-					numero_documento.append(cell_text)
-					numerodoc = False
-					numerooper = True
-				elif numerooper:
-					numero_operacao.append(cell_text)
-					numerooper = False
-					descoper = True
-				elif descoper:
-					descricao_operacao.append(cell_text)
-					descoper = False
-					montanteakz = True
-				elif montanteakz:
-					montante_akz.append(cell_text)
-					montanteakz = False
-					gravar_dados = False
+					elif numerodoc:
+						numero_documento.append(cell_text)
+						numerodoc = False
+						numerooper = True
+					elif numerooper:
+						numero_operacao.append(cell_text)
+						numerooper = False
+						descoper = True
+					elif descoper:
+						descricao_operacao.append(cell_text)
+						descoper = False
+						montanteakz = True
+					elif montanteakz:
+						montante_akz.append(cell_text)
+						montanteakz = False
+						gravar_dados = False
 
 		print()
 
