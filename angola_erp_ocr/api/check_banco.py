@@ -360,8 +360,9 @@ def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtr
 	if d.find_elements(By.ID,'load-next-movements'):
 		#Get more records....
 		#d.find_elements(By.ID,'load-next-movements').click()
-		d.execute_script("document.getElementById('load-next-movements').click()")
-		d.implicitly_wait(10)
+		print ('Does not click on Next movements / VER MAIS')
+		#d.execute_script("document.getElementById('load-next-movements').click()")
+		#d.implicitly_wait(10)
 		'''
 		TODO: If report does not get to last date... and this button exists...
 			Should generate again from the last date DATA received to last day of the Month...
