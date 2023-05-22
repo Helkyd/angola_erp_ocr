@@ -677,11 +677,6 @@ def banco_bfa_movimentos(usuariobanco, senha,datainicio_filtro = None, datafim_f
 	validation_url = "https://www.bfanetempresas.ao/Login/login.aspx"
 	transacao_url = "https://www.bfanetempresas.ao/Transaccoes/CMOV_CO.aspx?idc=143&idsc=74&idl=1#no-back-button"
 
-	'''
-		TODO:DELETE AFTER
-		USER 1667194252
-		pwd : BsJiJe
-	'''
 
 
 	d = webdriver.Chrome('/usr/bin/chromedriver',chrome_options=chrome_options)
