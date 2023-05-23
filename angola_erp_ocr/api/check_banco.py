@@ -631,14 +631,14 @@ def banco_bfa_movimentos(usuariobanco, senha,datainicio_filtro = None, datafim_f
 		datafim_ano = datafim_filtro[6:10]
 
 
-	print ('DATAS de INICIO E FIM ')
-	print (datainicio_ano)
-	print (datainicio_mes)
-	print (datainicio_dia)
+		print ('DATAS de INICIO E FIM ')
+		print (datainicio_ano)
+		print (datainicio_mes)
+		print (datainicio_dia)
 
-	print (datafim_ano)
-	print (datafim_mes)
-	print (datafim_dia)
+		print (datafim_ano)
+		print (datafim_mes)
+		print (datafim_dia)
 
 	chrome_options = Options()
 	chrome_options.add_argument('--headless')
@@ -872,28 +872,36 @@ def banco_bfa_movimentos(usuariobanco, senha,datainicio_filtro = None, datafim_f
 	descricao_operacao = []
 	montante_akz = []
 
-	contaloop = 0
+	contaloop = 1
 
 
 	while vermais_movimentos == True:
 		if datainicio_next:
 			d.get(transacao_url)
-			d.implicitly_wait(10)
+			d.implicitly_wait(15)
 
-			d.execute_script("document.getElementsByClassName('tab tab0')[0].className.replace(' active','')")
-			d.execute_script("document.getElementsByClassName('tab tab1')[0].className.replace(' tab1',' tab1 active')")
-			d.execute_script("document.getElementsByClassName('tab tab1')[0].click()")
+			num_rows = len (d.find_elements_by_xpath("//*[@id='ctl00_ctl00_WP_CMOV_grdCMOV']/tbody/tr"))
+			print ('Pagina seguinte CONTALOOP ')
+			print (contaloop)
+			print ('num_rows')
+			print (num_rows)
+			num_cols = len (d.find_elements_by_xpath("//*[@id='ctl00_ctl00_WP_CMOV_grdCMOV']/tbody/tr/td"))
+
+
+			#d.execute_script("document.getElementsByClassName('tab tab0')[0].className.replace(' active','')")
+			#d.execute_script("document.getElementsByClassName('tab tab1')[0].className.replace(' tab1',' tab1 active')")
+			#d.execute_script("document.getElementsByClassName('tab tab1')[0].click()")
 
 			#This date will be assinged at the end of the list... if last Record date not == last day of the month
 			print ('Continuacao do Statement... ', datainicio_next)
 			#datainicio_hidden = d.find_element(By.ID,'hidden_CalendarDateFrom')
 			#datainicio_hidden.send_keys("")
-			datainicio = d.find_element(By.ID,'CalendarDateFrom')
-			datafim = d.find_element(By.ID,'CalendarDateTo')
+			#datainicio = d.find_element(By.ID,'CalendarDateFrom')
+			#datafim = d.find_element(By.ID,'CalendarDateTo')
 
-			datafim_next = datafim_filtro
-			datainicio.send_keys(str(datainicio_next))
-			datafim.send_keys("31-03-2023")
+			#datafim_next = datafim_filtro
+			#datainicio.send_keys(str(datainicio_next))
+			#datafim.send_keys("31-03-2023")
 		else:
 			#datainicio = d.find_element(By.ID,'CalendarDateFrom')
 			#datafim = d.find_element(By.ID,'CalendarDateTo')
@@ -993,7 +1001,172 @@ def banco_bfa_movimentos(usuariobanco, senha,datainicio_filtro = None, datafim_f
 				tmp = datetime.strptime(str(datainicio_filtro), "%Y-%m-%d").strftime("%d-%m-%Y")
 				datainicio_filtro = tmp
 
-				datainicio.send_keys(str(datainicio_filtro))
+				datafim_filtro = get_last_day(frappe.utils.add_months(datetime.today(),-1))
+				print ('datafim_filtro ', datafim_filtro)
+				print (datetime.strptime(str(datafim_filtro), "%Y-%m-%d").strftime("%d-%m-%Y"))
+				tmp = datetime.strptime(str(datafim_filtro), "%Y-%m-%d").strftime("%d-%m-%Y")
+				datafim_filtro = tmp
+
+				#Format Dates to Day Month Year
+				#Assuming format is 01(D)-03(<<)-2023(YY)
+				datainicio_dia = datainicio_filtro[0:2]
+				if datainicio_dia.startswith('0'):
+					datainicio_dia = datainicio_dia.replace('0','')
+				datainicio_mes = datainicio_filtro[3:5]
+				#Needs to convert o TEXT
+				if datainicio_mes == "01":
+					datainicio_mes = 'janeiro'
+				elif datainicio_mes == "02":
+					datainicio_mes = 'fevereiro'
+				elif datainicio_mes == "03":
+					datainicio_mes = 'março'
+				elif datainicio_mes == "04":
+					datainicio_mes = 'abril'
+				elif datainicio_mes == "05":
+					datainicio_mes = 'maio'
+				elif datainicio_mes == "06":
+					datainicio_mes = 'junho'
+				elif datainicio_mes == "07":
+					datainicio_mes = 'julho'
+				elif datainicio_mes == "08":
+					datainicio_mes = 'agosto'
+				elif datainicio_mes == "09":
+					datainicio_mes = 'setembro'
+				elif datainicio_mes == "10":
+					datainicio_mes = 'outubro'
+				elif datainicio_mes == "11":
+					datainicio_mes = 'novembro'
+				elif datainicio_mes == "12":
+					datainicio_mes = 'dezembro'
+
+				#Ano
+				datainicio_ano = datainicio_filtro[6:10]
+
+				datafim_dia = datafim_filtro[0:2]
+				if datafim_dia.startswith('0'):
+					datafim_dia = datafim_dia.replace('0','')
+
+				datafim_mes = datafim_filtro[3:5]
+				#Needs to convert o TEXT
+				if datafim_mes == "01":
+					datafim_mes = 'janeiro'
+				elif datafim_mes == "02":
+					datafim_mes = 'fevereiro'
+				elif datafim_mes == "03":
+					datafim_mes = 'março'
+				elif datafim_mes == "04":
+					datafim_mes = 'abril'
+				elif datafim_mes == "05":
+					datafim_mes = 'maio'
+				elif datafim_mes == "06":
+					datafim_mes = 'junho'
+				elif datafim_mes == "07":
+					datafim_mes = 'julho'
+				elif datafim_mes == "08":
+					datafim_mes = 'agosto'
+				elif datafim_mes == "09":
+					datafim_mes = 'setembro'
+				elif datafim_mes == "10":
+					datafim_mes = 'outubro'
+				elif datafim_mes == "11":
+					datafim_mes = 'novembro'
+				elif datafim_mes == "12":
+					datafim_mes = 'dezembro'
+
+				#Ano
+				datafim_ano = datafim_filtro[6:10]
+				print ('====================== DATAS de INICIO E FIM ')
+				print (datainicio_ano)
+				print (datainicio_mes)
+				print (datainicio_dia)
+
+				print (datafim_ano)
+				print (datafim_mes)
+				print (datafim_dia)
+
+				d.execute_script("$('#ctl00_ctl00_WP_CMOV_rdBtnCustom')[0].checked = true")
+				d.implicitly_wait(15)
+				d.execute_script("$('#ctl00_ctl00_WP_CMOV_ctrlDateFrom_day_dd')[0].disabled = false")
+				d.implicitly_wait(15)
+				d.execute_script("$('#ctl00_ctl00_WP_CMOV_ctrlDateFrom_month_dd')[0].disabled = false")
+				d.implicitly_wait(15)
+				d.execute_script("$('#ctl00_ctl00_WP_CMOV_ctrlDateFrom_year_dd')[0].disabled = false")
+				d.implicitly_wait(15)
+				d.execute_script("$('#ctl00_ctl00_WP_CMOV_ctrlDateTo_day_dd')[0].disabled = false")
+				d.implicitly_wait(15)
+				d.execute_script("$('#ctl00_ctl00_WP_CMOV_ctrlDateTo_month_dd')[0].disabled = false")
+				d.implicitly_wait(15)
+				d.execute_script("$('#ctl00_ctl00_WP_CMOV_ctrlDateTo_year_dd')[0].disabled = false")
+				d.implicitly_wait(15)
+
+				sscript = "$('#ctl00_ctl00_WP_CMOV_ctrlDateFrom_day_dd')[0].value = '{}' ".format(datainicio_dia)
+				d.execute_script(sscript)
+				d.implicitly_wait(50)
+				sscript = "$('#ctl00_ctl00_WP_CMOV_ctrlDateFrom_month_dd')[0].value = '{}' ".format(datainicio_mes)
+				d.execute_script(sscript)
+				d.implicitly_wait(50)
+				sscript = "$('#ctl00_ctl00_WP_CMOV_ctrlDateFrom_year_dd')[0].value = '{}'".format(datainicio_ano)
+				d.execute_script(sscript)
+				d.implicitly_wait(50)
+				sscript = "$('#ctl00_ctl00_WP_CMOV_ctrlDateTo_day_dd')[0].value = '{}'".format(datafim_dia)
+				d.execute_script(sscript)
+				d.implicitly_wait(50)
+				sscript = "$('#ctl00_ctl00_WP_CMOV_ctrlDateTo_month_dd')[0].value = '{}'".format(datafim_mes)
+				d.execute_script(sscript)
+				d.implicitly_wait(50)
+				sscript = "$('#ctl00_ctl00_WP_CMOV_ctrlDateTo_year_dd')[0].value = '{}'".format(datafim_ano)
+				d.execute_script(sscript)
+				d.implicitly_wait(50)
+
+				d.execute_script("$('#ctl00_ctl00_WP_CMOV_btnSubmit').click()")
+				d.implicitly_wait(100)
+
+				num_rows = len (d.find_elements_by_xpath("//*[@id='ctl00_ctl00_WP_CMOV_grdCMOV']/tbody/tr"))
+				print (num_rows)
+
+				if num_rows == 1:
+					print ('Try again...')
+					d.execute_script("$('#ctl00_ctl00_WP_CMOV_rdBtnCustom')[0].checked = true")
+					d.implicitly_wait(15)
+					d.execute_script("$('#ctl00_ctl00_WP_CMOV_ctrlDateFrom_day_dd')[0].disabled = false")
+					d.implicitly_wait(15)
+					d.execute_script("$('#ctl00_ctl00_WP_CMOV_ctrlDateFrom_month_dd')[0].disabled = false")
+					d.implicitly_wait(15)
+					d.execute_script("$('#ctl00_ctl00_WP_CMOV_ctrlDateFrom_year_dd')[0].disabled = false")
+					d.implicitly_wait(15)
+					d.execute_script("$('#ctl00_ctl00_WP_CMOV_ctrlDateTo_day_dd')[0].disabled = false")
+					d.implicitly_wait(15)
+					d.execute_script("$('#ctl00_ctl00_WP_CMOV_ctrlDateTo_month_dd')[0].disabled = false")
+					d.implicitly_wait(15)
+					d.execute_script("$('#ctl00_ctl00_WP_CMOV_ctrlDateTo_year_dd')[0].disabled = false")
+					d.implicitly_wait(15)
+
+					sscript = "$('#ctl00_ctl00_WP_CMOV_ctrlDateFrom_day_dd')[0].value = '{}' ".format(datainicio_dia)
+					d.execute_script(sscript)
+					d.implicitly_wait(50)
+					sscript = "$('#ctl00_ctl00_WP_CMOV_ctrlDateFrom_month_dd')[0].value = '{}' ".format(datainicio_mes)
+					d.execute_script(sscript)
+					d.implicitly_wait(50)
+					sscript = "$('#ctl00_ctl00_WP_CMOV_ctrlDateFrom_year_dd')[0].value = '{}'".format(datainicio_ano)
+					d.execute_script(sscript)
+					d.implicitly_wait(50)
+					sscript = "$('#ctl00_ctl00_WP_CMOV_ctrlDateTo_day_dd')[0].value = '{}'".format(datafim_dia)
+					d.execute_script(sscript)
+					d.implicitly_wait(50)
+					sscript = "$('#ctl00_ctl00_WP_CMOV_ctrlDateTo_month_dd')[0].value = '{}'".format(datafim_mes)
+					d.execute_script(sscript)
+					d.implicitly_wait(50)
+					sscript = "$('#ctl00_ctl00_WP_CMOV_ctrlDateTo_year_dd')[0].value = '{}'".format(datafim_ano)
+					d.execute_script(sscript)
+					d.implicitly_wait(50)
+
+					d.execute_script("$('#ctl00_ctl00_WP_CMOV_btnSubmit').click()")
+					d.implicitly_wait(100)
+					numrows = len (d.find_elements_by_xpath("//*[@id='ctl00_ctl00_WP_CMOV_grdCMOV']/tbody/tr"))
+					print (numrows)
+
+				num_cols = len (d.find_elements_by_xpath("//*[@id='ctl00_ctl00_WP_CMOV_grdCMOV']/tbody/tr/td"))
+
 
 
 		#Trying to increase the number of results returned...
@@ -1174,16 +1347,23 @@ def banco_bfa_movimentos(usuariobanco, senha,datainicio_filtro = None, datafim_f
 			#End While
 			vermais_movimentos = False
 		else:
-			vermais_movimentos = False
+			#vermais_movimentos = False
 
 			for ll in d.find_elements_by_tag_name("a"):
 				if ll.get_attribute('href'):
 					#javascript:goTogrdCMOV_pag('')
-					if 'javascript:goTogrdCMOV_pag' in ll.get_attribute('href'):
+					if "javascript:goTogrdCMOV_pag('')" in ll.get_attribute('href'):
+						print (ll.get_attribute('href'))
+						print ('NO MORE PAGES TO EXTRACT.....')
+						vermais_movimentos = False
+						break
+
+					elif 'javascript:goTogrdCMOV_pag' in ll.get_attribute('href'):
 						print (ll.get_attribute('href'))
 						ll.click()
 						break
 
+			'''
 			print ('Check if data')
 			print ('Tenho os Movimentos...')
 			num_rows = len (d.find_elements_by_xpath("//*[@id='ctl00_ctl00_WP_CMOV_grdCMOV']/tbody/tr"))
@@ -1290,12 +1470,12 @@ def banco_bfa_movimentos(usuariobanco, senha,datainicio_filtro = None, datafim_f
 						print ('+++++++++++++++ MORE PAGES TO EXTRACT.....')
 						print ('+++++++++++++++ MORE PAGES TO EXTRACT.....')
 
-
+			'''
 			#Set start date again..
 			datainicio_next = datavalor[len(datavalor)-1]
 			print ('datainicio_next ', datainicio_next)
 			print ('contaloop ', contaloop)
-			if contaloop == 2:
+			if contaloop == 10:
 				vermais_movimentos = False
 
 		contaloop += 1
