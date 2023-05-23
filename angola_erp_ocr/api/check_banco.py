@@ -550,7 +550,10 @@ def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtr
 def banco_bfa_movimentos(usuariobanco, senha,datainicio_filtro = None, datafim_filtro = None):
 	'''
 		Reads movimento Banco BFA
-		Last Modified: 22-05-2023
+		Last Modified: 23-05-2023
+		Uses REQUESTS to pass Cookie to SELENIUM and be able to filter Statements by DATE
+		Loops throught all Pages to extract
+		BFA reports from LAST DAY to FIRST DAY 
 
 
 	'''
