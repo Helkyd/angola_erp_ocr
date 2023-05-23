@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 22/05/2023
+#Date Changed: 23/05/2023
 
 
 from __future__ import unicode_literals
@@ -553,7 +553,7 @@ def banco_bfa_movimentos(usuariobanco, senha,datainicio_filtro = None, datafim_f
 		Last Modified: 23-05-2023
 		Uses REQUESTS to pass Cookie to SELENIUM and be able to filter Statements by DATE
 		Loops throught all Pages to extract
-		BFA reports from LAST DAY to FIRST DAY 
+		BFA reports from LAST DAY to FIRST DAY
 
 
 	'''
@@ -1350,8 +1350,7 @@ def banco_bfa_movimentos(usuariobanco, senha,datainicio_filtro = None, datafim_f
 			#End While
 			vermais_movimentos = False
 		else:
-			#vermais_movimentos = False
-
+			vermais_movimentos = False	#To avoid looping and stop
 			for ll in d.find_elements_by_tag_name("a"):
 				if ll.get_attribute('href'):
 					#javascript:goTogrdCMOV_pag('')
@@ -1362,6 +1361,7 @@ def banco_bfa_movimentos(usuariobanco, senha,datainicio_filtro = None, datafim_f
 						break
 
 					elif 'javascript:goTogrdCMOV_pag' in ll.get_attribute('href'):
+						vermais_movimentos = True
 						print (ll.get_attribute('href'))
 						ll.click()
 						break
