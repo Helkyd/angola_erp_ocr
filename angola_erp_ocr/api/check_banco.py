@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 23/05/2023
+#Date Changed: 24/05/2023
 
 
 from __future__ import unicode_literals
@@ -1311,7 +1311,8 @@ def banco_bfa_movimentos(usuariobanco, senha,datainicio_filtro = None, datafim_f
 								if re.match(date_pattern,cell_text):
 									gravar_dados = True
 									datavalor.append(cell_text)
-									numerodoc = True
+									numerodoc = False
+									numerooper = True	#FIX 24-05-2023; BFA starts with Date, Oper, Doc, Desc
 
 								elif gravar_dados == True:
 									#Verifica se termina com AKZ
@@ -1321,11 +1322,13 @@ def banco_bfa_movimentos(usuariobanco, senha,datainicio_filtro = None, datafim_f
 									elif numerodoc:
 										numero_documento.append(cell_text)
 										numerodoc = False
-										numerooper = True
+										#numerooper = True
+										descoper = True
 									elif numerooper:
 										numero_operacao.append(cell_text)
 										numerooper = False
-										descoper = True
+										#descoper = True
+										numerodoc = True
 									elif descoper:
 										descricao_operacao.append(cell_text)
 										descoper = False
