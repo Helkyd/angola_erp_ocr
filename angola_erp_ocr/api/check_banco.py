@@ -337,7 +337,8 @@ def banco_keve_movimentos(usuario, senha,datainicio_filtro = None, datafim_filtr
 
 			datafim_next = datafim_filtro
 			datainicio.send_keys(str(datainicio_next))
-			datafim.send_keys("31-03-2023")
+			datafim.send_keys(datafim_next)
+
 		else:
 			datainicio = d.find_element(By.ID,'CalendarDateFrom')
 			datafim = d.find_element(By.ID,'CalendarDateTo')
