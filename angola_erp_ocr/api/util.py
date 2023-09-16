@@ -859,8 +859,202 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 	referenciadocumento = ""
 
+	#FIX 16-09-2023; Added to check if RUPE (IVA, INSS, IRT) and ZAP FIBRA payments
+	if "MCX DEBIT" in ocr_tesserac and ("ZAP FIBRA" in ocr_tesserac or "ZP EIBRA " in ocr_tesserac):
+		print ('Pagamento ZAP FIBRA.....')
+		print ('Pagamento ZAP FIBRA.....')
 
-	if "RECIBO DE PAGAMENTO" in ocr_tesserac or "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac or "EMITIDO EM: RF PORTAL BO CONTRIBUINTE" in ocr_tesserac \
+		pag_zapfibra = False
+		nif_zapfibra = ""
+		cliente_zapfibra = ""
+
+		mcxdebit = True
+
+		numeroTransacao = ""
+		dataTransacao = ""
+		descricaoPagamento = ""
+
+		for dd in ocr_tesserac.split('\n'):
+			print ('size dd ',len(dd))
+			print (dd == "")
+			print (dd == " ")
+			if dd !='' and dd != ' ':
+				print ('-----')
+				print ('dd ', dd)
+				print ('ddsplit ', dd.split(' '))
+				print ('ddsplit ', len(dd.split(' ')))
+				dd0 = dd.split(' ')
+				print ('dd0 ', len(dd0))
+				print ('DATAS ', re.match(date_pattern,dd0[0].strip()))
+				print ('DATAS ', re.match(date_pattern,dd.strip()))
+
+
+
+				if "N.CAIXA:" in dd:
+					#Get Transaction Number...
+					tmp_trans = dd.strip()
+					if not numeroTransacao:
+						numeroTransacao = tmp_trans[tmp_trans.rfind(":")+1:].strip()
+				elif "CONTA:" in dd:
+					#Get Date and time
+					tmp_data = dd.split(' ')[2]
+					if not dataTransacao:
+						dataTransacao = tmp_data
+				elif "NIF:" in dd:
+					#NIF da ZAP FIBRA
+					if "5417231126" in dd.split(' ')[1] or "5417231125" in dd.split(' ')[1]:
+						#Due to system ORC the last digit wrong ...5417231125
+						nif_zapfibra = "5417231126"
+				elif "N DE CLIENTE:" in dd:
+					cliente_zapfibra = dd[dd.find(":")+1:].strip()
+
+				elif "ZAP FIBRA" in dd or "ZP EIBRA" in dd:
+					if "ZP EIBRA" in dd:
+						descricaoPagamento = "ZAP FIBRA " + dd[dd.find('ZP EIBRA')+8:].strip()
+					else:
+						descricaoPagamento = dd.strip()
+				elif "MONTANTE:" in dd:
+					#Pagamento feito
+					if len(dd0) >= 3:
+						print ('CASH')
+						print (re.match(cash_pattern,dd0[1].strip()))
+						if re.match(cash_pattern,dd0[1].strip()):
+							valorPAGO = dd0[1].strip()
+					elif len(dd0) == 2:
+						print ('CASH - remove Akz')
+						print (re.match(cash_pattern,dd0[1].replace('Akz','').strip()))
+						if re.match(cash_pattern,dd0[1].replace('Akz','').strip()):
+							valorPAGO = dd0[1].replace('Akz','').strip()
+
+
+		print ('================ ENDDDDDD')
+		print ('DDDDDDd')
+		print ('numeroTransacao ',numeroTransacao)
+		print ('dataTransacao ', dataTransacao)
+		print ('nif zapfibra ', nif_zapfibra)
+		print ('cliente_zapfibra ', cliente_zapfibra)
+		print ('descricaoPagamento ', descricaoPagamento)
+		print ('valorPAGO ', valorPAGO)
+
+
+
+		if descricaoPagamento and valorPAGO and nif_zapfibra:
+			return {
+				"mcxdebit": True,
+				"numeroTransacao": numeroTransacao,
+				"datadePAGAMENTO": dataTransacao,
+				"nifZAPFIBRA": nif_zapfibra,
+				"cliente_ZAPFIBRA": cliente_zapfibra,
+				"descricaoPagamento": descricaoPagamento,
+				"valorPAGO": valorPAGO
+			}
+		frappe.throw(porra)
+
+
+	elif "MCX DEBIT" in ocr_tesserac and "RUPE" in ocr_tesserac and ("PAG. AO ESTADO" in ocr_tesserac or "PAG. RO ESTADO" in ocr_tesserac):
+		print ('Pagamento RUPE... IVA INSS OR IRT')
+		print ('Pagamento RUPE... IVA INSS OR IRT')
+		#Check if IVA... MUST HAVE 600 022 301 0
+		pag_iva = False
+		rupe_iva = ""
+
+		pag_inss = False
+		rupe_inss = ""
+
+		pag_irt = False
+		rupe_irt = ""
+
+		mcxdebit = True
+
+		if "600 022 301 0" in ocr_tesserac:
+			print ('DEVE TER Pagamento IVA....')
+			pag_iva = True
+		elif "600 012 308 0" in ocr_tesserac:
+			print ('DEVE TER Pagamento IRT....')
+			pag_irt = True
+		elif "603 002 309 0" in ocr_tesserac or "603 002 304 0" in ocr_tesserac:
+			print ('DEVE TER Pagamento INSS....')
+			pag_inss = True
+
+		numeroTransacao = ""
+		dataTransacao = ""
+		descricaoPagamento = ""
+
+		for dd in ocr_tesserac.split('\n'):
+			print ('size dd ',len(dd))
+			print (dd == "")
+			print (dd == " ")
+			if dd !='' and dd != ' ':
+				print ('-----')
+				print ('dd ', dd)
+				print ('ddsplit ', dd.split(' '))
+				print ('ddsplit ', len(dd.split(' ')))
+				dd0 = dd.split(' ')
+				print ('dd0 ', len(dd0))
+				print ('DATAS ', re.match(date_pattern,dd0[0].strip()))
+				print ('DATAS ', re.match(date_pattern,dd.strip()))
+
+
+
+				if "N.CAIXA:" in dd:
+					#Get Transaction Number...
+					tmp_trans = dd.strip()
+					if not numeroTransacao:
+						numeroTransacao = tmp_trans[tmp_trans.rfind(":")+1:].strip()
+				elif "CONTA:" in dd:
+					#Get Date and time
+					tmp_data = dd.split(' ')[2]
+					if not dataTransacao:
+						dataTransacao = tmp_data
+				elif "PAG. RO ESTADO" in dd or "PAG. AO ESTADO" in dd:
+					#descricao Pagamento
+					descricaoPagamento = "PAG. AO ESTADO"
+				elif "RUPE" in dd:
+					descricaoPagamento += ": RUPE"
+				elif len(dd) >= 23 and len(dd0) >= 7:
+					#RUPE NUMBER
+					print (dd.replace(" ","").isnumeric())
+					if dd.replace(" ","").isnumeric():
+						if pag_iva:
+							rupe_iva = dd.strip()
+						elif pag_irt:
+							rupe_irt = dd.strip()
+						elif pag_inss:
+							rupe_inss = dd.strip()
+				elif "MONTANTE:" in dd:
+					#Pagamento feito
+					if len(dd0) >= 3:
+						print ('CASH')
+						print (re.match(cash_pattern,dd0[1].strip()))
+						if re.match(cash_pattern,dd0[1].strip()):
+							valor_rupe = dd0[1].strip()
+
+
+		print ('================ ENDDDDDD')
+		print ('DDDDDDd')
+		print ('numeroTransacao ',numeroTransacao)
+		print ('dataTransacao ', dataTransacao)
+		print ('descricaoPagamento ', descricaoPagamento)
+		print ('rupe iva/irt/inss')
+		print (rupe_iva)
+		print (rupe_irt)
+		print (rupe_inss)
+		print ('valor_rupe ', valor_rupe)
+
+
+
+		if descricaoPagamento and valor_rupe and (rupe_iva or rupe_irt or rupe_inss):
+			return {
+				"mcxdebit": True,
+				"numeroTransacao": numeroTransacao,
+				"datadePAGAMENTO": dataTransacao,
+				"descricaoPagamento": descricaoPagamento,
+				"rupe": rupe_iva or rupe_inss or rupe_irt,
+				"valorRUPE": valor_rupe
+			}
+		#frappe.throw(porra)
+
+	elif "RECIBO DE PAGAMENTO" in ocr_tesserac or "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac or "EMITIDO EM: RF PORTAL BO CONTRIBUINTE" in ocr_tesserac \
 		or "MCX DEBIT" in ocr_tesserac or "COMPROVATIVO DA OPERACAO" in ocr_tesserac or "COMPROVATIVO DA OPERAÇÃO" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac \
 		or "MULTICAIXA Express." in ocr_tesserac: # or "através do serviço BAlDirecto." in ocr_tesserac or "através do serviço BAIDirecto." in ocr_tesserac:
 		#MCX DEBIT -> Multicaixa Express
