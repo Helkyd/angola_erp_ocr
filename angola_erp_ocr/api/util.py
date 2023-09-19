@@ -870,6 +870,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 		mcxdebit = True
 
+		tmp_numcaixa = ""
 		numeroTransacao = ""
 		dataTransacao = ""
 		descricaoPagamento = ""
@@ -891,6 +892,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 
 				if "N.CAIXA:" in dd:
+					#FIX 19-09-2023; get N. CAIXA
+					if not tmp_numcaixa:
+						tmp_numcaixa = dd[0:21].strip()
 					#Get Transaction Number...
 					tmp_trans = dd.strip()
 					if not numeroTransacao:
@@ -941,6 +945,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		if descricaoPagamento and valorPAGO and nif_zapfibra:
 			return {
 				"mcxdebit": True,
+				"numCaixa": tmp_numcaixa,
 				"numeroTransacao": numeroTransacao,
 				"datadePAGAMENTO": dataTransacao,
 				"nifZAPFIBRA": nif_zapfibra,
@@ -948,7 +953,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 				"descricaoPagamento": descricaoPagamento,
 				"valorPAGO": valorPAGO
 			}
-		frappe.throw(porra)
+		#frappe.throw(porra)
 
 
 	elif "MCX DEBIT" in ocr_tesserac and "RUPE" in ocr_tesserac and ("PAG. AO ESTADO" in ocr_tesserac or "PAG. RO ESTADO" in ocr_tesserac):
@@ -976,6 +981,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 			print ('DEVE TER Pagamento INSS....')
 			pag_inss = True
 
+		tmp_numcaixa = ""
 		numeroTransacao = ""
 		dataTransacao = ""
 		descricaoPagamento = ""
@@ -997,6 +1003,10 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 
 				if "N.CAIXA:" in dd:
+					#FIX 19-09-2023; get N. CAIXA
+					if not tmp_numcaixa:
+						tmp_numcaixa = dd[0:21].strip()
+
 					#Get Transaction Number...
 					tmp_trans = dd.strip()
 					if not numeroTransacao:
@@ -1046,6 +1056,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		if descricaoPagamento and valor_rupe and (rupe_iva or rupe_irt or rupe_inss):
 			return {
 				"mcxdebit": True,
+				"numCaixa": tmp_numcaixa,
 				"numeroTransacao": numeroTransacao,
 				"datadePAGAMENTO": dataTransacao,
 				"descricaoPagamento": descricaoPagamento,
