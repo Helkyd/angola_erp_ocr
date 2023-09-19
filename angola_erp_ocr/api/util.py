@@ -45,7 +45,8 @@ from urllib3 import Retry
 import time
 
 @frappe.whitelist(allow_guest=True)
-def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
+def lepdfocr(data,action = "SCRAPE",tipodoctype = None, lingua = None, resol = None):
+	#FIX 19-09-2023; Added LANG and resolution for MCX DEBIT OCR
 	#default is SCRAPE
 	#tipodoctype if Compras means will create a Purchase Order or Invoice.
 	start_time = time.monotonic()
@@ -810,7 +811,10 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None):
 		print ('IMAGE FILE')
 		print ('IMAGE FILE')
 		print ('DO OCR_READ and OCR_PDF')
-		return ocr_pytesseract (filefinal)
+		#FIX 19-09-2023; Added Lingua and Resol for MCX DEBIT...
+		print ('lingua ', lingua)
+		print ('resol ', resol)
+		return ocr_pytesseract (filefinal,None,lingua,resol)
 
 		#Might use after if no results from above..
 		#return ocr_pdf.ocr_pdf(input_path=data)
@@ -839,6 +843,8 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		return angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,lingua,False,resolucao) #250) #ocr_tesserac
 		#frappe.throw(porra)
 
+	print ('lingua ', lingua)
+	print ('resolucao ', resolucao)
 	ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,lingua,False,resolucao) #200) #180) #200)
 	print ('OCR TESSERACT')
 	print ('OCR TESSERACT')
@@ -894,7 +900,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 				if "N.CAIXA:" in dd:
 					#FIX 19-09-2023; get N. CAIXA
 					if not tmp_numcaixa:
-						tmp_numcaixa = dd[0:21].strip()
+						tmp_numcaixa = dd[8:21].strip()
 					#Get Transaction Number...
 					tmp_trans = dd.strip()
 					if not numeroTransacao:
@@ -956,7 +962,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		#frappe.throw(porra)
 
 
-	elif "MCX DEBIT" in ocr_tesserac and "RUPE" in ocr_tesserac and ("PAG. AO ESTADO" in ocr_tesserac or "PAG. RO ESTADO" in ocr_tesserac):
+	elif "MCX DEBIT" in ocr_tesserac and "RUPE" in ocr_tesserac and ("PAG. AO ESTADO" in ocr_tesserac or "PAG. RO ESTADO" in ocr_tesserac or "PAG. RO ESTANO" in ocr_tesserac):
 		print ('Pagamento RUPE... IVA INSS OR IRT')
 		print ('Pagamento RUPE... IVA INSS OR IRT')
 		#Check if IVA... MUST HAVE 600 022 301 0
@@ -974,7 +980,8 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		if "600 022 301 0" in ocr_tesserac:
 			print ('DEVE TER Pagamento IVA....')
 			pag_iva = True
-		elif "600 012 308 0" in ocr_tesserac:
+		elif "600 012 308 0" in ocr_tesserac or "600 012 398 0" in ocr_tesserac:
+			#FIX 19-09-2023; OCR might get 398 instead of 308
 			print ('DEVE TER Pagamento IRT....')
 			pag_irt = True
 		elif "603 002 309 0" in ocr_tesserac or "603 002 304 0" in ocr_tesserac:
@@ -1005,7 +1012,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 				if "N.CAIXA:" in dd:
 					#FIX 19-09-2023; get N. CAIXA
 					if not tmp_numcaixa:
-						tmp_numcaixa = dd[0:21].strip()
+						tmp_numcaixa = dd[8:21].strip()
 
 					#Get Transaction Number...
 					tmp_trans = dd.strip()
@@ -1016,7 +1023,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					tmp_data = dd.split(' ')[2]
 					if not dataTransacao:
 						dataTransacao = tmp_data
-				elif "PAG. RO ESTADO" in dd or "PAG. AO ESTADO" in dd:
+				elif "PAG. RO ESTADO" in dd or "PAG. AO ESTADO" in dd or "PAG. RO ESTANO" in dd:
 					#descricao Pagamento
 					descricaoPagamento = "PAG. AO ESTADO"
 				elif "RUPE" in dd:
@@ -1024,6 +1031,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 				elif len(dd) >= 23 and len(dd0) >= 7:
 					#RUPE NUMBER
 					print (dd.replace(" ","").isnumeric())
+					print ('pag_iva ',pag_iva)
+					print ('pag_irt ',pag_irt)
+					print ('pag_inss ', pag_inss)
 					if dd.replace(" ","").isnumeric():
 						if pag_iva:
 							rupe_iva = dd.strip()
