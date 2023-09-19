@@ -962,7 +962,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		#frappe.throw(porra)
 
 
-	elif "MCX DEBIT" in ocr_tesserac and "RUPE" in ocr_tesserac and ("PAG. AO ESTADO" in ocr_tesserac or "PAG. RO ESTADO" in ocr_tesserac or "PAG. RO ESTANO" in ocr_tesserac):
+	elif "MCX DEBIT" in ocr_tesserac and "RUPE" in ocr_tesserac and ("PAG. AO ESTADO" in ocr_tesserac or "PAG. RO ESTADO" in ocr_tesserac or "PAG. RO ESTANO" in ocr_tesserac or "PAG.' RO ES'TANO" in ocr_tesserac):
 		print ('Pagamento RUPE... IVA INSS OR IRT')
 		print ('Pagamento RUPE... IVA INSS OR IRT')
 		#Check if IVA... MUST HAVE 600 022 301 0
@@ -1023,7 +1023,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					tmp_data = dd.split(' ')[2]
 					if not dataTransacao:
 						dataTransacao = tmp_data
-				elif "PAG. RO ESTADO" in dd or "PAG. AO ESTADO" in dd or "PAG. RO ESTANO" in dd:
+				elif "PAG. RO ESTADO" in dd or "PAG. AO ESTADO" in dd or "PAG. RO ESTANO" in dd or "PAG.' RO ES'TANO" in dd:
 					#descricao Pagamento
 					descricaoPagamento = "PAG. AO ESTADO"
 				elif "RUPE" in dd:
@@ -1037,10 +1037,17 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					if dd.replace(" ","").isnumeric():
 						if pag_iva:
 							rupe_iva = dd.strip()
+							tiporupe = "IVA"
 						elif pag_irt:
-							rupe_irt = dd.strip()
+							if "600 012 398 0" in dd.strip():
+								#FIX as OCR changed from 308 to 398
+								rupe_irt = dd.replace('398','308').strip()
+							else:
+								rupe_irt = dd.strip()
+							tiporupe = "IRT"
 						elif pag_inss:
 							rupe_inss = dd.strip()
+							tiporupe = "INSS"
 				elif "MONTANTE:" in dd:
 					#Pagamento feito
 					if len(dd0) >= 3:
@@ -1071,6 +1078,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 				"datadePAGAMENTO": dataTransacao,
 				"descricaoPagamento": descricaoPagamento,
 				"rupe": rupe_iva or rupe_inss or rupe_irt,
+				"tipo_RUPE": tiporupe,
 				"valorRUPE": valor_rupe
 			}
 		#frappe.throw(porra)
