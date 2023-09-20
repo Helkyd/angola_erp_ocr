@@ -866,7 +866,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 	referenciadocumento = ""
 
 	#FIX 16-09-2023; Added to check if RUPE (IVA, INSS, IRT) and ZAP FIBRA payments
-	if "MCX DEBIT" in ocr_tesserac and ("ZAP FIBRA" in ocr_tesserac or "ZP EIBRA " in ocr_tesserac):
+	if "MCX DEBIT" in ocr_tesserac and ("ZAP FIBRA" in ocr_tesserac or "ZP EIBRA " in ocr_tesserac or "ZAP  FIBRA" in ocr_tesserac):
 		print ('Pagamento ZAP FIBRA.....')
 		print ('Pagamento ZAP FIBRA.....')
 
@@ -897,7 +897,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 
 
-				if "N.CAIXA:" in dd:
+				if "N.CAIXA:" in dd or "N-UAIXA:" in dd:
 					#FIX 19-09-2023; get N. CAIXA
 					if not tmp_numcaixa:
 						tmp_numcaixa = dd[8:21].strip()
@@ -910,26 +910,36 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					tmp_data = dd.split(' ')[2]
 					if not dataTransacao:
 						dataTransacao = tmp_data
-				elif "NIF:" in dd:
+				elif "NIF:" in dd or "NIEF:" in dd:
 					#NIF da ZAP FIBRA
-					if "5417231126" in dd.split(' ')[1] or "5417231125" in dd.split(' ')[1]:
+					if "5417231126" in dd.split(' ')[1] or "5417231125" in dd.split(' ')[1] or "5417231120" in dd.split(' ')[1]:
 						#Due to system ORC the last digit wrong ...5417231125
 						nif_zapfibra = "5417231126"
-				elif "N DE CLIENTE:" in dd:
-					cliente_zapfibra = dd[dd.find(":")+1:].strip()
+				elif "N DE CLIENTE:" in dd or "N° DE CLIENTE:" in dd:
+					cliente_zapfibra = dd[dd.find(":")+1:].replace('‘','').strip()
 
-				elif "ZAP FIBRA" in dd or "ZP EIBRA" in dd:
+				elif "ZAP FIBRA" in dd or "ZP EIBRA" in dd or "ZAP  FIBRA" in dd:
 					if "ZP EIBRA" in dd:
 						descricaoPagamento = "ZAP FIBRA " + dd[dd.find('ZP EIBRA')+8:].strip()
+					elif "ZAP  FIBRA" in dd:
+						descricaoPagamento = "ZAP FIBRA " + dd[dd.find('ZAP  FIBRA')+10:].strip()
 					else:
 						descricaoPagamento = dd.strip()
-				elif "MONTANTE:" in dd:
+				elif "MONTANTE:" in dd or "MONTANTE :" in dd:
 					#Pagamento feito
+					if "MONTANTE :" in dd:
+						dd0 = dd[10:].split(' ')
+
 					if len(dd0) >= 3:
 						print ('CASH')
 						print (re.match(cash_pattern,dd0[1].strip()))
 						if re.match(cash_pattern,dd0[1].strip()):
-							valorPAGO = dd0[1].strip()
+							#Check if COMMA bcs ANG uses COMMA as DECIMALS
+							if not ',' in dd0[1].strip():
+								#remove the DOT
+								valorPAGO = dd0[1].replace('.','').strip()
+							else:
+								valorPAGO = dd0[1].strip()
 					elif len(dd0) == 2:
 						print ('CASH - remove Akz')
 						print (re.match(cash_pattern,dd0[1].replace('Akz','').strip()))
