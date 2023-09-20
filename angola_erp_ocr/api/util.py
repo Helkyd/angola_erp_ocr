@@ -7020,6 +7020,7 @@ def agt_lgt(dlinumber):
 
 		else:
 			#return out #.decode("utf-8")
+			print (out.decode("utf-8"))
 			tmpficheiroPDF = out.decode("utf-8").split('\n')[12]
 			ficheiroPDF = tmpficheiroPDF[tmpficheiroPDF.find('VERIFICAR PASTA ')+16:]
 
