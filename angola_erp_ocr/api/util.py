@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 27/07/2023
+#Date Changed: 20/09/2023
 
 
 from __future__ import unicode_literals
@@ -897,7 +897,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 
 
-				if "N.CAIXA:" in dd or "N-UAIXA:" in dd:
+				if "N.CAIXA:" in dd or "N-UAIXA:" in dd or "N.CATNA:" in dd:
 					#FIX 19-09-2023; get N. CAIXA
 					if not tmp_numcaixa:
 						tmp_numcaixa = dd[8:21].strip()
@@ -915,7 +915,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					if "5417231126" in dd.split(' ')[1] or "5417231125" in dd.split(' ')[1] or "5417231120" in dd.split(' ')[1]:
 						#Due to system ORC the last digit wrong ...5417231125
 						nif_zapfibra = "5417231126"
-				elif "N DE CLIENTE:" in dd or "N° DE CLIENTE:" in dd:
+				elif "N DE CLIENTE:" in dd or "N° DE CLIENTE:" in dd or "W° DE CLIENTE:" in dd:
 					cliente_zapfibra = dd[dd.find(":")+1:].replace('‘','').strip()
 
 				elif "ZAP FIBRA" in dd or "ZP EIBRA" in dd or "ZAP  FIBRA" in dd:
@@ -1019,7 +1019,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 
 
-				if "N.CAIXA:" in dd:
+				if "N.CAIXA:" in dd or "N.CATNA:" in dd:
 					#FIX 19-09-2023; get N. CAIXA
 					if not tmp_numcaixa:
 						tmp_numcaixa = dd[8:21].strip()
