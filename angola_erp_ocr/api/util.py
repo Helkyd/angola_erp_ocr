@@ -1163,6 +1163,10 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 			print ('=====================')
 			#frappe.throw(porra)
 
+		#FIX 21-09-2023; Better in PT for this case
+		#if "AUTOLIQUPAGRO RETENÇAO A FONTE" in ocr_tesserac.strip():
+		#	ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,'eng',False,200)
+
 		#print ('CASH ',re.match(cash_pattern,b[0]))
 
 		for dd in ocr_tesserac.split('\n'):
@@ -1197,7 +1201,28 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 				print (dd.startswith("ADOG.0006.0000.6671.9425"))
 				#frappe.throw(porra)
 
-				if "LIQUIDAÇÃO GENÉRICA DE TRIBUTO" in dd.strip():
+				#FIX 21-09-2023; Check if has the Reference Number and search online ....
+				if "AUTOLIQUIDAÇÃO RETENÇÃO NA FONTE" in dd.strip() or "AUTOLIQUPAGRO RETENÇAO A FONTE" in dd.strip():
+					print ('Verify is Number is visible and VALID')
+					print (dd[0:dd.rfind(' ')])
+					print (dd.strip()[dd.strip().rfind(' '):].strip())
+					#230104899092230
+
+					if "AUTOLIQUPAGRO RETENÇAO A FONTE =" in dd.strip():
+						#FRENCH OCR....
+						print (dd[dd.find("A FONTE =")+10+4:].strip().replace(' ',''))
+						print (len(dd[dd.find("A FONTE =")+10+4:].strip().replace(' ','')) == 15)
+					else:
+						print (len(dd.strip()[dd.strip().rfind(' '):].strip()) == 15)
+					print ('search online.... https://portaldocontribuinte.minfin.gov.ao/imprimir-verificar-nf-nl')
+
+					frappe.throw(porra)
+				elif "230" in dd.strip() or "2310" in dd.strip():
+					print (dd)
+					frappe.throw(porra)
+
+
+				elif "LIQUIDAÇÃO GENÉRICA DE TRIBUTO" in dd.strip():
 					print ('Numero Referencia..')
 					print (dd[0:dd.find(' ')])
 					print (dd[0:dd.find(' ')].strip().isnumeric())
@@ -1378,7 +1403,8 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						print ('Tmpvalortributavel ', Tmpvalortributavel)
 					#frappe.throw(porra)
 
-				elif "INDUSTRIAL" in dd.strip() or "A28" in dd.strip():
+				elif ("INDUSTRIAL - RETENGAO NA FONTE" in dd.strip() or "INDUSTRIAL - RETENÇÃO NA FONTE" in dd.strip()): #and ("A28" in dd.strip() or "03C" in dd.strip()):
+					#FIX 21-09-2023; Removed A28 and Removed 03C as a check and changed from OR to AND
 					print ('descricao receita')
 					if not Tmpvalortributavel:
 						descricaoRECEITA = "IMPOSTO INDUSTRIAL - RETENÇÃO NA FONTE"
@@ -6833,6 +6859,9 @@ def liquidacao_generica_tributo(ficheiro):
 	custom_config = r'--oem 3 --psm 6'
 	textotemp = pytesseract.image_to_string(img, config=custom_config)
 
+	print ('textotemp')
+	print (textotemp)
+
 	for tt in textotemp.split('\n'):
 		#LIQUIDAGAO GENERICA DE TRIBUTO
 		#print (tt)
@@ -9263,3 +9292,56 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 	print(round(stop_time-start_time, 2), "seconds")
 
 	return (empresaSupplier,invoiceNumber,invoiceDate,supplierMoeda,supplierAddress,supplierNIF,supplierPais,data)
+
+
+
+@frappe.whitelist(allow_guest=True)
+def teste_ocr(ficheiro, dpi = 120, oem = 3, psm = 1):
+	'''
+		OCR an image file to get either the QRCODE or the Referencia do Documento and SCAN ONLINE
+		Last Modified: 20-10-2022
+	'''
+	import cv2
+	import pytesseract
+
+	start_time = time.monotonic()
+
+	if os.path.isfile(frappe.get_site_path('public','files') + ficheiro.replace('/files','')):
+		filefinal = frappe.get_site_path('public','files') + ficheiro.replace('/files','')
+		print ('filefinal ',filefinal)
+		if filefinal.startswith('.'):
+			filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+			filefinal = filefinal1
+		print ('filefinal1 ',filefinal)
+	elif os.path.isfile(frappe.get_site_path('public','files') + ficheiro.replace('/public/files','')):
+		filefinal = frappe.get_site_path('public','files') + ficheiro.replace('/public/files','')
+		print ('filefinal ',filefinal)
+		if filefinal.startswith('.'):
+			filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+			filefinal = filefinal1
+		print ('filefinal1 ',filefinal)
+
+	else:
+		filefinal = data
+
+	print ('filefinal ',filefinal)
+
+	#ficheiro = '/home/frappe/frappe-bench/sites/tools.angolaerp.co.ao/public/files/Pagto teor.jpeg'
+	img = cv2.imread(filefinal)
+
+	# Adding custom options
+	#custom_config = r'--oem 3 --psm 6'
+	print ('dpi ', dpi)
+	print ('oem ', oem)
+	print ('psm ', psm)
+	custom_config = r'--dpi ' + str(dpi) + ' --oem ' + str(oem) + ' --psm ' + str(psm)
+	textotemp = pytesseract.image_to_string(img, config=custom_config)
+
+	print ('textotemp')
+	#print (textotemp)
+	for tt in textotemp.split('\n'):
+		#LIQUIDAGAO GENERICA DE TRIBUTO
+		#print (tt)
+		if "230" in tt or "290" in tt:
+			print ('AQUI DEVE TER NUMERO')
+			print (tt)
