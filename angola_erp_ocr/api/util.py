@@ -1216,6 +1216,12 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						print (len(dd.strip()[dd.strip().rfind(' '):].strip()) == 15)
 					print ('search online.... https://portaldocontribuinte.minfin.gov.ao/imprimir-verificar-nf-nl')
 
+					#Try SCAN FOR OCR
+					rr = qrcode_scan_decode(filefinal)
+					print (rr)
+					if rr != False:
+						return rr
+
 					frappe.throw(porra)
 				elif "230" in dd.strip() or "2310" in dd.strip():
 					print (dd)
@@ -6806,20 +6812,175 @@ def retorna_descricao(fsup):
 
 	return tmpdescricao00.strip()
 
-
-def qrcode_decode():
+@frappe.whitelist(allow_guest=True)
+def qrcode_decode(ficheiro):
 	'''
 		QRCode decode from image files....
 	'''
 	from pyzbar.pyzbar import ZBarSymbol
 
-	#Look fro QRCODE on file
-	decode(Image.open('pyzbar/tests/qrcode.png'), symbols=[ZBarSymbol.QRCODE])
 
-	#Decode from IMAGE
-	from pyzbar.pyzbar import decode
-	from PIL import Image
-	decode(Image.open('pyzbar/tests/code128.png'))
+	start_time = time.monotonic()
+	if ficheiro:
+		if os.path.isfile(frappe.get_site_path('public','files') + ficheiro.replace('/files','')):
+			filefinal = frappe.get_site_path('public','files') + ficheiro.replace('/files','')
+			print ('filefinal ',filefinal)
+			if filefinal.startswith('.'):
+				filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+				filefinal = filefinal1
+			print ('filefinal1 ',filefinal)
+		elif os.path.isfile(frappe.get_site_path('public','files') + ficheiro.replace('/public/files','')):
+			filefinal = frappe.get_site_path('public','files') + ficheiro.replace('/public/files','')
+			print ('filefinal ',filefinal)
+			if filefinal.startswith('.'):
+				filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+				filefinal = filefinal1
+			print ('filefinal1 ',filefinal)
+
+		else:
+			filefinal = data
+
+		print ('filefinal ',filefinal)
+	if filefinal:
+		#Look fro QRCODE on file
+		decode(Image.open(filefinal), symbols=[ZBarSymbol.QRCODE])
+	else:
+		#Look fro QRCODE on file
+		decode(Image.open('pyzbar/tests/qrcode.png'), symbols=[ZBarSymbol.QRCODE])
+
+	if filefinal:
+		#Decode from IMAGE
+		from pyzbar.pyzbar import decode
+		from PIL import Image
+		decode(Image.open(filefinal))
+	else:
+		#Decode from IMAGE
+		from pyzbar.pyzbar import decode
+		from PIL import Image
+		decode(Image.open('pyzbar/tests/code128.png'))
+
+@frappe.whitelist(allow_guest=True)
+def qrcode_scan_decode(ficheiro):
+	'''
+		QRCode Detect and decode from image files....
+	'''
+	import cv2
+
+
+	start_time = time.monotonic()
+	if ficheiro:
+		if os.path.isfile(frappe.get_site_path('public','files') + ficheiro.replace('/files','')):
+			filefinal = frappe.get_site_path('public','files') + ficheiro.replace('/files','')
+			print ('filefinal ',filefinal)
+			if filefinal.startswith('.'):
+				filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+				filefinal = filefinal1
+			print ('filefinal1 ',filefinal)
+		elif os.path.isfile(frappe.get_site_path('public','files') + ficheiro.replace('/public/files','')):
+			filefinal = frappe.get_site_path('public','files') + ficheiro.replace('/public/files','')
+			print ('filefinal ',filefinal)
+			if filefinal.startswith('.'):
+				filefinal1 = "/home/frappe/frappe-bench/sites" + filefinal[1:len(filefinal)]
+				filefinal = filefinal1
+			print ('filefinal1 ',filefinal)
+
+		else:
+			filefinal = ficheiro
+
+		print ('filefinal ',filefinal)
+
+	if filefinal:
+		img = cv2.imread(filefinal)
+		detector = cv2.QRCodeDetector()
+		data, bbox, s_qrcode = detector.detectAndDecode(img)
+		if "portaldocontribuinte" in data:
+			print ('Detected QRCODE LINK IN FILE....')
+			#print (data)
+			print ('verifying... ', data[data.find('?datNumber'):])
+			try:
+				#response.headers['Content-Type'] = 'application/json; charset=utf-8'
+				headers= {
+					'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36',
+					'Content-Type': 'application/json; charset=utf-8',
+				}
+
+				response  = requests.get(data,headers=headers,verify=False, timeout=5)
+				#check if Response is 502; Does not Exist the site...
+				if response.status_code == 502:
+					print ('Nao existe o SITE!!!!')
+					return ('SITE EM BAIXO.')
+				else:
+					print ('Tem dados NIF....')
+					#print (response.content)
+					data = response.text
+					#print ('data')
+					#print (data['success'])
+					#print (data)
+
+					#Verify if PAGA
+					numeroRecibo = ""
+					datadePAGAMENTO = ""
+					Contribuinte = ""
+					nifContribuinte = ""
+					valorPAGO = ""
+
+					if data.find('encontra-se pago e registado no sistema') != -1:
+						print ('Nota de Liquidacao ESTA PAGA...')
+						from bs4 import BeautifulSoup
+						soup = BeautifulSoup(response.content,'html.parser')
+						sopa = soup.find(id='panelDARRP_content')
+						elements = sopa.find_all("div",class_="form-group col-sm-6".split())
+						print("\n".join("{} {}".format(el['class'], el.get_text()) for el in elements))
+						for fsup in elements:
+							print ('=====')
+							texto = fsup.get_text()
+							#print (texto)
+							if "do Recibo de Pagamento" in texto:
+								print ('Numbero do Recibo')
+								print (texto[texto.rfind(':')+1:].strip())
+								numeroRecibo = texto[texto.rfind(':')+1:].strip()
+							elif "Data do Pagamento" in texto:
+								print ('Data de Pagamento')
+								print (texto[texto.rfind(':')+1:].strip())
+								datadePAGAMENTO = texto[texto.rfind(':')+1:].strip()
+
+							elif "Contribuinte" in texto:
+								print ('Contribuinte')
+								print (texto[texto.rfind(':')+1:].strip())
+								Contribuinte = texto[texto.rfind(':')+1:].strip()
+
+							elif "NIF" in texto:
+								print ('NIF')
+								print (texto[texto.rfind(':')+1:].strip())
+								nifContribuinte = texto[texto.rfind(':')+1:].strip()
+							elif "Valor" in texto:
+								print ('Valor')
+								print (texto[texto.rfind(':')+1:].strip())
+								valorPAGO = texto[texto.rfind(':')+1:].strip()
+
+
+
+
+
+			except requests.exceptions.ReadTimeout:
+				print ('SEM LIGACAO.....')
+				print ('SEM LIGACAO.....')
+			except requests.exceptions.ConnectionError:
+				print ('Connection refused.....')
+				requests.status_code = "Connection refused"
+
+			#Recibo de Pagamento RETENCAO NA FONTE
+			if numeroRecibo and datadePAGAMENTO and nifContribuinte and valorPAGO:
+				return {
+					"tipoDocumento": "Recibo Pagamento Retencao",
+					"numeroRecibo": numeroRecibo,
+					"datadePAGAMENTO": datadePAGAMENTO,
+					"Contribuinte": Contribuinte,
+					"nifContribuinte": nifContribuinte,
+					"valorPAGO": valorPAGO
+				}
+
+		return False
 
 @frappe.whitelist(allow_guest=True)
 def liquidacao_generica_tributo(ficheiro):
