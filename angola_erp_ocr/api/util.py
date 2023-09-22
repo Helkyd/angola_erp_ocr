@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 20/09/2023
+#Date Changed: 22/09/2023
 
 
 from __future__ import unicode_literals
@@ -5418,13 +5418,14 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 	'''
-	Last modified: 16-10-2022
+	Last modified: 22-09-2023
 	Using to Train or LEARN OCR from PDF files not configurated on the System....
 	'''
 	start_time = time.monotonic()
 
+	#FIX 22-09-2023; Added words to HEADER
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-	terpalavras_header = ['VALOR UN', 'VALOR TOTAL LIQ', 'UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC', 'DEC', 'TAXA', 'IVA']
+	terpalavras_header = ['VALOR UN', 'VALOR TOTAL LIQ', 'UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Pr. Unitário', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC', 'DEC', 'TAXA', 'IVA', 'Total c/ I VA']
 	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
 
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
@@ -5432,6 +5433,9 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 	cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)'
 	#filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
 	filtered_divs = {'COUNTER': [], 'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
+
+	#FIX 22-09-2023
+	nif_pattern = r'^([0-9]{3})\s([0-9]{3})\s([0-9]{4})|([0-9]{10})|([0-9]{3})\s([0-9]{3})\s([0-9]{3}\s[0-9])'
 
 
 	if os.path.isfile(frappe.get_site_path('public','files') + data.replace('/files','')):
@@ -5740,7 +5744,11 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 				if not supplierNIF:
 					if not en_scan:
 						if "NIF" in fsup.upper() or "NIF:" in fsup.upper():
-							supplierNIF = fsup.replace('NIF:','').replace('NIF','').strip()
+							#FIX 22-09-2023
+							tmp_supplierNIF = fsup.replace('NIF:','').replace('NIF','').strip()
+							print ('NIFnumber ', re.match(nif_pattern,tmp_supplierNIF.strip()))
+							if re.match(nif_pattern,tmp_supplierNIF.strip()):
+								supplierNIF = tmp_supplierNIF[0:re.match(nif_pattern,tmp_supplierNIF.strip()).span()[1]].replace(' ','')
 							print ('CHECK NIF....ANGOLA2')
 							nifvalido = validar_nif (supplierNIF)
 							print (nifvalido)
@@ -5750,6 +5758,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 				if not supplierMoeda:
 					terpalavras = ['Moeda','AOA','AKZ']
 					#TODO: List of Currencies to see if on the Document to be OCR..
+					print ('Ver se tem MOEDA AKZ/AOA')
 
 					Moedapalavraexiste = False
 					for ff in terpalavras:
@@ -5762,7 +5771,10 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 						elif "AKZ" in fsup.strip():
 							supplierMoeda = 'KZ'
 						else:
-							supplierMoeda = fsup.strip().replace('Moeda','')
+							#FIX 22-09-2023
+							if "Moeda:" in fsup.strip():
+								supplierMoeda = fsup.strip().replace('Moeda','')
+								print ('aqui MOEDA ADDED')
 							#TODO: Remove CAMBIO and Numbers if exist on the same line...
 					else:
 						#Check words on doc if any on the list...
@@ -5826,7 +5838,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 					terpalavras = ['Invoice No:','Invoice No']
 					if not invoiceNumber:
 						for tt in terpalavras:
-							print ('Factura ', tt.upper())
+							print ('Factura00 ', tt.upper())
 							print (fsup.upper().strip())
 							if fsup.upper().strip().find(tt.upper()) != -1:
 								invoiceNumber = fsup.upper().strip()[fsup.upper().strip().find(tt.upper()):].replace(tt.upper(),'').replace(':','').strip()
@@ -5969,15 +5981,24 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 						if palavraexiste_item or fsup.strip()[0:1].isnumeric():
 							#Check if tmp_sn and add on previous ITEM and clear
 							if tmp_sn !='' and fsup.strip()[0:1].isnumeric():
-								filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += ' SN: ' + tmp_sn
-								tmp_sn = ''
-								print ('ADDED SNs to DESCRIPTION...')
-								print ('ADDED SNs to DESCRIPTION...')
-								tmp_sn_added = True
+								#FIX 22-09-2023
+								if len(filtered_divs['DESCRIPTION']) > 1:
+									filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += ' SN: ' + tmp_sn
+									tmp_sn = ''
+									print ('ADDED SNs to DESCRIPTION...')
+									print ('ADDED SNs to DESCRIPTION...')
+									tmp_sn_added = True
+								else:
+									tmp_sn = ''
+									tmp_sn_added = False
 
 							#Check if First is Numbers... so is a Counter
 							if fsup.strip()[0:1].isnumeric():
-								contaLinhas = fsup.strip()[0:1]
+								#FIX 22-09-2023
+								if fsup.strip()[:fsup.find(' ')].isnumeric() and len(fsup.strip()[:fsup.find(' ')]) >= 3:
+									print ('Cannot be CONTALINAS... must be ITEMCODE/ARTIGO')
+								else:
+									contaLinhas = fsup.strip()[0:1]
 							#if EN; testing to start from TOTAL, PRICE, QTD in order to prices and Qtd correct
 							tmpdescricao = ''
 							if en_scan:
