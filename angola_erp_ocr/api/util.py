@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 22/09/2023
+#Date Changed: 25/09/2023
 
 
 from __future__ import unicode_literals
@@ -142,6 +142,9 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None, lingua = None, resol = N
 						itemIVA = ''
 
 						cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)'
+						#FIX 22-09-2023
+						nif_pattern = r'^([0-9]{3})\s([0-9]{3})\s([0-9]{4})|([0-9]{10})|([0-9]{3})\s([0-9]{3})\s([0-9]{3}\s[0-9])'
+
 						filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
 
 
@@ -203,7 +206,18 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None, lingua = None, resol = N
 										supplierEmail = 'Ainda por fazer....'
 								if not supplierNIF:
 									if "NIF" in fsup.upper() or "NIF:" in fsup.upper():
-										supplierNIF = fsup.replace('NIF:','').replace('NIF','').strip()
+										#FIX 22-09-2023
+										tmp_supplierNIF = fsup.replace('NIF:','').replace('NIF','').strip()
+										print ('NIFnumber ', re.match(nif_pattern,tmp_supplierNIF.strip()))
+										if re.match(nif_pattern,tmp_supplierNIF.strip()):
+											supplierNIF = tmp_supplierNIF[0:re.match(nif_pattern,tmp_supplierNIF.strip()).span()[1]].replace(' ','')
+											nifvalido = validar_nif (supplierNIF)
+											print (nifvalido)
+											if nifvalido and nifvalido[2]:
+												print ('Empresa CORRECTA5 ', nifvalido[2])
+												empresaSupplier = nifvalido[2]
+												supplierNIF = nifvalido[0]
+
 								if not supplierMoeda:
 									terpalavras = ['Moeda','AOA','AKZ']
 									Moedapalavraexiste = False
@@ -826,6 +840,12 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 	#Podemos fazer OCR with tesseract before trying with pytesseract
 	# File, Language, DPI
 	#cash to include . and , ex. 44.123,00 / 44.123,97
+
+	#FIX 25-09-2023
+	if lingua == None and resolucao == None:
+		lingua = 'por'
+		resolucao = 200
+
 	start_time = time.monotonic()
 
 	#cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)' #r'^[-+]?(?:\d*\.\d+|\d+)'
@@ -833,6 +853,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
 	iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
+
+	#FIX 22-09-2023
+	nif_pattern = r'^([0-9]{3})\s([0-9]{3})\s([0-9]{4})|([0-9]{10})|([0-9]{3})\s([0-9]{3})\s([0-9]{3}\s[0-9])'
 
 	ocr_tesserac = ""
 	ocr_tesserac1 = ""
@@ -843,7 +866,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		return angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,lingua,False,resolucao) #250) #ocr_tesserac
 		#frappe.throw(porra)
 
-	print ('lingua ', lingua)
+	print ('lingua00 ', lingua)
 	print ('resolucao ', resolucao)
 	ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,lingua,False,resolucao) #200) #180) #200)
 	print ('OCR TESSERACT')
@@ -2150,6 +2173,9 @@ def lerdocumento(dados):
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
 	iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
 
+	#FIX 22-09-2023
+	nif_pattern = r'^([0-9]{3})\s([0-9]{3})\s([0-9]{4})|([0-9]{10})|([0-9]{3})\s([0-9]{3})\s([0-9]{3}\s[0-9])'
+
 	contaOrigem = ''
 	ibanDestino = ''
 	numeroTransacao = ''
@@ -2369,6 +2395,9 @@ def pdf_scrape_txt(ficheiro):
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|^([0-9][0-9])\-([0-9][0-9])\-([1-9][0-9][0-9][0-9])'
 	iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
 	cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)' #r'^[-+]?(?:\d*\.\d+|\d+)'
+
+	#FIX 22-09-2023
+	nif_pattern = r'^([0-9]{3})\s([0-9]{3})\s([0-9]{4})|([0-9]{10})|([0-9]{3})\s([0-9]{3})\s([0-9]{3}\s[0-9])'
 
 	oldIDXDescription = 0;
 
@@ -2948,6 +2977,9 @@ def pdf_scrape_txt_v1(ficheiro,tipodoctype = None):
 	iban_pattern = r'^([A][O][O][E]|[A][O][0][6]|[A][0][0][6]).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{4}).([0-9]{1})'
 	cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)' #r'^[-+]?(?:\d*\.\d+|\d+)'
 
+	#FIX 22-09-2023
+	nif_pattern = r'^([0-9]{3})\s([0-9]{3})\s([0-9]{4})|([0-9]{10})|([0-9]{3})\s([0-9]{3})\s([0-9]{3}\s[0-9])'
+
 	oldIDXDescription = 0;
 
 	master_headers = ['ITEM','CODE','DESCRIPTION','QUANTITY','UNIT PRICE (EUR)','TOTAL PRICE (EUR)']
@@ -3498,13 +3530,19 @@ def pdf_scrape_txt_v1(ficheiro,tipodoctype = None):
 
 def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 	'''
-	Last modified: 14-12-2022
+	Last modified: 22-09-2023
 	Using to Train or LEARN OCR from PDF files not configurated on the System....
 	'''
 	start_time = time.monotonic()
 
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-	terpalavras_header = ['VALOR UN', 'VALOR TOTAL LIQ', 'UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC', 'DEC', 'TAXA', 'IVA']
+	#terpalavras_header = ['VALOR UN', 'VALOR TOTAL LIQ', 'UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC', 'DEC', 'TAXA', 'IVA']
+
+	#FIX 22-09-2023; Added words to HEADER
+	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
+	#terpalavras_header = ['VALOR UN', 'VALOR TOTAL LIQ', 'UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Pr. Unitário', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC', 'DEC', 'TAXA', 'IVA', 'Total c/ IVA']
+	terpalavras_header = ['Total c/ IVA','Totalc/IVA','VALOR UN', 'VALOR TOTAL LIQ', 'UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qotd.', 'QUANT', 'Qtd.', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC.', 'DESC', 'DEC', 'TAXA', 'IVA', ' VA ', 'Arm']
+
 
 	#terpalavras_header_EN = ['CODE NO','CODE', 'DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL AMOUNT', 'AMOUNT', 'TOTAL', 'VAT', 'PRICE']
 	#FIX 27-07-2023
@@ -3515,6 +3553,10 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 	#cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)'
 	cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)|(?:\d*\,\d+)'
+
+	#FIX 22-09-2023
+	nif_pattern = r'^([0-9]{3})\s([0-9]{3})\s([0-9]{4})|([0-9]{10})|([0-9]{3})\s([0-9]{3})\s([0-9]{3}\s[0-9])'
+
 
 	#filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
 	filtered_divs = {'COUNTER': [], 'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
@@ -4591,6 +4633,13 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 								#AGT tem Nif Origem e nif DESTINO
 								if "NIFE do Adquirente:".upper() in fsup.upper():
 									niforigem = fsup[fsup.find('NIF:')+4:fsup.find('NIFE')].strip()
+									#FIX 22-09-2023
+									tmp_supplierNIF = niforigem.replace('NIF:','').replace('NIF','').strip()
+									print ('NIFnumber ', re.match(nif_pattern,tmp_supplierNIF.strip()))
+									if re.match(nif_pattern,tmp_supplierNIF.strip()):
+										supplierNIF = tmp_supplierNIF[0:re.match(nif_pattern,tmp_supplierNIF.strip()).span()[1]].replace(' ','')
+										niforigem = supplierNIF
+
 									nifvalido = validar_nif (niforigem)
 									print (nifvalido)
 									if nifvalido and nifvalido[2]:
@@ -4611,6 +4660,19 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 						print ('TRN aqui....')
 						if not supplierNIF:
 							supplierNIF = fsup[fsup.upper().find('TRN :')+5:].strip()
+							#FIX 22-09-2023
+							tmp_supplierNIF = supplierNIF.replace('NIF:','').replace('NIF','').strip()
+							print ('NIFnumber ', re.match(nif_pattern,tmp_supplierNIF.strip()))
+							if re.match(nif_pattern,tmp_supplierNIF.strip()):
+								supplierNIF = tmp_supplierNIF[0:re.match(nif_pattern,tmp_supplierNIF.strip()).span()[1]].replace(' ','')
+								#niforigem = supplierNIF
+								nifvalido = validar_nif (supplierNIF)
+								print (nifvalido)
+								if nifvalido and nifvalido[2]:
+									print ('Empresa CORRECTA1 ', nifvalido[2])
+									empresaSupplier = nifvalido[2]
+									supplierNIF = nifvalido[0]
+
 				if not supplierMoeda:
 					terpalavras = ['Moeda','AOA','AKZ','KZ']
 					#TODO: List of Currencies to see if on the Document to be OCR..
@@ -5425,7 +5487,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 
 	#FIX 22-09-2023; Added words to HEADER
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-	terpalavras_header = ['VALOR UN', 'VALOR TOTAL LIQ', 'UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', 'PREÇO', 'Pr.Unit', 'Pr. Unitário', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC', 'DEC', 'TAXA', 'IVA', 'Total c/ I VA']
+	terpalavras_header = ['Total c/ IVA','Totalc/IVA','VALOR UN', 'VALOR TOTAL LIQ', 'UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qotd.', 'QUANT', 'Qtd.', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC.', 'DESC', 'DEC', 'TAXA', 'IVA', ' VA ', 'Arm']
 	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
 
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
@@ -5627,6 +5689,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 		itemTotal = ''
 		itemIVA = ''
 
+		tmpcountry = ''
 
 
 		#System Currencies ...
@@ -5699,16 +5762,23 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 
 						if empresa == 'INVALIDO':
 							empresaSupplier = ''
+
 						else:
 							print ('RESULTADO Empresa Online')
 							print (empresa)
 							removerpalavras =['|','Facebook']
 							tmpempresa = ''
+
 							for ee in empresa:
 								if not ":" in ee:
 									for rr in removerpalavras:
 										if not tmpempresa:
-											tmpempresa = ee.replace(rr,'')
+											if rr == "|":
+												print ('poder ser country')
+												tmpempresa = ee[:ee.find('|')]
+												tmpcountry = ee[ee.find('|')+1:ee.find('-')-1]
+											else:
+												tmpempresa = ee.replace(rr,'')
 										else:
 											tmpempresa1 = tmpempresa.replace(rr,'')
 											tmpempresa = tmpempresa1
@@ -5716,26 +5786,35 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 									break
 							if tmpempresa:
 								print ('tmpempresa ',tmpempresa)
+								print ('tmpcountry ', tmpcountry)
 								if tmpempresa.strip().endswith('-'):
 									empresaSupplier = tmpempresa.strip()[0:len(tmpempresa.strip())-1]
 								else:
 									empresaSupplier = tmpempresa.strip()
-
+								if tmpcountry:
+									if tmpcountry.upper().strip() == "DUBAI":
+										supplierPais = 'United Arab Emirates'
 						#frappe.throw(porra)
 				if not supplierAddress:
 					'''
 					TER palavras:
 						RUA, AVENIDA
 					'''
-					terpalavras = ['RUA', 'AVENIDA']
-					ADDRpalavraexiste = False
-					for ff in fsup.split(' '):
-						#print (ff)
-						if ff in terpalavras:
-							#print ('TEM palavra ', ff)
-							ADDRpalavraexiste = True
-					if ADDRpalavraexiste:
-						supplierAddress = fsup.strip()
+					if tmpcountry.upper().strip() != "DUBAI":
+						if empresaSupplier:
+							terpalavras = ['RUA', 'AVENIDA','BELAS BUSINESS']
+							ADDRpalavraexiste = False
+							for ff in fsup.split(' '):
+								#print (ff)
+								if ff in terpalavras:
+									#print ('TEM palavra ', ff)
+									ADDRpalavraexiste = True
+							if ADDRpalavraexiste:
+								#FIX 22-09-2023; if starts with BELAS...
+								if "BELAS BUSINESS" in fsup.strip():
+									supplierAddress = fsup.strip().upper()[fsup.strip().upper().find("BELAS BUSINESS"):]
+								else:
+									supplierAddress = fsup.strip()
 
 				if not supplierEmail:
 					if "EMAIL:" in fsup.upper():
@@ -5753,7 +5832,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 							nifvalido = validar_nif (supplierNIF)
 							print (nifvalido)
 							if nifvalido and nifvalido[2]:
-								print ('Empresa CORRECTA ', nifvalido[2])
+								print ('Empresa CORRECTA2 ', nifvalido[2])
 								empresaSupplier = nifvalido[2]
 				if not supplierMoeda:
 					terpalavras = ['Moeda','AOA','AKZ']
@@ -7668,6 +7747,9 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 	cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)|(?:\d*\,\d+)'
 	filtered_divs = {'COUNTER': [], 'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
 
+	#FIX 22-09-2023
+	nif_pattern = r'^([0-9]{3})\s([0-9]{3})\s([0-9]{4})|([0-9]{10})|([0-9]{3})\s([0-9]{3})\s([0-9]{3}\s[0-9])'
+
 	empresaSupplier = ''
 	invoiceNumber = ''
 	invoiceDate = ''
@@ -7879,26 +7961,65 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 							#AGT tem Nif Origem e nif DESTINO
 							if "NIFE do Adquirente:".upper() in fsup.upper():
 								niforigem = fsup[fsup.find('NIF:')+4:fsup.find('NIFE')].strip()
+								#FIX 22-09-2023
+								tmp_supplierNIF = niforigem.replace('NIF:','').replace('NIF','').strip()
+								print ('NIFnumber ', re.match(nif_pattern,tmp_supplierNIF.strip()))
+								if re.match(nif_pattern,tmp_supplierNIF.strip()):
+									supplierNIF = tmp_supplierNIF[0:re.match(nif_pattern,tmp_supplierNIF.strip()).span()[1]].replace(' ','')
+									nifvalido = validar_nif (supplierNIF)
+									print (nifvalido)
+									if nifvalido and nifvalido[2]:
+										print ('Empresa CORRECTA3 ', nifvalido[2])
+										empresaSupplier = nifvalido[2]
+										supplierNIF = nifvalido[0]
+								'''
 								nifvalido = validar_nif (niforigem)
 								print (nifvalido)
 								if nifvalido and nifvalido[2]:
-									print ('Empresa CORRECTA ', nifvalido[2])
+									print ('Empresa CORRECTA3 ', nifvalido[2])
 									empresaSupplier = nifvalido[2]
 									supplierNIF = nifvalido[0]
+								'''
 
 								#Check if is for Destiny company!!!!
 								nifdestino = fsup[fsup.find('Adquirente:')+11:].strip()
 
 						else:
+							#FIX 22-09-2023
+							tmp_supplierNIF = supplierNIF.replace('NIF:','').replace('NIF','').strip()
+							print ('NIFnumber ', re.match(nif_pattern,tmp_supplierNIF.strip()))
+							if re.match(nif_pattern,tmp_supplierNIF.strip()):
+								supplierNIF = tmp_supplierNIF[0:re.match(nif_pattern,tmp_supplierNIF.strip()).span()[1]].replace(' ','')
+								nifvalido = validar_nif (supplierNIF)
+								print (nifvalido)
+								if nifvalido and nifvalido[2]:
+									print ('Empresa CORRECTA3 ', nifvalido[2])
+									empresaSupplier = nifvalido[2]
+									supplierNIF = nifvalido[0]
+							'''
 							nifvalido = validar_nif (supplierNIF)
 							print (nifvalido)
 							if nifvalido and nifvalido[2]:
 								print ('Empresa CORRECTA ', nifvalido[2])
 								empresaSupplier = nifvalido[2]
+							'''
+
 				elif 'TRN :' in fsup.upper().strip():
 					print ('TRN aqui....')
 					if not supplierNIF:
 						supplierNIF = fsup[fsup.upper().find('TRN :')+5:].strip()
+						#FIX 22-09-2023
+						tmp_supplierNIF = supplierNIF.replace('NIF:','').replace('NIF','').strip()
+						print ('NIFnumber ', re.match(nif_pattern,tmp_supplierNIF.strip()))
+						if re.match(nif_pattern,tmp_supplierNIF.strip()):
+							supplierNIF = tmp_supplierNIF[0:re.match(nif_pattern,tmp_supplierNIF.strip()).span()[1]].replace(' ','')
+							nifvalido = validar_nif (supplierNIF)
+							print (nifvalido)
+							if nifvalido and nifvalido[2]:
+								print ('Empresa CORRECTA4 ', nifvalido[2])
+								empresaSupplier = nifvalido[2]
+								supplierNIF = nifvalido[0]
+
 			if not supplierMoeda:
 				terpalavras = ['Moeda','AOA','AKZ','KZ']
 				#TODO: List of Currencies to see if on the Document to be OCR..
