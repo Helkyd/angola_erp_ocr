@@ -2024,7 +2024,12 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		print (ocr_tesserac)
 
 		#Try to lerPdf_ocr as CSV to extract TEXT
-		lerpdfocr = ocr_pdf.lerPdf_ocr(filefinal,6,'por')
+		#FIX 25-09-2023
+		if lingua:
+			print ('Testa lerPDF_OCR com lingua ', lingua)
+			lerpdfocr = ocr_pdf.lerPdf_ocr(filefinal,6,lingua)
+		else:
+			lerpdfocr = ocr_pdf.lerPdf_ocr(filefinal,6,'por')
 		print ('////// lerpdfocr \\\\\\\\')
 		print (lerpdfocr)
 		if lerpdfocr and ".pdf" in filefinal: # lerpdfocr:
@@ -2096,7 +2101,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						print ('Designação: Deposito a Ordem - Moeda Nacional')
 						print ('Designação: Deposito a Ordem - Moeda Nacional' in val)
 						if "Conta de Origem:" in val:
-							contaOrigem = val[val.find('Conta de Origem:')+17:].strip()
+							contaOrigem = val[val.find('Conta de Origem:')+17:].strip().replace(' ','')
 						if "Data do movimento" in val:
 							dataEMISSAO = val[val.find('Data do movimento')+18:].strip()
 						if "Designaçäo: Conta BIC Empresas - Moeda Nacional" in val or "Designação: Conta BIC Empresas - Moeda Nacional" in val or "Designação: Deposito a Ordem - Moeda Nacional" in val:
@@ -2110,11 +2115,25 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 									numeroOperacao = val[val.find('Nümero de operaçäo')+19:].strip()
 								else:
 									numeroOperacao = val[val.find('Número de operaçäo')+19:].strip()
-						if "Descrição do movimento" in val:
-							descricaoPagamento = val[val.find('Descrição do movimento')+23:].strip()
+						if "Descrição do movimento" in val or "Descriçäo do movimento" in val:
+							if "Descriçäo do movimento" in val:
+								descricaoPagamento = val[val.find('Descriçäo do movimento')+23:].strip()
+							else:
+								descricaoPagamento = val[val.find('Descrição do movimento')+23:].strip()
 
 						if "Valor a debitar" in val:
 							valorPAGO = val[val.find('Valor a debitar')+16:].strip()
+
+						#FIX 25-09-2023
+						if "IBAN " in val:
+							if not ibanDestino:
+								#if val[val.find('AO06')] != -1 or val[val.find('AOO6')] != -1 or val[val.find('AOC06')] != -1:
+								if val.find('IBAN da conta a creditar') != -1:
+									tmpiban = val[val.find('IBAN da conta a creditar')+25:].strip().replace(' ','').replace('—','')
+								else:
+									tmpiban = val[val.find('IBAN ')+5:].strip().replace(' ','').replace('—','')
+								ibanDestino = tmpiban.replace('AOO6','AO06').replace('AOC06','AO06')
+
 
 
 			stop_time = time.monotonic()
@@ -2144,7 +2163,8 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						"datadePAGAMENTO": dataEMISSAO,
 						"contaOrigem": contaOrigem,
 						"ibanDestino": ibanDestino,
-						"valorPAGO": valorPAGO
+						"valorPAGO": valorPAGO,
+						"descricaoPagamento": descricaoPagamento
 					}
 
 		print ('TODO: Tenta ocr_pytesseract.... but reading all Lines and checking for the required fields...')
