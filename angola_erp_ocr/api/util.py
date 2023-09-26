@@ -1010,7 +1010,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 		mcxdebit = True
 
-		if "600 022 301 0" in ocr_tesserac:
+		if "600 022 301 0" in ocr_tesserac or "6060 G22 301" in ocr_tesserac:
 			print ('DEVE TER Pagamento IVA....')
 			pag_iva = True
 		elif "600 012 308 0" in ocr_tesserac or "600 012 398 0" in ocr_tesserac:
@@ -1061,12 +1061,17 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					descricaoPagamento = "PAG. AO ESTADO"
 				elif "RUPE" in dd:
 					descricaoPagamento += ": RUPE"
-				elif len(dd) >= 23 and len(dd0) >= 7:
+				elif len(dd) >= 22 and len(dd0) >= 7:
 					#RUPE NUMBER
 					print (dd.replace(" ","").isnumeric())
 					print ('pag_iva ',pag_iva)
 					print ('pag_irt ',pag_irt)
 					print ('pag_inss ', pag_inss)
+					#FIX 26-029-2023
+					if "6060 G22 301" in dd.strip():
+						tmp_dd = dd.replace('6060 G22 301','600 022 301').strip()
+						dd = tmp_dd
+
 					if dd.replace(" ","").isnumeric():
 						if pag_iva:
 							rupe_iva = dd.strip()
