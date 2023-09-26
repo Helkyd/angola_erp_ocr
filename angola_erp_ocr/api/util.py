@@ -868,7 +868,9 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 	print ('lingua00 ', lingua)
 	print ('resolucao ', resolucao)
-	ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,lingua,False,resolucao) #200) #180) #200)
+	print ('filefinal', filefinal)
+	#FIX 26-09-2023; added INT to resolucao
+	ocr_tesserac = angola_erp_ocr.angola_erp_ocr.doctype.ocr_read.ocr_read.read_document(filefinal,lingua,False,int(resolucao)) #200) #180) #200)
 	print ('OCR TESSERACT')
 	print ('OCR TESSERACT')
 	print ('OCR TESSERACT')
