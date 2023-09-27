@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 26/09/2023
+#Date Changed: 27/09/2023
 
 
 from __future__ import unicode_literals
@@ -997,7 +997,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		#frappe.throw(porra)
 
 
-	elif ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac) and "RUPE" in ocr_tesserac and ("PAG. AO ESTADO" in ocr_tesserac or "PAG. RO ESTADO" in ocr_tesserac or "PAG. RO ESTANO" in ocr_tesserac or "PAG.' RO ES'TANO" in ocr_tesserac):
+	elif ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac) and "RUPE" in ocr_tesserac and ("PAG. AO ESTADO" in ocr_tesserac or "PAG. RO ESTADO" in ocr_tesserac or "PAG. RO ESTANO" in ocr_tesserac or "PAG.' RO ES'TANO" in ocr_tesserac or "PAG, AO ESTADO" in ocr_tesserac):
 		print ('Pagamento RUPE... IVA INSS OR IRT')
 		print ('Pagamento RUPE... IVA INSS OR IRT')
 		#Check if IVA... MUST HAVE 600 022 301 0
@@ -1044,7 +1044,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 
 
-				if "N.CAIXA:" in dd or "N.CATNA:" in dd:
+				if "N.CAIXA:" in dd or "N.CATNA:" in dd or "N,CAIXA:" in dd:
 					#FIX 19-09-2023; get N. CAIXA
 					if not tmp_numcaixa:
 						tmp_numcaixa = dd[8:21].strip()
@@ -1058,7 +1058,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					tmp_data = dd.split(' ')[2]
 					if not dataTransacao:
 						dataTransacao = tmp_data
-				elif "PAG. RO ESTADO" in dd or "PAG. AO ESTADO" in dd or "PAG. RO ESTANO" in dd or "PAG.' RO ES'TANO" in dd:
+				elif "PAG. RO ESTADO" in dd or "PAG. AO ESTADO" in dd or "PAG. RO ESTANO" in dd or "PAG.' RO ES'TANO" in dd or "PAG, AO ESTADO" in dd:
 					#descricao Pagamento
 					descricaoPagamento = "PAG. AO ESTADO"
 				elif "RUPE" in dd:
@@ -5514,7 +5514,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 
 	#FIX 22-09-2023; Added words to HEADER
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-	terpalavras_header = ['Total c/ IVA','Totalc/IVA','VALOR UN', 'VALOR TOTAL LIQ', 'UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qotd.', 'QUANT', 'Qtd.', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC.', 'DESC', 'DEC', 'TAXA', 'IVA', ' VA ', 'Arm']
+	terpalavras_header = ['Total c/ IVA','Totalc/IVA', 'TOTAL ', 'VALOR UN', 'VALOR TOTAL LIQ', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'UNIDADE', 'UNI ', 'UN ', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qotd.', 'QUANT', 'Qtd.', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC.', 'DESC ', 'DEC', 'TAXA', 'IVA', ' VA ', 'Arm.']
 	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
 
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
@@ -5525,6 +5525,9 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 
 	#FIX 22-09-2023
 	nif_pattern = r'^([0-9]{3})\s([0-9]{3})\s([0-9]{4})|([0-9]{10})|([0-9]{3})\s([0-9]{3})\s([0-9]{3}\s[0-9])'
+
+	#FIX 26-09-2023
+	palavras_no_header = []
 
 
 	if os.path.isfile(frappe.get_site_path('public','files') + data.replace('/files','')):
@@ -5741,7 +5744,8 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 		en_contapalavras_header_banco = 0	#To avoid adding Bank details as SN
 
 		for fsup in facturaSupplier.split('\n'):
-			print ('=====')
+			print ('=====INI')
+			print ('terpalavras_header ',terpalavras_header)
 			print (fsup)
 
 			if fsup.strip() != None and fsup.strip() != "":
@@ -5964,6 +5968,8 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 
 					tmprate = ''
 
+					itemTotalcIVA = ''
+
 					'''
 					TER palavras Para saber que ITEM TABLES DESCRIPTION:
 						UN, UNIDADE, CAIXA, CX, Artigo, Descrição, Qtd., Pr.Unit, Cód. Artigo, V.Líquido
@@ -5987,14 +5993,19 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 					else:
 						for pp in terpalavras_header:
 							if pp.upper() in fsup.strip().upper():
+								print ('Add on contapalavras_header')
+								print (pp.upper())
+								print (fsup.strip().upper())
 								contapalavras_header += 1
+								palavras_no_header.append(pp.upper())
 
 					'''
 					TER palavras Para saber que ITEM TABLES:
 						UN, UNIDADE, CAIXA, CX
 					'''
 
-					terpalavras_item = ['UN', 'UNIDADE', 'CAIXA', 'CX']
+					#FIX 27-09-2023; added Arm.
+					terpalavras_item = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'ARM.']
 					palavraexiste_item = False
 
 					primeiroRegisto = True	#To break creating description with SN
@@ -6127,6 +6138,71 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 									#More than 1 can be Items...
 									if len(fsup.strip().split()) > 1:
 										if re.match(cash_pattern,cc):
+											if not itemTotal:
+												itemTotal = cc.strip()
+											elif not itemRate:
+												itemRate = cc.strip()
+											primeiroRegisto = False
+										elif cc.strip().isnumeric():
+											#Qtd
+											if not itemQtd:
+												itemQtd = cc.strip()
+										else:
+											#String...
+											tmpdescricao = cc.strip() + ' ' + tmpdescricao
+									if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1:
+										#Add SN JSTJPB7CX5N4008215 to Description
+										#tmpdescricao = tmpdescricao + 'SN: ' + cc
+										tmpdescricao = ' SN: ' + cc
+										palavraexiste_item = False
+									elif len(fsup.strip().split()) == 1:
+										#Has SN bu might be with a DOT the SN
+										if not tmp_sn_added:
+											print ('Has SN bu might be with a DOT the SN')
+											print (fsup.strip())
+											tmpdescricao = ' SN: ' + cc
+											palavraexiste_item = False
+											itemCode = ''
+
+
+									print ('tmpdescricao ', tmpdescricao)
+									print ('primeiroRegisto ',primeiroRegisto)
+									print (len(fsup.split()))
+									if idx == len(fsup.split())-1:
+										print ('para')
+										if len(fsup.strip()) >= 15 and len(fsup.strip().split()) == 1:
+											print('continua')
+										elif len(fsup.strip()) >= 3 and len(fsup.strip().split()) == 1:
+											print ('NUMERO SERIE.... ADD to DESCRIPTION')
+										elif not re.match(cash_pattern,cc):
+											tmpdescricao = ''
+											avoidADDING = True
+											print ('FEZ BREAK')
+											break
+							else:
+								#FIX 27-09-2023; IF PT SCAN
+								print ('PT SCAN; REVERSE FSUP....')
+								cash_pattern = r'^[-+]?(?:\d*\.\d+\,\d+)|(?:\d*\s\d+\,\d+)|(?:\d*\,\d+)'
+
+								for idx,cc in reversed(list(enumerate(fsup.split()))):
+									print ('===== IDX ======')
+									print ('idx ',idx)
+									print ('cc ',cc)
+
+									#Check if cash
+									print (re.match(cash_pattern,cc))
+									print (cc.strip().isnumeric())
+
+									#If last(first) is not Numeric; No longer ITEMs...
+									#if primeiroRegisto == False:
+									#	palavrasexiste_header = False
+									#	break
+
+									#More than 1 can be Items...
+									if len(fsup.strip().split()) > 1:
+										if re.match(cash_pattern,cc):
+											#if not itemTotalcIVA
+											print ('palavras_no_header ', palavras_no_header)
 											if not itemTotal:
 												itemTotal = cc.strip()
 											elif not itemRate:
