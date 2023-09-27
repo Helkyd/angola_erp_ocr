@@ -5520,7 +5520,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 	'''
-	Last modified: 22-09-2023
+	Last modified: 27-09-2023
 	Using to Train or LEARN OCR from PDF files not configurated on the System....
 	'''
 	start_time = time.monotonic()
@@ -5530,7 +5530,10 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 	terpalavras_header = ['Total c/ IVA','Totalc/IVA', 'TOTAL ', 'VALOR UN', 'VALOR TOTAL LIQ', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'UNIDADE', 'UNI ', 'UN ', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qotd.', 'QUANT', 'Qtd.', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', ' DESC. ', ' DESC ', ' DEC ', ' TAXA ', ' IVA ', ' VA ', ' Arm. ']
 	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
 
-	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
+	#FIX 27-09-2023; Added date format YYYY-MM-DD
+	#date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
+
+	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])|([1-9][0-9][0-9][0-9])\-([0-9][0-9])\-([0-9][0-9])'
 	#cash_pattern = r'^[-+]?(?:\d*\.\d+|\d+)|(?:\d*\.\d+\,\d+|\d+)'
 	cash_pattern = r'^[-+]?(?:\d*\,\d+\.\d+)|(?:\d*\.\d+)'
 	#filtered_divs = {'ITEM': [], 'DESCRIPTION': [], 'QUANTITY': [], 'RATE': [], 'TOTAL': [], 'IVA': []}
@@ -5879,7 +5882,10 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 							print (nifvalido)
 							if nifvalido and nifvalido[2]:
 								print ('Empresa CORRECTA2 ', nifvalido[2])
-								empresaSupplier = nifvalido[2]
+								if nifvalido != "NIF INVALIDO!!!" and nifvalido != "NIF INVALIDO":
+									empresaSupplier = nifvalido[2]
+								else:
+									empresaSupplier = "NIF INVALIDO NAO CONSEGUI OBTER FORNECEDOR!"
 				if not supplierMoeda:
 					terpalavras = ['Moeda','AOA','AKZ']
 					#TODO: List of Currencies to see if on the Document to be OCR..
@@ -5914,7 +5920,8 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 
 				if not invoiceDate:
 					print ('invoiceDate')
-					terpalavras = ['Data Doc.','Data Doc','Invoice Date:','Invoice Date']
+					#FIX 27-09-2023; Added Data
+					terpalavras = ['Data Doc.','Data Doc','Invoice Date:','Invoice Date', ' Data ']
 					Datepalavraexiste = False
 					for ff in terpalavras:
 						if ff in fsup.strip():
@@ -5926,15 +5933,27 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 								invoiceDate1 = fsup.strip()[fsup.strip().find(tt):]
 								invoiceDate = invoiceDate1.replace(tt,'').strip()
 								break
+						print ('aqui invoiceDate')
 						print (invoiceDate)
 					else:
 						#Check if has DATE on fsup
+						print ('Check if has DATE on fsup')
+						oldinvoicedata = ""
 						matches = re.finditer(date_pattern,fsup, re.MULTILINE)
 						for matchNum, match in enumerate(matches, start=1):
 							print ("Match {matchNum} was found at {start}-{end}: {match}".format(matchNum = matchNum, start = match.start(), end = match.end(), match = match.group()))
 							if match.group():
 								print('TEM DATA.... ',match.group())
-								invoiceDate = match.group()
+								#FIX 27-09-2023
+								if oldinvoicedata == "":
+									oldinvoicedata = match.group()
+								else:
+									if oldinvoicedata <= match.group():
+										oldinvoicedata = match.group()
+										invoiceDate = match.group()
+									elif oldinvoicedata > match.group():
+										invoiceDate = match.group()
+								#invoiceDate = match.group()
 
 
 				if not invoiceNumber:
@@ -5960,13 +5979,13 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 							#frappe.throw(porra)
 
 					#Case Doc is in EN and not from Angola
-					terpalavras = ['Invoice No:','Invoice No']
+					terpalavras = ['Invoice No:','Invoice No', 'Fatura/Recibo ']
 					if not invoiceNumber:
 						for tt in terpalavras:
 							print ('Factura00 ', tt.upper())
 							print (fsup.upper().strip())
 							if fsup.upper().strip().find(tt.upper()) != -1:
-								invoiceNumber = fsup.upper().strip()[fsup.upper().strip().find(tt.upper()):].replace(tt.upper(),'').replace(':','').strip()
+								invoiceNumber = fsup.upper().strip()[fsup.upper().strip().find(tt.upper()):].replace(tt.upper(),'').replace(':','').replace('ORIGINAL','').strip()
 								print ('fac ', invoiceNumber)
 
 
