@@ -3917,6 +3917,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 				print (palavras_no_header)
 				print ('CALLED OCR_OCR_OCR')
 				print ('Qtd_isnot_number ',Qtd_isnot_number)
+
 				return ocr_ocr_ocr (facturaSupplier_tmp,en_palavras_fim_item,en_scan,supplierMoeda,terpalavras_header_EN,palavras_no_header)
 
 				#frappe.throw(porra)
@@ -4468,7 +4469,19 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 				print ('filefinal ', filefinal)
 
 				palavras_fim_item = ['Metodo de Pagamento','Incidência','Total Retenção']
-				return ocr_ocr_ocr (facturaSupplier_tmp,palavras_fim_item,en_scan,supplierMoeda,terpalavras_header,palavras_no_header,filefinal,palavras_no_header_ultimoHeader)
+
+				#FIX 27-09-2023; Will try aprender_OCR_v1 if items returns NONE
+				ocrocrocr = ocr_ocr_ocr (facturaSupplier_tmp,palavras_fim_item,en_scan,supplierMoeda,terpalavras_header,palavras_no_header,filefinal,palavras_no_header_ultimoHeader)
+				print ('ocrocrocr')
+				print (ocrocrocr)
+				print (len(ocrocrocr))
+				print (ocrocrocr[7])	#ITEMS
+				if len(ocrocrocr) == 8 and ocrocrocr[7] == []:
+					return aprender_OCR_v1 (filefinal,"SCRAPE","COMPRAS")
+				else:
+					return ocrocrocr
+
+				#return ocr_ocr_ocr (facturaSupplier_tmp,palavras_fim_item,en_scan,supplierMoeda,terpalavras_header,palavras_no_header,filefinal,palavras_no_header_ultimoHeader)
 
 			frappe.throw(porra)
 		'''
@@ -5514,7 +5527,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 
 	#FIX 22-09-2023; Added words to HEADER
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-	terpalavras_header = ['Total c/ IVA','Totalc/IVA', 'TOTAL ', 'VALOR UN', 'VALOR TOTAL LIQ', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'UNIDADE', 'UNI ', 'UN ', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qotd.', 'QUANT', 'Qtd.', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC.', 'DESC ', 'DEC', 'TAXA', 'IVA', ' VA ', 'Arm.']
+	terpalavras_header = ['Total c/ IVA','Totalc/IVA', 'TOTAL ', 'VALOR UN', 'VALOR TOTAL LIQ', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'UNIDADE', 'UNI ', 'UN ', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qotd.', 'QUANT', 'Qtd.', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', ' DESC. ', ' DESC ', ' DEC ', ' TAXA ', ' IVA ', ' VA ', ' Arm. ']
 	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
 
 	date_pattern = r'^([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])\s([1-9]{1,2}):([1-9]{2}):[0-9]{2}\s(AM|PM)|([1-9][0-9][0-9][0-9])\/([0-9][0-9])\/([0-9][0-9])|([0-9][0-9])-([0-9][0-9])-([1-9][0-9][0-9][0-9])'
@@ -5557,6 +5570,8 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 		#FIX 27-07-2023
 		en_palavras_fim_item = ['INCIDENCE','VAT', 'TAX','UNTAXED AMOUNT']
 		fim_items = False
+
+		pt_palavras_fim_item = ['Processado por programa validado'.upper()]
 
 		contapalavras_header = 0
 
@@ -5996,8 +6011,9 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 								print ('Add on contapalavras_header')
 								print (pp.upper())
 								print (fsup.strip().upper())
-								contapalavras_header += 1
-								palavras_no_header.append(pp.upper())
+								if not pp.upper() in palavras_no_header:
+									contapalavras_header += 1
+									palavras_no_header.append(pp.upper())
 
 					'''
 					TER palavras Para saber que ITEM TABLES:
@@ -6087,6 +6103,16 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 					#if "SN: JTFBV71J8B044454 JTFBV71J8B044601 JTFBV71J8B044616" in fsup:
 					#	frappe.throw(porra)
 					tmp_sn_added = False
+
+					#FIX 27-09-2023; for PT SCAN to avoid adding after ITEM TABLEs...
+					for ppitemfim in pt_palavras_fim_item:
+						print ('tem palavra fim item')
+						print (ppitemfim)
+						if ppitemfim in fsup.strip().upper():
+							avoidADDING = True
+					if avoidADDING:
+						print ('STOP ADDING... NO MORE ITEMS')
+						break
 
 					if palavrasexiste_header:
 						#Tem HEADER entao ve os ITENS...
@@ -6201,17 +6227,31 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 									#More than 1 can be Items...
 									if len(fsup.strip().split()) > 1:
 										if re.match(cash_pattern,cc):
-											#if not itemTotalcIVA
 											print ('palavras_no_header ', palavras_no_header)
-											if not itemTotal:
+											if "TOTALC/IVA" in palavras_no_header and not itemTotalcIVA:
+												if not itemTotalcIVA:
+													itemTotalcIVA = cc.strip()
+												print ('itemTotalcIVA itemTotalcIVA')
+
+											elif not itemTotal:
 												itemTotal = cc.strip()
 											elif not itemRate:
 												itemRate = cc.strip()
 											primeiroRegisto = False
+										elif "%" in cc.strip() and ("14" in cc.strip() or "7" in cc.strip() or "5" in cc.strip()):
+											#IVA 14 / 7 / 5
+											print ('TEM IVA NA LINHAS DO ITENS.... ', cc.strip())
+											itemIVA = cc.strip()
 										elif cc.strip().isnumeric():
 											#Qtd
 											if not itemQtd:
 												itemQtd = cc.strip()
+												#FIX 27-09-2023; Might be ZERO or price might be PT ex. 5 880,00 no DOT
+												if itemRate == "0,00":
+													#if "," in itemTotal
+													itemRate = float(itemTotal.replace(',00','')) / int(itemQtd)
+
+
 										else:
 											#String...
 											tmpdescricao = cc.strip() + ' ' + tmpdescricao
@@ -6351,7 +6391,8 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 												itemTotal = ii.strip()
 										elif not itemIVA:
 											if not en_scan:
-												itemIVA = ii.strip()
+												if not itemIVA:
+													itemIVA = ii.strip()
 
 							print ('Items')
 							print ('contaLinhas ',contaLinhas)
