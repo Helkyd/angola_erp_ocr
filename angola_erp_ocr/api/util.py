@@ -1274,9 +1274,10 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					#FIX 02-10-2023
 					if multiexpress:
 						if "Data - Hora" in dd:
-							tmpdata = dd.replace("Data - Hora",'').strip().split(' ')
-							if len(tmpdata) == 2:
-								datadePAGAMENTO = str(dd.split(' ')[0]) + " " + str(dd.split(' ')[1])
+							tmpdata = dd.replace("Data - Hora",'').strip()
+							print (tmpdata.split(' '))
+							if len(tmpdata.split(' ')) == 2:
+								datadePAGAMENTO = str(tmpdata.split(' ')[0]) + " " + str(tmpdata.split(' ')[1])
 						else:
 							datadePAGAMENTO = str(dd.split(' ')[2]) + " " + str(dd.split(' ')[3])
 						print ('datadePAGAMENTO ',datadePAGAMENTO)
