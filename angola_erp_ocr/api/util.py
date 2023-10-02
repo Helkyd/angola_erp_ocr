@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 27/09/2023
+#Date Changed: 02/10/2023
 
 
 from __future__ import unicode_literals
@@ -921,8 +921,8 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 				print ('DATAS ', re.match(date_pattern,dd.strip()))
 
 
-
-				if "N.CAIXA:" in dd or "N-UAIXA:" in dd or "N.CATNA:" in dd:
+				#FIX 02-10-2023 added W.CAIXA:
+				if "N.CAIXA:" in dd or "N-UAIXA:" in dd or "N.CATNA:" in dd or "W.CAIXA:" in dd:
 					#FIX 19-09-2023; get N. CAIXA
 					if not tmp_numcaixa:
 						tmp_numcaixa = dd[8:21].strip()
@@ -1043,8 +1043,8 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 				print ('DATAS ', re.match(date_pattern,dd.strip()))
 
 
-
-				if "N.CAIXA:" in dd or "N.CATNA:" in dd or "N,CAIXA:" in dd:
+				#FIX 02-10-2023;
+				if "N.CAIXA:" in dd or "N.CATNA:" in dd or "N,CAIXA:" in dd or "W.CAIXA:" in dd:
 					#FIX 19-09-2023; get N. CAIXA
 					if not tmp_numcaixa:
 						tmp_numcaixa = dd[8:21].strip()
@@ -1270,14 +1270,53 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 					bfatransferencia = True
 				elif "Comprovativo Digital" in dd or "MULTICAIXA Express." in dd:
 					multiexpress = True
-				elif "Data-Hora" in dd:
+				elif "Data-Hora" in dd or "Data - Hora" in dd:
+					#FIX 02-10-2023
 					if multiexpress:
-						datadePAGAMENTO = str(dd.split(' ')[2]) + " " + str(dd.split(' ')[3])
+						if "Data - Hora" in dd:
+							tmpdata = dd.replace("Data - Hora",'').strip().split(' ')
+							if len(tmpdata) == 2:
+								datadePAGAMENTO = str(dd.split(' ')[0]) + " " + str(dd.split(' ')[1])
+						else:
+							datadePAGAMENTO = str(dd.split(' ')[2]) + " " + str(dd.split(' ')[3])
 						print ('datadePAGAMENTO ',datadePAGAMENTO)
 				elif "Destinatário" in dd or "Destinatario" in dd:
 					if multiexpress:
 						nomeDestinatario = dd[dd.find('|')+1:len(dd)].strip()
 						print ('nomeDestinatario ',nomeDestinatario)
+
+				elif "Montante" in dd and multiexpress:
+					#FIX 02-10-2023
+					if len(dd.split(' ')) == 2:
+						print ('Montante ',re.match(cash_pattern,dd.split(' ')[1].strip()))
+						if not valorPAGO:
+							valorPAGO = dd.split(' ')[1].strip()
+							print ('valorPAGO ',valorPAGO)
+							#frappe.throw(porra)
+					elif len(dd.split(' ')) >= 3:
+						print ('Montante ',re.match(cash_pattern,dd.split(' ')[2].strip()))
+						if not valorPAGO:
+							valorPAGO = dd.split(' ')[2].strip()
+							print ('valorPAGO ',valorPAGO)
+							#frappe.throw(porra)
+				elif ("Transacção".upper() in dd.upper() or "Transacgao".upper() in dd.upper() or "TRANSACÇÃD:" in dd.upper()) and multiexpress:
+					#FIX 02-10-2023
+					if not numeroOperacao:
+						if len(dd.split(' ')) == 2:
+							numeroOperacao = dd.split(' ')[1]
+							print ('numeroTransacao ',numeroOperacao)
+						elif len(dd.split(' ')) > 2:
+							numeroOperacao = dd.split(' ')[2]
+							print ('numeroTransacao ',numeroOperacao)
+					#frappe.throw(porra)
+				elif ("IBAN:" in dd or "BAN:" in dd) and multiexpress:
+					print ('ibanOrigem ',ibanOrigem)
+					#frappe.throw(porra)
+					if not ibanOrigem:
+						print ('IBAN ORIGEM.... ',re.match(iban_pattern,dd.split(' ')[1].strip()))
+						ibanOrigem = dd.split(' ')[1]
+						print ('ibanOrigem ',ibanOrigem)
+
 				elif "IBAN" in dd and multiexpress:
 					if len(dd.split(' ')) > 2:
 						print ('IBAN DEST. ',re.match(iban_pattern,dd.split(' ')[2].strip()))
@@ -1297,21 +1336,6 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 								print ('ibanDestino ',ibanDestino)
 
 					#frappe.throw(porra)
-				elif "Montante" in dd and multiexpress:
-					print ('Montante ',re.match(cash_pattern,dd.split(' ')[2].strip()))
-					if not valorPAGO:
-						valorPAGO = dd.split(' ')[2].strip()
-						print ('valorPAGO ',valorPAGO)
-						frappe.throw(porra)
-				elif ("Transacção".upper() in dd.upper() or "Transacgao".upper() in dd.upper() or "TRANSACÇÃD:" in dd.upper()) and multiexpress:
-					if not numeroOperacao:
-						numeroOperacao = dd.split(' ')[2]
-						print ('numeroTransacao ',numeroOperacao)
-					frappe.throw(porra)
-				elif ("IBAN:" in dd or "BAN:" in dd) and multiexpress:
-					if not ibanOrigem:
-						ibanOrigem = dd.split(' ')[1]
-						print ('ibanOrigem ',ibanOrigem)
 
 				elif "Net Empresas por" in dd and bfatransferencia or "Nect Empresas por" in dd and bfatransferencia or "Netrt Empresas por" in dd and bfatransferencia:
 					print ('dd ', dd)
@@ -1779,7 +1803,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 				"mcexpress": mcexpress,
 				"numeroTransacao": numeroTransacao,
 				"datadePAGAMENTO": datadePAGAMENTO,
-				"contaOrigem": contaOrigem,
+				"contaOrigem": contaOrigem or ibanOrigem,
 				"ibanDestino": ibanDestino,
 				"valorPAGO": valorPAGO
 			}
