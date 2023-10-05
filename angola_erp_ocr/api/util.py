@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 02/10/2023
+#Date Changed: 05/10/2023
 
 
 from __future__ import unicode_literals
@@ -5552,7 +5552,8 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 
 	#FIX 22-09-2023; Added words to HEADER
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-	terpalavras_header = ['Total c/ IVA','Totalc/IVA', 'TOTAL ', 'VALOR UN', 'VALOR TOTAL LIQ', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'UNIDADE', 'UNI ', 'UN ', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qotd.', 'QUANT', 'Qtd.', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', ' DESC. ', ' DESC ', ' DEC ', ' TAXA ', ' IVA ', ' VA ', ' Arm. ']
+	terpalavras_header = ['Total c/ IVA','Totalc/IVA', 'TOTAL ', 'VALOR UN', 'VALOR TOTAL LIQ', 'WKIQUIDO ', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'PR. UNIT', 'UNIDADE', 'UNI ', 'UN ', 'CAIXA', 'CX', ' Artigo ', 'Descrição', 'DASCRIÇÃO TD ', 'Qotd.', 'QUANT', 'Qtd.', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'SIMPOSTOS', ' DESC. ', ' DESC ', ' DEC ', ' TAXA ', ' IVA ', ' VA ', ' Arm. ','cód.artigo ']
+
 	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
 
 	#FIX 27-09-2023; Added date format YYYY-MM-DD
@@ -5569,6 +5570,9 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 
 	#FIX 26-09-2023
 	palavras_no_header = []
+
+	#FIX 05-10-2023
+	ending_currency_PT = r'^([0-9]{1,3}\s[0-9]{2,3}\,[0-9]{2,3})'
 
 
 	if os.path.isfile(frappe.get_site_path('public','files') + data.replace('/files','')):
@@ -5599,7 +5603,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 		en_palavras_fim_item = ['INCIDENCE','VAT', 'TAX','UNTAXED AMOUNT']
 		fim_items = False
 
-		pt_palavras_fim_item = ['Processado por programa validado'.upper()]
+		pt_palavras_fim_item = ['Processado por programa validado'.upper(), 'Obs:'.upper()]
 
 		contapalavras_header = 0
 
@@ -5791,6 +5795,25 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 			print ('terpalavras_header ',terpalavras_header)
 			print (fsup)
 
+			#FIX 05-10-2023; Bcs if PT has not dot only comma for currency... add DOT
+			if "UN " in fsup.upper().strip():
+				#Remove WORDS
+				tmp_fsup = fsup[fsup.upper().find('UN ')+3:]
+				print ('tmp_fsup ',tmp_fsup)
+				if re.match(ending_currency_PT,tmp_fsup):
+					pat = tmp_fsup[:re.match(ending_currency_PT,tmp_fsup).span()[1]]
+					new_pat = pat.replace(' ','.')
+					#Replace all on tmp_fsup so search can continue...
+					tmp_fsup = tmp_fsup.replace(pat,new_pat)
+					print ('NEW tmp_fsup ', tmp_fsup)
+					print ('NEW FSUP ')
+					print (fsup[:fsup.upper().find('UN ')+3] + str(tmp_fsup))
+					fsup = fsup[:fsup.upper().find('UN ')+3] + str(tmp_fsup)
+					#frappe.throw(porra)
+				else:
+					print ('REVERRRRRRRRRRRRRRRRRRRrrr')
+					#frappe.throw(porra)
+
 			if fsup.strip() != None and fsup.strip() != "":
 				if not empresaSupplier:
 					'''
@@ -5874,7 +5897,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 					TER palavras:
 						RUA, AVENIDA
 					'''
-					if tmpcountry.upper().strip() != "DUBAI":
+					if tmpcountry.upper().strip() != "DUBAI" or tmpcountry == "" or tmpcountry == None:
 						if empresaSupplier:
 							terpalavras = ['RUA', 'AVENIDA','BELAS BUSINESS']
 							ADDRpalavraexiste = False
@@ -5896,9 +5919,9 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 						supplierEmail = 'Ainda por fazer....'
 				if not supplierNIF:
 					if not en_scan:
-						if "NIF" in fsup.upper() or "NIF:" in fsup.upper():
+						if "NIF" in fsup.upper() or "NIF:" in fsup.upper() or "CONTRIBUINTE:" in fsup.upper():
 							#FIX 22-09-2023
-							tmp_supplierNIF = fsup.replace('NIF:','').replace('NIF','').strip()
+							tmp_supplierNIF = fsup.upper().replace('NIF:','').replace('NIF','').replace('CONTRIBUINTE:','').strip()
 							print ('NIFnumber ', re.match(nif_pattern,tmp_supplierNIF.strip()))
 							if re.match(nif_pattern,tmp_supplierNIF.strip()):
 								supplierNIF = tmp_supplierNIF[0:re.match(nif_pattern,tmp_supplierNIF.strip()).span()[1]].replace(' ','')
@@ -5983,24 +6006,31 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 
 				if not invoiceNumber:
 					#Search for PP FT FR
-					seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
+					#seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
+					#FIX 05-10-2023; Updated SERIEs...
+					seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,7}\d{2}\/\d{1,5}"
 					#print (re.match(seriesDocs_pattern,fsup.upper().strip()))
 					if re.match(seriesDocs_pattern,fsup.upper().strip()):
 						invoiceNumber = fsup.upper().strip()
 					else:
-						if "FT" in fsup.upper().strip() or "PP" in fsup.upper().strip() or "FR" in fsup.upper().strip():
-							if "FT" in fsup.upper().strip():
-								tmpseries = fsup.upper().strip()[fsup.upper().strip().find('FT'):]
-							elif "PP" in fsup.upper().strip():
-								tmpseries = fsup.upper().strip()[fsup.upper().strip().find('PP'):]
-							elif "FR" in fsup.upper().strip():
-								tmpseries = fsup.upper().strip()[fsup.upper().strip().find('FR'):]
+						#FIX 05-10-2023
+						print ('Tem FT / PP / FR ')
+						if "FT " in fsup.upper().strip() or "PP " in fsup.upper().strip() or "FR " in fsup.upper().strip():
+							if "FT " in fsup.upper().strip():
+								tmpseries = fsup.upper().strip()[fsup.upper().strip().find('FT '):]
+							elif "PP " in fsup.upper().strip():
+								tmpseries = fsup.upper().strip()[fsup.upper().strip().find('PP '):]
+							elif "FR " in fsup.upper().strip():
+								tmpseries = fsup.upper().strip()[fsup.upper().strip().find('FR '):]
 
 							#print ('tmpseries ',tmpseries)
 							#print (re.match(seriesDocs_pattern,tmpseries))
 							if re.match(seriesDocs_pattern,tmpseries):
 								#Match series
 								invoiceNumber = tmpseries
+							#frappe.throw(porra)
+							print ('tmpseries ',tmpseries)
+							print ('invoiceNumber ',invoiceNumber)
 							#frappe.throw(porra)
 
 					#Case Doc is in EN and not from Angola
@@ -6206,12 +6236,28 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 									#	break
 
 									#More than 1 can be Items...
+									print ('More than 1 can be Items...')
+									print (len(fsup.strip().split()))
+									print (fsup.strip().split())
+									print (fsup.strip())
+
 									if len(fsup.strip().split()) > 1:
 										if re.match(cash_pattern,cc):
+											print ('IS CASH PATTERN....')
 											if not itemTotal:
 												itemTotal = cc.strip()
 											elif not itemRate:
 												itemRate = cc.strip()
+											elif cc.upper().endswith('00UN'):
+												#FIX 05-10-2023; Exception when UN is stack with numbers.. could be QTD
+												if not itemQtd:
+													#Bcs if PT might have comma
+													if ",000" in cc or ",00" in cc:
+														print ('remove comma from QTD')
+														itemQtd = cc.upper().replace(',000','').replace(',00','').replace('UN','').strip()
+													else:
+														print ('QTD will be ', cc.upper().replace('UN','').strip())
+														itemQtd = cc.upper().replace('UN','').strip()
 											primeiroRegisto = False
 										elif cc.strip().isnumeric():
 											#Qtd
@@ -6269,6 +6315,12 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 									#	break
 
 									#More than 1 can be Items...
+									#More than 1 can be Items...
+									print ('More than 1 can be Items...')
+									print (len(fsup.strip().split()))
+									print (fsup.strip().split())
+									print (fsup.strip())
+
 									if len(fsup.strip().split()) > 1:
 										if re.match(cash_pattern,cc):
 											print ('palavras_no_header ', palavras_no_header)
@@ -6276,11 +6328,35 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 												if not itemTotalcIVA:
 													itemTotalcIVA = cc.strip()
 												print ('itemTotalcIVA itemTotalcIVA')
+											elif "SIMPOSTOS" in palavras_no_header and not itemIVA:
+												#FIX 05-10-2023; Case where IVA is the last column
+												if cc.strip() == "14.00" or cc.strip() == "14,00":
+													itemIVA = cc.strip()
 
 											elif not itemTotal:
 												itemTotal = cc.strip()
 											elif not itemRate:
 												itemRate = cc.strip()
+											elif cc.upper().endswith('00UN'):
+												#FIX 05-10-2023; Exception when UN is stack with numbers.. could be QTD
+												if not itemQtd:
+													#Bcs if PT might have comma
+													if ",000" in cc or ",00" in cc:
+														print ('remove comma from QTD')
+														itemQtd = cc.upper().replace(',000','').replace(',00','').replace('UN','').strip()
+													else:
+														print ('QTD will be ', cc.upper().replace('UN','').strip())
+														itemQtd = cc.upper().replace('UN','').strip()
+
+													#FIX 27-09-2023; Might be ZERO or price might be PT ex. 5 880,00 no DOT
+													if itemRate == "0,00":
+														#if "," in itemTotal
+														#FIX 05-10-2023; Check if has DOT
+														if '.' in itemTotal:
+															itemRate = float(itemTotal.replace('.','').replace(',','.')) / int(itemQtd)
+														else:
+															itemRate = float(itemTotal.replace(',00','')) / int(itemQtd)
+
 											primeiroRegisto = False
 										elif "%" in cc.strip() and ("14" in cc.strip() or "7" in cc.strip() or "5" in cc.strip()):
 											#IVA 14 / 7 / 5
@@ -6293,7 +6369,11 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 												#FIX 27-09-2023; Might be ZERO or price might be PT ex. 5 880,00 no DOT
 												if itemRate == "0,00":
 													#if "," in itemTotal
-													itemRate = float(itemTotal.replace(',00','')) / int(itemQtd)
+													#FIX 05-10-2023; Check if has DOT
+													if '.' in itemTotal:
+														itemRate = float(itemTotal.replace('.','').replace(',','.')) / int(itemQtd)
+													else:
+														itemRate = float(itemTotal.replace(',00','')) / int(itemQtd)
 
 
 										else:
@@ -6528,7 +6608,273 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 		stop_time = time.monotonic()
 		print(round(stop_time-start_time, 2), "seconds")
 
-		return (empresaSupplier,invoiceNumber,invoiceDate,supplierMoeda,supplierAddress,supplierNIF,empresaPais,data)
+		#FIX 05-10-2023
+		print (len(data))
+		if len(data) <= 0 or data == []:
+			print ('Tenta....')
+			#FIX 22-01-2023; Scan table using pd2txt.comecar ...
+			print ('Scan table using pd2txt.comecar PORTUGUES...')
+			if contapalavras_header <= 4:
+				contapalavras_header = 0
+				palavras_header_counted = False
+				palavras_no_header = []
+				adicionapalavra_FIM = False	#To end adding to Header
+				Qtd_isnot_number = False	#To control if needs to OCR again as 260
+
+				print ('Scan table using pd2txt.comecar ...')
+				from angola_erp_ocr.api.pdf2txt import extrair_texto
+				print ('FILEFINAL')
+				print (filefinal)
+				textotabela = extrair_texto(filefinal)
+				print ('Read file generated....')
+
+				#print (textotabela)
+				#print (textotabela[0].split('\n'))
+				facturaSupplier_tmp = textotabela
+				terpalavras_header = ['VALOR UN', 'VALOR TOTAL LIQ', 'UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', ' Qtd', 'PREÇO', 'Pr.Unit', 'PR. UNITÁRIO', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC ', 'DEC ', 'DSC. %', 'TAXA','TAXA %', 'IVA','TOTAL']
+				palavras_no_header_ultimoHeader = ['VALOR LIQ.','VALOR TOTAL', 'TOTAL ']
+
+				print ('facturaSupplier')
+				print (facturaSupplier_tmp)
+				for fsup in facturaSupplier_tmp:
+					print ('2 - TEXTOOOOOOaaaa *********')
+					print (fsup.strip())
+
+					print ('00000000')
+					print ('TEXTO LINHA: ', fsup)
+					for fi in en_palavras_fim_item:
+						print ('HEADRE ',fsup.strip().upper())
+						print ('fi ', fi.upper())
+						if fi.upper() in fsup.strip().upper():
+							fim_items = True
+
+					if fsup.strip == "ITEM CODE DESCRIPTION QUANTITY —_ UNIT PRICE TOTAL":
+						frappe.throw(porra)
+
+					if not fsup.strip().startswith('SN:'):
+						print ('conta PALAVRAS HEADER ', contapalavras_header)
+						print ('fim items ', fim_items)
+						if contapalavras_header >= 5 and not fim_items:
+							#Now check if all Columns for Items are correct ....
+							#ITEM| DESCRIPTION| QUANTITY| UNIT PRICE (EUR)| TOTAL PRICE (EUR)
+							#this case must have 5 columns with TEXTs...
+							totalgeral = ''
+							precounitario = ''
+							quantidade = ''
+
+
+							for idx,cc in reversed(list(enumerate(fsup.split()))):
+								print ('contapalavras_header ',contapalavras_header)
+								print (len(fsup.split()))
+								if len(fsup.split()) > contapalavras_header:
+									print ('TEM ESPACO nos ITENS.... ')
+									print ('TODO: IDX: last must be Number, LAST-1 also, last-2 also')
+									print ('TODO: IDX: First can be Number or TEXT')
+									print ('TODO: if NOT IDX: First and not LAST-1 and not LAST-2 than is DESCRIPTION')
+									#frappe.throw(porra)
+								elif len(fsup.split()) <= 3:
+									print ('PODE SER SNs.... CANCEL QTD CHECK')
+									break
+
+
+
+								print ('===== FIRST IDX0 ======')
+								print ('idx ',idx)
+								print ('cc ',cc)
+
+								#Check if cash
+								print (re.match(cash_pattern,cc))
+								print (cc.strip().isnumeric())
+								#If startswith SN: skip
+
+
+								if re.match(cash_pattern,cc):
+									if not totalgeral:
+										totalgeral = cc
+									elif not precounitario:
+										precounitario = cc
+								elif contapalavras_header == 5:
+									#Check QTD is a Number...
+									if len(fsup.split()) > 1:
+										print ('size fsup ',len(fsup.split()))
+										#FIX 21-12-2022; Check if Currency Symbol...
+										if cc.strip() == "€":
+											if not supplierMoeda:
+												supplierMoeda = 'EUR'
+
+										elif not cc.strip().isnumeric():
+											#Gera novamente o OCR bcs QTD is not a Number...
+											if quantidade == '':
+												#Qtd_isnot_number = True
+												print ('QTD is not a NUMBER ', cc)
+												#frappe.throw(porra)
+												#break
+												#SET to ZERO and after Rate and Total added divide to find the QTD
+												quantidade = 0
+
+								if cc.strip().isnumeric():
+									if contapalavras_header == 5:
+										#Assuming that 5 is Total, 4 is Unit Price, 3 is Qtd
+										if not idx == 0:
+											if not quantidade:
+												quantidade = cc
+												Qtd_isnot_number = False
+
+							print ('totalgeral ', totalgeral)
+							print ('precounitario ', precounitario)
+							print ('quantidade ', quantidade)
+
+							#if "0.15065" in fsup:
+							#	frappe.throw(porra)
+
+						#Must be last to avoid running on the top first and still on the HEADER TEXT...
+						print ('VERIFICAR palavras_header_counted ', palavras_header_counted)
+						if palavras_header_counted == False:
+							palavra_total = False #TO AVOID counting 'TOTAL PRICE (EUR)' and again TOTAL
+							palavra_preco = False #TO AVOID counting 'UNIT PRICE (EUR)' and again UNIT PRICE
+
+							print ('terpalavras_header ', terpalavras_header)
+
+							for pp in terpalavras_header:
+								#Check if two words for HEADER like Valor Un or VALOR LIQ.
+								print (fsup.strip().upper().replace('\xa0',' ') == pp.strip().upper())
+
+
+								#if (pp.upper().strip() in fsup.strip().upper()) or (pp.upper().strip() == fsup.strip().upper()):
+								#For some reason might have '\xa0' between...
+								if (pp.upper().strip() in fsup.strip().upper()) or (fsup.strip().upper().replace('\xa0',' ') == pp.strip().upper()):
+									print ('fsup.strip')
+									print (fsup.strip().upper())
+									print ('Palavaheader ', pp.upper())
+									if pp.upper() == 'PREÇO' or pp.upper() == 'VALOR LIQ.' or pp.upper() == 'Pr.Unit'.upper():
+										if palavra_preco:
+											print ('NAO CONTA HEADER PRECO ', pp.upper())
+										if palavra_total:
+											print ('NAO CONTA HEADER TOTAL ', pp.upper())
+										if pp.upper() == 'PREÇO':
+											print (palavras_no_header)
+											print ('palavra_preco ', palavra_preco)
+											print ('+++++ AAAAAAAA +++++ ')
+
+										#if ('UNIT PRICE' in palavras_no_header  or 'PRICE' in palavras_no_header or 'UNIT' in palavras_no_header) and (pp.upper() == 'UNIT PRICE' or pp.upper() == 'UNIT' or pp.upper() == 'PRICE'):
+										if ('UNIT PRICE' in palavras_no_header  or 'PRICE' in palavras_no_header) and (pp.upper() == 'UNIT PRICE' or pp.upper() == 'PRICE'):
+											palavra_preco = True
+											print ('Skip Unit Price or Unit')
+
+									print ('palavra_preco ', palavra_preco)
+									print ('palavra_total ', palavra_total)
+									if not palavra_preco or not palavra_total:
+										#To avoid TOTAL AMOUNT and TOTAL being added
+										if 'VALOR LIQ.' in palavras_no_header and pp.upper() == 'VALOR LIQ.':
+											print ('SKIP VALOR LIQ.')
+										elif 'CODE NO' in palavras_no_header  or 'CODE' in palavras_no_header and pp.upper() == 'CODE':
+											print ('SKIP CODE and CODE NO')
+										elif ('DESCRIPTION OF GOODS' in palavras_no_header  or 'DESCRIPTION' in palavras_no_header) and (pp.upper() == 'DESCRIPTION OF GOODS' or pp.upper() == 'DESCRIPTION'):
+											print ('SKIP DESCRIPTION OF GOODS and DESCRIPTION')
+											print (palavras_no_header)
+										elif 'Descrição'.upper() in palavras_no_header and pp.upper() == 'Descrição'.upper():
+											print ('SKIP Descrição')
+											print (palavras_no_header)
+										elif 'TAXA' in palavras_no_header and pp.upper() == 'TAXA':
+											print ('SKIP TAXA')
+											print (palavras_no_header)
+										elif ('UNI' in palavras_no_header and pp.upper() == 'UNI') or ('UNI' in palavras_no_header and pp.upper() == 'UNIDADE'):
+											print ('SKIP UNI or UNIDADE')
+											print (palavras_no_header)
+
+
+										else:
+											if pp.upper() == 'PRICE':
+												print ('palavras no header ', palavras_no_header)
+											if not palavra_preco:
+												#Check if word is... ex. cooperativa is not part of header but IVA exists inside....
+												print ('Check if word is...')
+												print (len(pp.split()))
+												print (pp.split())
+
+												if len(pp.split()) == 1:
+													adicionapalavra = False
+													for ffsup in fsup.split():
+														print ('pp.upper() ', pp.upper())
+														print ('pp.upper().strip ', pp.upper().strip())
+														print ('ffsup.upper().strip() ', ffsup.upper().strip())
+														if ffsup.upper().strip() == pp.upper().strip():
+															adicionapalavra = True
+												else:
+													#Case Palavra do Header is a single one but has a space...  ex. 'VALOR LIQ.'
+													adicionapalavra = True
+
+
+												if adicionapalavra:
+													#check if last HEADER
+													print ('check if last HEADER')
+													print ('palavras_no_header_ultimoHeader ',palavras_no_header_ultimoHeader)
+													print ('adicionapalavra_FIM ',adicionapalavra_FIM)
+													if pp.upper() in palavras_no_header_ultimoHeader:
+														adicionapalavra_FIM = True
+														palavras_no_header.append(pp.upper())
+														contapalavras_header += 1
+														print ('pode contar HEADER ', pp.upper())
+														print ('contapalavras_header ', contapalavras_header)
+													elif adicionapalavra_FIM == False:
+														palavras_no_header.append(pp.upper())
+														contapalavras_header += 1
+														print ('pode contar HEADER ', pp.upper())
+														print ('contapalavras_header ', contapalavras_header)
+
+
+
+											#frappe.throw(porra)
+
+									#palavras_header_counted = True
+									if contapalavras_header >= 9:
+										#palavras_header_counted = True
+										print ('palavras_header_counted SET FALSE')
+										print ('contapalavras_header')
+										print (palavras_no_header)
+									if 'PICTURE' in palavras_no_header:
+										palavras_header_counted = True
+										print ('PICTURE no HEADER COUNT')
+									#'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL'
+									if pp.upper() == 'UNIT PRICE (EUR)': # or pp.upper() == 'PRICE':
+										palavra_preco = True
+									if pp.upper() == 'TOTAL PRICE (EUR)' or pp.upper() == 'TOTAL AMOUNT':
+										palavra_total = True
+							if contapalavras_header <= 3:
+								print ('Scan HEADER AGAIN33333.... ')
+						if Qtd_isnot_number:
+							break
+
+				print ('palavras_no_header')
+				print (palavras_no_header)
+				print ('CALLED OCR_OCR_OCR 0000')
+				print ('Qtd_isnot_number ',Qtd_isnot_number)
+				#terpalavras_header_EN = terpalavras_header
+				print ('PORTUGUES ocr_ocr_ocr =======')
+				print ('en_scan ', en_scan)
+				print ('terpalavras_header ',terpalavras_header)
+				print ('palavras_no_header ',palavras_no_header)
+				print ('filefinal ', filefinal)
+
+				palavras_fim_item = ['Metodo de Pagamento','Incidência','Total Retenção']
+
+				#FIX 27-09-2023; Will try aprender_OCR_v1 if items returns NONE
+				ocrocrocr = ocr_ocr_ocr (facturaSupplier_tmp,palavras_fim_item,en_scan,supplierMoeda,terpalavras_header,palavras_no_header,filefinal,palavras_no_header_ultimoHeader)
+				print ('ocrocrocr')
+				print (ocrocrocr)
+				print (len(ocrocrocr))
+				print (ocrocrocr[7])	#ITEMS
+				#if len(ocrocrocr) == 8 and ocrocrocr[7] == []:
+				#	return aprender_OCR_v1 (filefinal,"SCRAPE","COMPRAS")
+				#else:
+				return ocrocrocr
+
+				#return ocr_ocr_ocr (facturaSupplier_tmp,palavras_fim_item,en_scan,supplierMoeda,terpalavras_header,palavras_no_header,filefinal,palavras_no_header_ultimoHeader)
+
+			frappe.throw(porra)
+
+		else:
+			return (empresaSupplier,invoiceNumber,invoiceDate,supplierMoeda,supplierAddress,supplierNIF,empresaPais,data)
 
 
 def search_company_online(empresa):
