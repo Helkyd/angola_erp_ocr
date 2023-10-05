@@ -4262,7 +4262,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 			print ("palavras_no_header ",palavras_no_header)
 			print (contapalavras_header)
 			#FIX 22-01-2023; Scan table using pd2txt.comecar ...
-			print ('Scan table using pd2txt.comecar PORTUGUES...')
+			print ('Scan table using pd2txt.comecar PORTUGUES 000...')
 			if contapalavras_header <= 4:
 				contapalavras_header = 0
 				palavras_header_counted = False
@@ -5545,14 +5545,14 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 	'''
-	Last modified: 27-09-2023
+	Last modified: 05-10-2023
 	Using to Train or LEARN OCR from PDF files not configurated on the System....
 	'''
 	start_time = time.monotonic()
 
 	#FIX 22-09-2023; Added words to HEADER
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-	terpalavras_header = ['Total c/ IVA','Totalc/IVA', 'TOTAL ', 'VALOR UN', 'VALOR TOTAL LIQ', 'WKIQUIDO ', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'PR. UNIT', 'UNIDADE', 'UNI ', 'UN ', 'CAIXA', 'CX', ' Artigo ', 'Descrição', 'DASCRIÇÃO TD ', 'Qotd.', 'QUANT', 'Qtd.', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'SIMPOSTOS', ' DESC. ', ' DESC ', ' DEC ', ' TAXA ', ' IVA ', ' VA ', ' Arm. ','cód.artigo ']
+	terpalavras_header = ['Total c/ IVA','Totalc/IVA', 'TOTAL ', 'VALOR UN', 'VALOR TOTAL LIQ', 'WKIQUIDO ', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'PR. UNIT', 'UNIDADE', 'UNI ', 'UN ', 'CAIXA', 'CX', ' Artigo ', 'Descrição', 'DASCRIÇÃO TD ', 'Designação ', 'Qotd.', 'QUANT', 'Qtd.', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'SIMPOSTOS', ' DESC. ', ' DESC ', ' DEC ', 'Desc %', ' TAXA ', ' IVA ', ' VA ', ' Arm. ','cód.artigo ', 'Referência ']
 
 	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
 
@@ -6631,8 +6631,8 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 				#print (textotabela)
 				#print (textotabela[0].split('\n'))
 				facturaSupplier_tmp = textotabela
-				terpalavras_header = ['VALOR UN', 'VALOR TOTAL LIQ', 'UNIDADE', 'UNI', 'UN', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', ' Qtd', 'PREÇO', 'Pr.Unit', 'PR. UNITÁRIO', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC ', 'DEC ', 'DSC. %', 'TAXA','TAXA %', 'IVA','TOTAL']
-				palavras_no_header_ultimoHeader = ['VALOR LIQ.','VALOR TOTAL', 'TOTAL ']
+				terpalavras_header = ['VALOR UN', 'VALOR TOTAL LIQ', 'UNIDADE', 'UNI', 'UN', 'Un.', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'QUANT', 'Qtd.', ' Qtd', 'Qt.', 'PREÇO', 'Pr.Unit', 'PR. UNITÁRIO', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'DESC ', 'DEC ', 'DSC. %', 'TAXA','TAXA %', 'IVA','TOTAL', 'REFERÊNCIA', 'DESIGNAÇÃO', 'P. Unit.']
+				palavras_no_header_ultimoHeader = ['VALOR LIQ.','VALOR TOTAL', 'TOTAL ', 'TAXA']
 
 				print ('facturaSupplier')
 				print (facturaSupplier_tmp)
@@ -8351,9 +8351,29 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 	proximalinha_contentor = False
 	proximalinha_data = False
 
+	#FIX 05-10-2023
+	en_palavras_fim_item.append("CÓD./MOTIVO INCIDÊNCIA")
+	print ('en_palavras_fim_item')
+	print (en_palavras_fim_item)
+
 	for fsup in facturaSupplier:
 		print ('=====INICIO ======= ocr_ocr_ocr ')
 		print (fsup)
+
+		#FIX 05-10-2023
+		ending_currency_PT = r'^([0-9]{1,3}\s[0-9]{2,3}\,[0-9]{2,3})'
+
+		if re.match(ending_currency_PT,fsup):
+			pat = fsup[:re.match(ending_currency_PT,fsup).span()[1]]
+			new_pat = pat.replace(' ','.')
+			#Replace all on tmp_fsup so search can continue...
+			tmp_fsup = fsup.replace(pat,new_pat)
+			print ('NEW tmp_fsup ', tmp_fsup)
+			print ('NEW FSUP ')
+			print (str(tmp_fsup))
+			fsup = tmp_fsup
+
+			#frappe.throw(porra)
 
 		#Check if AGT Invoices
 		if "CONTRIBUINTE FISCAL DETALHES DO CLIENTE" in fsup.strip():
@@ -8370,6 +8390,9 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 		if fsup.strip() == None or fsup.strip() == '':
 			linhaem_branco = True
 			#palavrasexiste_header = True
+		else:
+			#FIX 05-10-2023
+			linhaem_branco = False
 
 		if fsup.strip() != None and fsup.strip() != "":
 			if not empresaSupplier:
@@ -8835,7 +8858,8 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 								if "@" in cc.strip():
 									print (re.match(email_pattern,cc.strip()))
 								#FIX 23-12-2022; If starts with SN:
-								if cc.startswith('SN:') and not "@" in cc.strip():
+								#FIX 05-10-2023; Added EAN:
+								if cc.startswith('SN:') and not "@" in cc.strip() or cc.startswith('EAN:') and not "@" in cc.strip():
 									#Save all and break
 									tmp_sn = fsup.strip()
 									print ('VERIFICAR SE TODOS SAO SNs.... ')
@@ -8960,6 +8984,11 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 					#Check if startswith a NUMBER...
 					print ('XXXpalavraexiste_item ',palavraexiste_item)
 					print (fsup.strip()[0:1].isnumeric())
+
+					#FIX 05-10-2023; Check if Referencia on header
+					#if "REFERÊNCIA" in palavras_no_header and itemCode == '':
+					#	print ('TEM REFERENCIA NO HEADER.... ')
+					#	itemCode = fsup.strip()
 					if "CODE" in palavras_no_header and tmp_sn.startswith('SN:'):
 						print ('Caso tenha CODE or CODE NO and tmp_sn')
 						print ('Caso tenha CODE or CODE NO and tmp_sn')
@@ -9275,7 +9304,11 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 										#itemcode = cc.strip()
 										if cc.isnumeric() or cc[:1].isnumeric():
 											print ('PODE SER CODIGO ou QUANTIDADE ou PRECO, TOTAL.... dos ITENS')
-											if len(cc) <= 2: # or len(cc) == 3:
+											#FIX 05-10-2023; If header has REFERENCIA
+											if 'REFERÊNCIA' in palavras_no_header:
+												if linhaAnterior == "DESCRIPTION":
+													filtered_divs['QUANTITY'].append(cc.strip())
+											elif len(cc) <= 2: # or len(cc) == 3:
 												print ('contaLinhas ', contaLinhas)
 												print ('countlines ', countlines)
 												print ('cc.strip() ',cc.strip())
@@ -9613,7 +9646,7 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 							#frappe.throw(porra)
 
 
-						print ('Items')
+						print ('Items=======')
 						print ('contaLinhas ',contaLinhas)
 						print ('countlines ',countlines)
 						print ('itemCode ',itemCode)
@@ -9718,7 +9751,8 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 											filtered_divs['ITEM'].append(fsup.split()[0].strip())
 										else:
 											#Check if COdigo on Header
-											if 'CODIGO' in palavras_no_header:
+											#FIX 05-10-2023; added Refere
+											if 'CODIGO' in palavras_no_header: #or 'REFERÊNCIA' in palavras_no_header:
 												filtered_divs['ITEM'].append(fsup.split()[0].strip())
 											else:
 												filtered_divs['ITEM'].append(fsup.strip())
@@ -9733,19 +9767,54 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 							print ('linhaAnterior ',linhaAnterior)
 							if linhaAnterior == 'CARTON':
 								print ('Linha CARTON tem MAIS QUE NUMEROS...')
-							elif len(filtered_divs['DESCRIPTION']) >= 1:
+							elif fsup.replace(',','').strip().isnumeric() and linhaAnterior == 'DESCRIPTION':
+								#QTD
+								filtered_divs['QUANTITY'].append(fsup.strip())
+								linhaAnterior = 'QUANTITY'
+							elif fsup.replace(',','').replace('.','').strip().isnumeric() and linhaAnterior == 'QUANTITY':
+								#RATE
+								filtered_divs['RATE'].append(fsup.strip())
+								linhaAnterior = 'RATE'
+							elif fsup.replace(',','').replace('.','').strip().isnumeric() and linhaAnterior == 'RATE' and not "%" in fsup.strip():
+								#TOTAL
+								filtered_divs['TOTAL'].append(fsup.strip())
+								linhaAnterior = 'TOTAL'
+
+							elif len(filtered_divs['DESCRIPTION']) >= 1 and linhaAnterior == 'DESCRIPTION':
 								#filtered_divs['DESCRIPTION'].append(fsup.strip())
 								filtered_divs['DESCRIPTION'][len(filtered_divs['DESCRIPTION'])-1] += ' ' + fsup.strip()
+								linhaAnterior = 'DESCRIPTION'
 							else:
+								print ('Aqui muda para DESCRIPTION ALWAYS...')
 								if fsup.strip() != '':
-									filtered_divs['DESCRIPTION'].append(fsup.strip())
-							linhaAnterior = 'DESCRIPTION'
+									if len(filtered_divs['ITEM']) == 0:
+										#FIX 05-10-2023
+										filtered_divs['ITEM'].append(fsup.strip())
+										linhaAnterior = 'DESCRIPTION'
+									elif len(filtered_divs['DESCRIPTION']) == 0:
+										#FIX 05-10-2023
+										filtered_divs['DESCRIPTION'].append(fsup.strip())
+										linhaAnterior = 'DESCRIPTION'
+									elif fsup.strip() == "14,0%":
+										#IVA
+										filtered_divs['IVA'].append(fsup.strip())
+										#Check if Counter is less
+										if len(filtered_divs['COUNTER']) < len(filtered_divs['ITEM']):
+											filtered_divs['COUNTER'].append(len(filtered_divs['COUNTER'])+1)
+											print ('Aumenta o Counter depois do IVA....')
+
+
 							#print (filtered_divs['DESCRIPTION'])
 							#frappe.throw(porra)
+						print ('COUNTER')
 						print (filtered_divs['COUNTER'])
+						print ('DESCRIPTION')
 						print (filtered_divs['DESCRIPTION'])
+						print ('ITEM')
 						print (filtered_divs['ITEM'])
+						print ('QUANTITY')
 						print (filtered_divs['QUANTITY'])
+						print ('RATE')
 						print (filtered_divs['RATE'])
 						print (filtered_divs['TOTAL'])
 
@@ -9760,7 +9829,10 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 				print ('TEM linhaem_branco ',linhaem_branco)
 				if contapalavras_header >= 5:
 					palavrasexiste_header = True
-					if fsup.strip() in palavras_no_header_ultimoHeader:
+					print ('palavras_no_header_ultimoHeader ',palavras_no_header_ultimoHeader)
+					print ('fsup.strip() ', fsup.strip())
+					#FIX 05-10-2023
+					if fsup.upper().strip() in palavras_no_header_ultimoHeader:
 						if palavrasexiste_header:
 							palavrasexiste_header = True
 						else:
@@ -10071,7 +10143,8 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 		for row in zip(filtered_divs['ITEM'], filtered_divs['DESCRIPTION'], filtered_divs['QUANTITY'], filtered_divs['RATE'], filtered_divs['TOTAL'], filtered_divs['IVA'], filtered_divs['COUNTER']):
 			if 'ITEM' in row[0]:
 				continue
-
+			print ('row[0] ',row[0] )
+			print (row[0].split(' '))
 			data_row = {'ID': row[0].split(' ')[0], 'Description': row[1], 'Quantity': row[2], 'Rate': row[3], 'Total': row[4], 'Iva': row[5], 'COUNTER': row[6]}
 			data.append(data_row)
 	else:
@@ -10120,6 +10193,7 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 	print('Moeda ', supplierMoeda)
 
 	#frappe.throw(porra)
+	print ('*************************////////////////////')
 	pprint(data)
 
 	#return (empresaSupplier,invoiceNumber,invoiceDate,supplierMoeda,supplierAddress,supplierNIF,empresaPais,data)
