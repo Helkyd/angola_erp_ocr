@@ -5970,7 +5970,10 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 					if not en_scan:
 						if "NIF" in fsup.upper() or "NIF:" in fsup.upper() or "CONTRIBUINTE:" in fsup.upper():
 							#FIX 22-09-2023
-							tmp_supplierNIF = fsup.upper().replace('NIF:','').replace('NIF','').replace('CONTRIBUINTE:','').strip()
+							#FIX 09-10-2023; Removed ;:
+							tmp_supplierNIF = fsup.upper()[fsup.upper().find('NIF:')+4:] if fsup.upper().find('NIF:') != -1 else fsup
+							tmp_supplierNIF = tmp_supplierNIF.upper().replace('NIF:','').replace('NIF','').replace('CONTRIBUINTE:','').replace(';:','').strip()
+							print ('tmp_supplierNIF ',tmp_supplierNIF)
 							print ('NIFnumber ', re.match(nif_pattern,tmp_supplierNIF.strip()))
 							if re.match(nif_pattern,tmp_supplierNIF.strip()):
 								supplierNIF = tmp_supplierNIF[0:re.match(nif_pattern,tmp_supplierNIF.strip()).span()[1]].replace(' ','')
@@ -5983,6 +5986,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 									empresaSupplier = nifvalido[2]
 								else:
 									empresaSupplier = "NIF INVALIDO NAO CONSEGUI OBTER FORNECEDOR!"
+							
 				if not supplierMoeda:
 					terpalavras = ['Moeda','AOA','AKZ']
 					#TODO: List of Currencies to see if on the Document to be OCR..
@@ -6018,7 +6022,8 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 				if not invoiceDate:
 					print ('invoiceDate')
 					#FIX 27-09-2023; Added Data
-					terpalavras = ['Data Doc.','Data Doc','Invoice Date:','Invoice Date', ' Data ']
+					#FIX 09-10-2023; Added Data de Emissão:
+					terpalavras = ['Data de Emissão:', 'Data Doc.','Data Doc','Invoice Date:','Invoice Date', ' Data ']
 					Datepalavraexiste = False
 					for ff in terpalavras:
 						if ff in fsup.strip():
