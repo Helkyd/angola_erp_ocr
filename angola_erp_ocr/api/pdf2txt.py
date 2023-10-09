@@ -98,8 +98,8 @@ def extract_text_to_file(
 		for override, alttype in OUTPUT_TYPES:
 			if outfile.endswith(override):
 				output_type = alttype
-
-	outfile = files.replace('.pdf','.txt')
+	#FIX 08-10-2023
+	outfile = files.replace('.pdf','.txt').replace(' ','_')
 	if outfile == "-":
 		outfp: AnyIO = sys.stdout
 		if sys.stdout.encoding is not None:

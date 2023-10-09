@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 05/10/2023
+#Date Changed: 09/10/2023
 
 
 from __future__ import unicode_literals
@@ -5545,14 +5545,14 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 
 def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 	'''
-	Last modified: 05-10-2023
+	Last modified: 09-10-2023
 	Using to Train or LEARN OCR from PDF files not configurated on the System....
 	'''
 	start_time = time.monotonic()
 
 	#FIX 22-09-2023; Added words to HEADER
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-	terpalavras_header = ['Total c/ IVA','Totalc/IVA', 'TOTAL ', 'VALOR UN', 'VALOR TOTAL LIQ', 'WKIQUIDO ', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'PR. UNIT', 'UNIDADE', 'UNI ', 'UN ', 'CAIXA', 'CX', ' Artigo ', 'Descrição', 'DASCRIÇÃO TD ', 'Designação ', 'Qotd.', 'QUANT', 'Qtd.', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'SIMPOSTOS', ' DESC. ', ' DESC ', ' DEC ', 'Desc %', ' TAXA ', ' IVA ', ' VA ', ' Arm. ','cód.artigo ', 'Referência ']
+	terpalavras_header = ['Total c/ IVA','Totalc/IVA', 'TOTAL ', 'VALOR UN', 'VALOR TOTAL LIQ', 'WKIQUIDO ', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'PR. UNIT', 'P. UNIT.', 'UNIDADE', 'UNI ', 'UN ', 'UNN/', 'CAIXA', 'CX', ' Artigo ', 'Descrição', 'DASCRIÇÃO TD ', 'Designação ', 'Qotd.', 'QUANT', 'Qtd.', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'SIMPOSTOS', ' DESC. ', ' DESC ', ' DEC ', 'Desc %', ' TAXA ',' TAXA', ' IVA ', ' VA ', ' Arm. ','cód.artigo ', 'Referência ']
 
 	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
 
@@ -5796,23 +5796,72 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 			print (fsup)
 
 			#FIX 05-10-2023; Bcs if PT has not dot only comma for currency... add DOT
-			if "UN " in fsup.upper().strip():
+			if "UN " in fsup.upper().strip() or "UNN/ " in fsup.upper().strip():
 				#Remove WORDS
-				tmp_fsup = fsup[fsup.upper().find('UN ')+3:]
-				print ('tmp_fsup ',tmp_fsup)
-				if re.match(ending_currency_PT,tmp_fsup):
-					pat = tmp_fsup[:re.match(ending_currency_PT,tmp_fsup).span()[1]]
-					new_pat = pat.replace(' ','.')
-					#Replace all on tmp_fsup so search can continue...
-					tmp_fsup = tmp_fsup.replace(pat,new_pat)
-					print ('NEW tmp_fsup ', tmp_fsup)
-					print ('NEW FSUP ')
-					print (fsup[:fsup.upper().find('UN ')+3] + str(tmp_fsup))
-					fsup = fsup[:fsup.upper().find('UN ')+3] + str(tmp_fsup)
-					#frappe.throw(porra)
+				if "UNN/ " in fsup.upper().strip():
+					tmp_fsup = fsup[fsup.upper().find('UNN/ ')+5:]
+					print ('tmp_fsup ',tmp_fsup)
+					if re.match(ending_currency_PT,tmp_fsup):
+						pat = tmp_fsup[:re.match(ending_currency_PT,tmp_fsup).span()[1]]
+						new_pat = pat.replace(' ','.')
+						#Replace all on tmp_fsup so search can continue...
+						tmp_fsup = tmp_fsup.replace(pat,new_pat)
+						print ('NEW tmp_fsup ', tmp_fsup)
+						print ('NEW FSUP ')
+						print (fsup[:fsup.upper().find('UNN/ ')+5] + str(tmp_fsup))
+						fsup = fsup[:fsup.upper().find('UNN/ ')+5] + str(tmp_fsup)
+
+						#FIX 09-10-2023; DO again the search...
+						tmp_fsup = fsup[fsup.upper().find('UNN/ ')+5:]
+						patt_currency_dot = r'^([0-9]{1,3}\.[0-9]{2,3}\,[0-9]{2,3})'
+						if re.match(patt_currency_dot,tmp_fsup):
+							#Remove existing... assuming first is Price, second Discount and third is the prize
+							pat = tmp_fsup[re.match(patt_currency_dot,tmp_fsup).span()[1]:].strip()
+							#Check if 0.0%
+							if pat.startswith('0.0%') or pat.startswith('0,0%'):
+								tt_pat = pat.replace('0.0%','').replace('0,0%','').strip()
+								if re.match(ending_currency_PT,tt_pat):
+									pat = tt_pat[:re.match(ending_currency_PT,tt_pat).span()[1]]
+									new_pat = pat.replace(' ','.')
+									#Replace all on tmp_fsup so search can continue...
+									tmp_fsup = tmp_fsup.replace(pat,new_pat)
+									print ('NEW tmp_fsup ', tmp_fsup)
+									print ('NEW FSUP ')
+									print (fsup[:fsup.upper().find('UNN/ ')+5] + str(tmp_fsup))
+									fsup = fsup[:fsup.upper().find('UNN/ ')+5] + str(tmp_fsup)
+
+						print ('tmp_fsup Second ROUND ',tmp_fsup)
+						if re.match(ending_currency_PT,tmp_fsup):
+							pat = tmp_fsup[:re.match(ending_currency_PT,tmp_fsup).span()[1]]
+							new_pat = pat.replace(' ','.')
+							#Replace all on tmp_fsup so search can continue...
+							tmp_fsup = tmp_fsup.replace(pat,new_pat)
+							print ('NEW tmp_fsup ', tmp_fsup)
+							print ('NEW FSUP ')
+							print (fsup[:fsup.upper().find('UNN/ ')+5] + str(tmp_fsup))
+							fsup = fsup[:fsup.upper().find('UNN/ ')+5] + str(tmp_fsup)
+
+						#frappe.throw(porra)
+					else:
+						print ('REVERRRRRRRRRRRRRRRRRRRrrr')
+						#frappe.throw(porra)
+
 				else:
-					print ('REVERRRRRRRRRRRRRRRRRRRrrr')
-					#frappe.throw(porra)
+					tmp_fsup = fsup[fsup.upper().find('UN ')+3:]
+					print ('tmp_fsup ',tmp_fsup)
+					if re.match(ending_currency_PT,tmp_fsup):
+						pat = tmp_fsup[:re.match(ending_currency_PT,tmp_fsup).span()[1]]
+						new_pat = pat.replace(' ','.')
+						#Replace all on tmp_fsup so search can continue...
+						tmp_fsup = tmp_fsup.replace(pat,new_pat)
+						print ('NEW tmp_fsup ', tmp_fsup)
+						print ('NEW FSUP ')
+						print (fsup[:fsup.upper().find('UN ')+3] + str(tmp_fsup))
+						fsup = fsup[:fsup.upper().find('UN ')+3] + str(tmp_fsup)
+						#frappe.throw(porra)
+					else:
+						print ('REVERRRRRRRRRRRRRRRRRRRrrr')
+						#frappe.throw(porra)
 
 			if fsup.strip() != None and fsup.strip() != "":
 				if not empresaSupplier:
@@ -6316,7 +6365,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 
 									#More than 1 can be Items...
 									#More than 1 can be Items...
-									print ('More than 1 can be Items...')
+									print ('More than 1 can be Items000...')
 									print (len(fsup.strip().split()))
 									print (fsup.strip().split())
 									print (fsup.strip())
@@ -6328,9 +6377,12 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 												if not itemTotalcIVA:
 													itemTotalcIVA = cc.strip()
 												print ('itemTotalcIVA itemTotalcIVA')
-											elif "SIMPOSTOS" in palavras_no_header and not itemIVA:
+											elif "SIMPOSTOS" in palavras_no_header and not itemIVA or (" TAXA" in palavras_no_header or "TAXA" in palavras_no_header) and not itemIVA:
 												#FIX 05-10-2023; Case where IVA is the last column
 												if cc.strip() == "14.00" or cc.strip() == "14,00":
+													itemIVA = cc.strip()
+												elif cc.strip() == "14.0%" or cc.strip() == "14,0%":
+													#FIX 09-10-2023
 													itemIVA = cc.strip()
 
 											elif not itemTotal:
@@ -6367,14 +6419,15 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 											if not itemQtd:
 												itemQtd = cc.strip()
 												#FIX 27-09-2023; Might be ZERO or price might be PT ex. 5 880,00 no DOT
-												if itemRate == "0,00":
+												#FIX 09-10-2023; Wrong value for Rate... added Round()
+												if itemRate == "0,00" or itemRate == "0,0%":
 													#if "," in itemTotal
 													#FIX 05-10-2023; Check if has DOT
 													if '.' in itemTotal:
-														itemRate = float(itemTotal.replace('.','').replace(',','.')) / int(itemQtd)
+														itemRate = round(float(itemTotal.replace('.','').replace(',','.')) / int(itemQtd.replace(',00','')),2)
 													else:
-														itemRate = float(itemTotal.replace(',00','')) / int(itemQtd)
-
+														itemRate = round(float(itemTotal.replace(',00','')) / int(itemQtd.replace(',00','')),2)
+												#frappe.throw(porra)
 
 										else:
 											#String...
@@ -6498,6 +6551,14 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 										#Tem Decimais...
 										if not itemQtd:
 											itemQtd = ii.strip()
+											#FIX 09-10-2023; Wrong value for Rate... added Round()
+											if itemRate == "0,00" or itemRate == "0,0%":
+												#if "," in itemTotal
+												#FIX 05-10-2023; Check if has DOT
+												if '.' in itemTotal:
+													itemRate = round(float(itemTotal.replace('.','').replace(',','.')) / int(itemQtd.replace(',00','')),2)
+												else:
+													itemRate = round(float(itemTotal.replace(',00','')) / int(itemQtd.replace(',00','')),2)
 										elif not itemRate:
 											if tmprate != '':
 												itemRate = str(tmprate) + str(ii.strip())
