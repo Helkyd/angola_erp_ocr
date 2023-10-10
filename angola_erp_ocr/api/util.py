@@ -251,7 +251,10 @@ def lepdfocr(data,action = "SCRAPE",tipodoctype = None, lingua = None, resol = N
 
 								if not invoiceNumber:
 									#Search for PP FT FR
-									seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
+									#seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
+									#FIX 10-10-2023
+									seriesDocs_pattern = r"^([F][T][M]|[P][P]|[F][T]|[F][R]).{1}\s\d{1}[a-zA-Z].{1}[0-9]{4}\/.{1,4}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,4}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,8}\/\d{1,5}"
+
 									#print (re.match(seriesDocs_pattern,fsup.upper().strip()))
 									if re.match(seriesDocs_pattern,fsup.upper().strip()):
 										invoiceNumber = fsup.upper().strip()
@@ -4796,10 +4799,15 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 					#seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R]|[F][T][M])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,4}\/\d{1,5}"
 					#FIX 05-01-2023; Included FTM from AGT site
 					#seriesDocs_pattern = r"^([F][T][M]|[P][P]|[F][T]|[F][R]).{1}\s\d{1}[a-zA-Z].{1}[0-9]{4}\/.{1,4}|([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
-					seriesDocs_pattern = r"^([F][T][M]|[P][P]|[F][T]|[F][R]).{1}\s\d{1}[a-zA-Z].{1}[0-9]{4}\/.{1,4}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,4}\/\d{1,5}"
+					seriesDocs_pattern = r"^([F][T][M]|[P][P]|[F][T]|[F][R]).{1}\s\d{1}[a-zA-Z].{1}[0-9]{4}\/.{1,4}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,4}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,8}\/\d{1,5}"
+
 					#print (re.match(seriesDocs_pattern,fsup.upper().strip()))
 					if re.match(seriesDocs_pattern,fsup.upper().strip()):
-						invoiceNumber = fsup.upper().strip()
+						#FIX 10-10-2023
+						invoiceNumber = fsup.upper().strip()[:re.match(seriesDocs_pattern,fsup.upper().strip()).span()[1]]
+						print (invoiceNumber)
+						#frappe.throw(porra)
+
 					else:
 						if "FT" in fsup.upper().strip() or "PP" in fsup.upper().strip() or "FR" in fsup.upper().strip() or "FTM" in fsup.upper().strip():
 							if "FT" in fsup.upper().strip():
@@ -4828,6 +4836,7 @@ def aprender_OCR(data,action = "SCRAPE",tipodoctype = None):
 							if fsup.upper().strip().find(tt.upper()) != -1:
 								invoiceNumber = fsup.upper().strip()[fsup.upper().strip().find(tt.upper()):].replace(tt.upper(),'').replace(':','').strip()
 								print ('fac ', invoiceNumber)
+					#frappe.throw(porra)
 
 				#CONTAINER NUMBER
 				if not container_number:
@@ -5552,7 +5561,7 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 
 	#FIX 22-09-2023; Added words to HEADER
 	#terpalavras_header = ['UN', 'UNIDADE', 'CAIXA', 'CX', 'Artigo', 'Descrição', 'Qtd.', 'Pr.Unit', 'Cód. Artigo', 'V.Líquido', 'V. Líquido']
-	terpalavras_header = ['Total c/ IVA','Totalc/IVA', 'TOTAL ', 'VALOR UN', 'VALOR TOTAL LIQ', 'WKIQUIDO ', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'PR. UNIT', 'P. UNIT.', 'UNIDADE', 'UNI ', 'UN ', 'UNN/', 'CAIXA', 'CX', ' Artigo ', 'Descrição', 'DASCRIÇÃO TD ', 'Designação ', 'Qotd.', 'QUANT', 'Qtd.', 'Codigo', 'Cód. Artigo', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'SIMPOSTOS', ' DESC. ', ' DESC ', ' DEC ', 'Desc %', ' TAXA ',' TAXA', ' IVA ', ' VA ', ' Arm. ','cód.artigo ', 'Referência ']
+	terpalavras_header = ['Total c/ IVA','Totalc/IVA', 'TOTAL ', 'VALOR UN', 'VALOR TOTAL LIQ', 'WKIQUIDO ', 'PREÇO', 'Pr. Unitário', 'Pr.Unit', 'PR. UNIT', 'P. UNIT.', 'UNIDADE', 'UNI ', 'UN ', 'UNN/', 'CAIXA', 'CX', 'Descrição', 'DASCRIÇÃO TD ', 'Designação ', 'Qotd.', 'QUANT', 'Qtd.', 'Codigo', 'Cód. Artigo', ' Artigo ', 'VALOR TOTAL', 'VALOR LIQ.', 'V.Líquido', 'V. Líquido','%Imp.', 'SIMPOSTOS', '%IMPOSTOS', ' DESC. ', ' DESC ', ' DEC ', 'Desc %', ' TAXA ',' TAXA', ' IVA ', ' VA ', ' Arm. ','cód.artigo ', 'Referência ']
 
 	terpalavras_header_EN = ['DESCRIPTION', 'Y/M', 'COLOR', 'FUEL',' QTY', 'ITEM', 'QUANTITY', 'UNIT PRICE (EUR)', 'TOTAL PRICE (EUR)', 'UNIT PRICE', 'TOTAL']
 
@@ -5607,7 +5616,8 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 		fim_items = False
 
 		#FIX 10-10-2023; added as per NCR items end when Cód./Motivo Incidência % Imposto table starts
-		pt_palavras_fim_item = ['Processado por programa validado'.upper(), 'Obs:'.upper(), 'Cód./Motivo Incidência % Imposto'.upper()]
+		pt_palavras_fim_item = ['Processado por programa validado'.upper(), 'Obs:'.upper(), 'Cód./Motivo Incidência % Imposto'.upper(), \
+		'Os bens foram colocados à disposição do adquirente ou'.upper()]
 
 		contapalavras_header = 0
 
@@ -6156,6 +6166,23 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 								break
 						print ('aqui invoiceDate')
 						print (invoiceDate)
+						#FIX 10-10-2023
+						matches = re.finditer(date_pattern,invoiceDate, re.MULTILINE)
+						invoiceDate = ''	#RESET might not be or have a DATE on it
+						for matchNum, match in enumerate(matches, start=1):
+							print ("Match {matchNum} was found at {start}-{end}: {match}".format(matchNum = matchNum, start = match.start(), end = match.end(), match = match.group()))
+							if match.group():
+								print('TEM DATA.... ',match.group())
+								#FIX 27-09-2023
+								if oldinvoicedata == "":
+									oldinvoicedata = match.group()
+								else:
+									if oldinvoicedata <= match.group():
+										oldinvoicedata = match.group()
+										invoiceDate = match.group()
+									elif oldinvoicedata > match.group():
+										invoiceDate = match.group()
+
 					else:
 						#Check if has DATE on fsup
 						print ('Check if has DATE on fsup')
@@ -6181,10 +6208,14 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 					#Search for PP FT FR
 					#seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
 					#FIX 05-10-2023; Updated SERIEs...
-					seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,7}\d{2}\/\d{1,5}"
+					#seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,7}\d{2}\/\d{1,5}"
+					seriesDocs_pattern = r"^([F][T][M]|[P][P]|[F][T]|[F][R]).{1}\s\d{1}[a-zA-Z].{1}[0-9]{4}\/.{1,4}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,4}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,8}\/\d{1,5}"
+
 					#print (re.match(seriesDocs_pattern,fsup.upper().strip()))
 					if re.match(seriesDocs_pattern,fsup.upper().strip()):
-						invoiceNumber = fsup.upper().strip()
+						#FIX 10-10-2023
+						invoiceNumber = fsup.upper().strip()[:re.match(seriesDocs_pattern,fsup.upper().strip()).span()[1]]
+
 					else:
 						#FIX 05-10-2023
 						print ('Tem FT / PP / FR ')
@@ -6258,6 +6289,10 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 								print ('Add on contapalavras_header')
 								print (pp.upper())
 								print (fsup.strip().upper())
+
+								#FIX 10-10-2023
+								#if 'Cód. Artigo'.upper() == pp.upper() and 'Cód. Artigo'.upper() in palavras_no_header
+
 								if not pp.upper() in palavras_no_header:
 									contapalavras_header += 1
 									palavras_no_header.append(pp.upper())
@@ -6407,7 +6442,15 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 								if fsup.strip()[:fsup.find(' ')].isnumeric() and len(fsup.strip()[:fsup.find(' ')]) >= 3:
 									print ('Cannot be CONTALINAS... must be ITEMCODE/ARTIGO')
 								else:
-									contaLinhas = fsup.strip()[0:1]
+									#FIX 10-10-2023; check if rest is numbers...
+									if len(fsup.strip()) >= 3 and fsup.strip()[0:3].isnumeric():
+										#10-10-2023; REMOVED FOR NOW...
+										#contaLinhas = fsup.strip()[0:1]
+										print ('NO SENSE AddiNG COUNTER to line with more than 3 chars and might be TEXT')
+									elif len(fsup.strip()) <= 2:
+										contaLinhas = fsup.strip()[0:1]
+
+
 							#if EN; testing to start from TOTAL, PRICE, QTD in order to prices and Qtd correct
 							tmpdescricao = ''
 							if en_scan:
@@ -6520,7 +6563,8 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 												if not itemTotalcIVA:
 													itemTotalcIVA = cc.strip()
 												print ('itemTotalcIVA itemTotalcIVA')
-											elif "SIMPOSTOS" in palavras_no_header and not itemIVA or (" TAXA" in palavras_no_header or "TAXA" in palavras_no_header) and not itemIVA:
+											elif ("SIMPOSTOS" in palavras_no_header or "%IMPOSTOS" in palavras_no_header) and not itemIVA or (" TAXA" in palavras_no_header or "TAXA" in palavras_no_header) and not itemIVA:
+												#FIX 10-10-2023; added %IMPOSTOS
 												#FIX 05-10-2023; Case where IVA is the last column
 												if cc.strip() == "14.00" or cc.strip() == "14,00":
 													itemIVA = cc.strip()
@@ -6790,7 +6834,8 @@ def aprender_OCR_v1(data,action = "SCRAPE",tipodoctype = None):
 											if not itemTotalcIVA:
 												itemTotalcIVA = cc.strip()
 											print ('itemTotalcIVA itemTotalcIVA')
-										elif "SIMPOSTOS" in palavras_no_header and not itemIVA or (" TAXA" in palavras_no_header or "TAXA" in palavras_no_header) and not itemIVA:
+										elif ("SIMPOSTOS" in palavras_no_header or "%IMPOSTOS" in palavras_no_header) and not itemIVA or (" TAXA" in palavras_no_header or "TAXA" in palavras_no_header) and not itemIVA:
+											#FIX 10-10-2023; Added %IMPOSTOS
 											#FIX 05-10-2023; Case where IVA is the last column
 											if cc.strip() == "14.00" or cc.strip() == "14,00":
 												itemIVA = cc.strip()
@@ -7730,7 +7775,9 @@ def aprender_OCR_v2(data,action = "SCRAPE",tipodoctype = None):
 
 				if not invoiceNumber:
 					#Search for PP FT FR
-					seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
+					#seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
+					#FIX 10-10-2023
+					seriesDocs_pattern = r"^([F][T][M]|[P][P]|[F][T]|[F][R]).{1}\s\d{1}[a-zA-Z].{1}[0-9]{4}\/.{1,4}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,4}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,8}\/\d{1,5}"
 					#print (re.match(seriesDocs_pattern,fsup.upper().strip()))
 					if re.match(seriesDocs_pattern,fsup.upper().strip()):
 						invoiceNumber = fsup.upper().strip()
@@ -9124,7 +9171,8 @@ def ocr_ocr_ocr(facturaSupplier,en_palavras_fim_item,en_scan,supplierMoeda,terpa
 				#seriesDocs_pattern = r"^([P][P]|[F][T]|[F][R]|[F][T][M])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,4}\/\d{1,5}"
 				#FIX 05-01-2023; Included FTM from AGT site
 				#seriesDocs_pattern = r"^([F][T][M]|[P][P]|[F][T]|[F][R]).{1}\s\d{1}[a-zA-Z].{1}[0-9]{4}\/.{1,4}|([P][P]|[F][T]|[F][R])\s.{1,5}\d{2}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}"
-				seriesDocs_pattern = r"^([F][T][M]|[P][P]|[F][T]|[F][R]).{1}\s\d{1}[a-zA-Z].{1}[0-9]{4}\/.{1,4}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,4}\/\d{1,5}"
+				seriesDocs_pattern = r"^([F][T][M]|[P][P]|[F][T]|[F][R]).{1}\s\d{1}[a-zA-Z].{1}[0-9]{4}\/.{1,4}|([P][P]|[F][T]|[F][R])\s.{1,5}\s\d{2}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,4}\/\d{1,5}|([P][P]|[F][T]|[F][R])\s.{1,8}\/\d{1,5}"
+
 				#print (re.match(seriesDocs_pattern,fsup.upper().strip()))
 				if re.match(seriesDocs_pattern,fsup.upper().strip()):
 					invoiceNumber = fsup.upper().strip()
