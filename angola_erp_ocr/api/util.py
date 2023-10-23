@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 10/10/2023
+#Date Changed: 23/10/2023
 
 
 from __future__ import unicode_literals
@@ -894,7 +894,8 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 	referenciadocumento = ""
 
 	#FIX 16-09-2023; Added to check if RUPE (IVA, INSS, IRT) and ZAP FIBRA payments
-	if ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac) and ("ZAP FIBRA" in ocr_tesserac or "ZP EIBRA " in ocr_tesserac or "ZAP  FIBRA" in ocr_tesserac):
+	#FIX 23-10-2023; Added Diff DEBIT OCRs...
+	if ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac) and ("ZAP FIBRA" in ocr_tesserac or "ZP EIBRA " in ocr_tesserac or "ZAP  FIBRA" in ocr_tesserac):
 		print ('Pagamento ZAP FIBRA.....')
 		print ('Pagamento ZAP FIBRA.....')
 
@@ -914,7 +915,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 			print (dd == "")
 			print (dd == " ")
 			if dd !='' and dd != ' ':
-				print ('-----')
+				print ('-----////////')
 				print ('dd ', dd)
 				print ('ddsplit ', dd.split(' '))
 				print ('ddsplit ', len(dd.split(' ')))
@@ -925,14 +926,20 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 
 				#FIX 02-10-2023 added W.CAIXA:
-				if "N.CAIXA:" in dd or "N-UAIXA:" in dd or "N.CATNA:" in dd or "W.CAIXA:" in dd:
+				if "N.CAIXA:" in dd or "N-UAIXA:" in dd or "N.CATNA:" in dd or "W.CAIXA:" in dd or "N.CATXA:" in dd:
 					#FIX 19-09-2023; get N. CAIXA
 					if not tmp_numcaixa:
 						tmp_numcaixa = dd[8:21].strip()
 					#Get Transaction Number...
-					tmp_trans = dd.strip()
+					if len(dd0) >= 4:
+						tmp_trans = dd0[3]
+						print ('tmp_trans ',tmp_trans)
+					else:
+						tmp_trans = dd.strip()
 					if not numeroTransacao:
 						numeroTransacao = tmp_trans[tmp_trans.rfind(":")+1:].strip()
+					print ('numeroTransacao ',numeroTransacao)
+					#frappe.throw(porra)
 				elif "CONTA:" in dd:
 					#Get Date and time
 					tmp_data = dd.split(' ')[2]
@@ -953,7 +960,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						descricaoPagamento = "ZAP FIBRA " + dd[dd.find('ZAP  FIBRA')+10:].strip()
 					else:
 						descricaoPagamento = dd.strip()
-				elif "MONTANTE:" in dd or "MONTANTE :" in dd:
+				elif "MONTANTE:" in dd or "MONTANTE :" in dd or "MONTANTE;" in dd:
 					#Pagamento feito
 					if "MONTANTE :" in dd:
 						dd0 = dd[10:].split(' ')
@@ -1000,7 +1007,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		#frappe.throw(porra)
 
 
-	elif ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac) and "RUPE" in ocr_tesserac and ("PAG. AO ESTADO" in ocr_tesserac or "PAG. RO ESTADO" in ocr_tesserac or "PAG. RO ESTANO" in ocr_tesserac or "PAG.' RO ES'TANO" in ocr_tesserac or "PAG, AO ESTADO" in ocr_tesserac):
+	elif ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac) and "RUPE" in ocr_tesserac and ("PAG. AO ESTADO" in ocr_tesserac or "PAG. RO ESTADO" in ocr_tesserac or "PAG. RO ESTANO" in ocr_tesserac or "PAG.' RO ES'TANO" in ocr_tesserac or "PAG, AO ESTADO" in ocr_tesserac):
 		print ('Pagamento RUPE... IVA INSS OR IRT')
 		print ('Pagamento RUPE... IVA INSS OR IRT')
 		#Check if IVA... MUST HAVE 600 022 301 0
@@ -1047,15 +1054,22 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 
 				#FIX 02-10-2023;
-				if "N.CAIXA:" in dd or "N.CATNA:" in dd or "N,CAIXA:" in dd or "W.CAIXA:" in dd:
+				if "N.CAIXA:" in dd or "N-UAIXA:" in dd or "N.CATNA:" in dd or "W.CAIXA:" in dd or "N.CATXA:" in dd:
 					#FIX 19-09-2023; get N. CAIXA
 					if not tmp_numcaixa:
 						tmp_numcaixa = dd[8:21].strip()
 
 					#Get Transaction Number...
-					tmp_trans = dd.strip()
+					if len(dd0) >= 4:
+						tmp_trans = dd0[3]
+						print ('tmp_trans ',tmp_trans)
+					else:
+						tmp_trans = dd.strip()
 					if not numeroTransacao:
 						numeroTransacao = tmp_trans[tmp_trans.rfind(":")+1:].strip()
+					print ('numeroTransacao ',numeroTransacao)
+					#frappe.throw(porra)
+
 				elif "CONTA:" in dd:
 					#Get Date and time
 					tmp_data = dd.split(' ')[2]
@@ -1091,7 +1105,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						elif pag_inss:
 							rupe_inss = dd.strip()
 							tiporupe = "INSS"
-				elif "MONTANTE:" in dd:
+				elif "MONTANTE:" in dd or "MONTANTE :" in dd or "MONTANTE;" in dd:
 					#Pagamento feito
 					if len(dd0) >= 3:
 						print ('CASH')
@@ -1127,7 +1141,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		#frappe.throw(porra)
 
 	elif "RECIBO DE PAGAMENTO" in ocr_tesserac or "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac or "EMITIDO EM: RF PORTAL BO CONTRIBUINTE" in ocr_tesserac \
-		or ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac) or "COMPROVATIVO DA OPERACAO" in ocr_tesserac or "COMPROVATIVO DA OPERAÇÃO" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac \
+		or ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac) or "COMPROVATIVO DA OPERACAO" in ocr_tesserac or "COMPROVATIVO DA OPERAÇÃO" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac \
 		or "MULTICAIXA Express." in ocr_tesserac: # or "através do serviço BAlDirecto." in ocr_tesserac or "através do serviço BAIDirecto." in ocr_tesserac:
 		#MCX DEBIT -> Multicaixa Express
 		#COMPROVATIVO DA OPERACAO BFA
@@ -1174,13 +1188,13 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 		empresaOrigem0 = ""
 
-		if ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac) or "Comprovativo Digital" in ocr_tesserac:
+		if ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac) or "Comprovativo Digital" in ocr_tesserac:
 			#Check if TRANSACÇÃO
 			#FIX 04-01-2023
 			if "TRANSACÇÃO:" in ocr_tesserac or "TRANSACGAO:" in ocr_tesserac or "TRANSACÇÃD:" in ocr_tesserac:
 				print ('Transacao MCX DEBIT')
 				print ('Transacao MCX DEBIT')
-				if ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac):
+				if ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac):
 					mcxdebit = True
 
 
@@ -1516,7 +1530,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 						mcexpress = True
 						numeroTransacao = ncaixa_tmp
 
-				elif "N.CAIXA:" in dd or "N.CATXA:" in dd or "W.CAIXA:" in dd:
+				elif "N.CAIXA:" in dd or "N-UAIXA:" in dd or "N.CATNA:" in dd or "W.CAIXA:" in dd or "N.CATXA:" in dd:
 					#Fix to check W.CAIXA as scan was not good...
 					print ('N. Caixa e Num Transacao')
 					if not numeroTransacao:
