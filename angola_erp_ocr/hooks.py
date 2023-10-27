@@ -96,12 +96,13 @@ scheduler_events = {
 # 	],
 # 	"daily": [
 # 		"angola_erp_ocr.tasks.daily"
+        "angola_erp_ocr.util.ferramenta.apagar_ficheiros_uploaded"
 # 	],
 # 	"hourly": [
 # 		"angola_erp_ocr.tasks.hourly"
 # 	],
     "weekly": [
-        "angola_erp_ocr.util.ferramenta.apagar_ficheiros_uploaded"
+#        "angola_erp_ocr.util.ferramenta.apagar_ficheiros_uploaded"
     ]
 # 	"monthly": [
 # 		"angola_erp_ocr.tasks.monthly"

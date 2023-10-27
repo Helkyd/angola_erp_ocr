@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-#Date Changed: 23/10/2023
+#Date Changed: 27/10/2023
 
 
 from __future__ import unicode_literals
@@ -895,7 +895,12 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 	#FIX 16-09-2023; Added to check if RUPE (IVA, INSS, IRT) and ZAP FIBRA payments
 	#FIX 23-10-2023; Added Diff DEBIT OCRs...
-	if ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac or "MCX DEBIE" in ocr_tesserac) and ("ZAP FIBRA" in ocr_tesserac or "ZP EIBRA " in ocr_tesserac or "ZAP  FIBRA" in ocr_tesserac):
+	#FIX 27-10-2023
+	print ('TESTE MCX DEBIT')
+	print (("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac or "MCX DEBIE" in ocr_tesserac or "MOY DEBIT" in ocr_tesserac or "MCX PRET" in ocr_tesserac))
+	print ('TESTA ZAP FIBRA')
+	print (("ZAP FIBRA" in ocr_tesserac or "ZP EIBRA " in ocr_tesserac or "ZAP  FIBRA" in ocr_tesserac))
+	if ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac or "MCX DEBIE" in ocr_tesserac or "MOY DEBIT" in ocr_tesserac or "MCX PRET" in ocr_tesserac) and ("ZAP FIBRA" in ocr_tesserac or "ZP EIBRA " in ocr_tesserac or "ZAP  FIBRA" in ocr_tesserac):
 		print ('Pagamento ZAP FIBRA.....')
 		print ('Pagamento ZAP FIBRA.....')
 
@@ -1007,7 +1012,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		#frappe.throw(porra)
 
 
-	elif ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac or "MCX DEBIE" in ocr_tesserac) and "RUPE" in ocr_tesserac and ("PAG. AO ESTADO" in ocr_tesserac or "PAG. RO ESTADO" in ocr_tesserac or "PAG. RO ESTANO" in ocr_tesserac or "PAG.' RO ES'TANO" in ocr_tesserac or "PAG, AO ESTADO" in ocr_tesserac):
+	elif ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac or "MCX DEBIE" in ocr_tesserac or "MOY DEBIT" in ocr_tesserac or "MCX PRET" in ocr_tesserac) and "RUPE" in ocr_tesserac and ("PAG. AO ESTADO" in ocr_tesserac or "PAG. RO ESTADO" in ocr_tesserac or "PAG. RO ESTANO" in ocr_tesserac or "PAG.' RO ES'TANO" in ocr_tesserac or "PAG, AO ESTADO" in ocr_tesserac):
 		print ('Pagamento RUPE... IVA INSS OR IRT')
 		print ('Pagamento RUPE... IVA INSS OR IRT')
 		#Check if IVA... MUST HAVE 600 022 301 0
@@ -1145,7 +1150,7 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 		#frappe.throw(porra)
 
 	elif "RECIBO DE PAGAMENTO" in ocr_tesserac or "EMITIDO EM: RF PORTAL DO CONTRIBUINTE" in ocr_tesserac or "EMITIDO EM: RF PORTAL BO CONTRIBUINTE" in ocr_tesserac \
-		or ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac or "MCX DEBIE" in ocr_tesserac) or "COMPROVATIVO DA OPERACAO" in ocr_tesserac or "COMPROVATIVO DA OPERAÇÃO" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac \
+		or ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac or "MCX DEBIE" in ocr_tesserac or "MOY DEBIT" in ocr_tesserac or "MCX PRET" in ocr_tesserac) or "COMPROVATIVO DA OPERACAO" in ocr_tesserac or "COMPROVATIVO DA OPERAÇÃO" in ocr_tesserac or "Comprovativo Digital" in ocr_tesserac \
 		or "MULTICAIXA Express." in ocr_tesserac: # or "através do serviço BAlDirecto." in ocr_tesserac or "através do serviço BAIDirecto." in ocr_tesserac:
 		#MCX DEBIT -> Multicaixa Express
 		#COMPROVATIVO DA OPERACAO BFA
@@ -1192,13 +1197,13 @@ def ocr_pytesseract (filefinal,tipodoctype = None,lingua = 'por',resolucao = 200
 
 		empresaOrigem0 = ""
 
-		if ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac or "MCX DEBIE" in ocr_tesserac) or "Comprovativo Digital" in ocr_tesserac:
+		if ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac or "MCX DEBIE" in ocr_tesserac or "MOY DEBIT" in ocr_tesserac or "MCX PRET" in ocr_tesserac) or "Comprovativo Digital" in ocr_tesserac:
 			#Check if TRANSACÇÃO
 			#FIX 04-01-2023
 			if "TRANSACÇÃO:" in ocr_tesserac or "TRANSACGAO:" in ocr_tesserac or "TRANSACÇÃD:" in ocr_tesserac:
 				print ('Transacao MCX DEBIT')
 				print ('Transacao MCX DEBIT')
-				if ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac or "MCX DEBIE" in ocr_tesserac):
+				if ("MCX DEBIT" in ocr_tesserac or "MCX DÉBIT" in ocr_tesserac or "woY DEBIT" in ocr_tesserac or "iCx DEBIT" in ocr_tesserac or "Wotw DEBIT" in ocr_tesserac or "MCX DEBIE" in ocr_tesserac or "MOY DEBIT" in ocr_tesserac or "MCX PRET" in ocr_tesserac):
 					mcxdebit = True
 
 
