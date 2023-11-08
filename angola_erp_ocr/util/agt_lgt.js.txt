@@ -1,0 +1,162 @@
+//TO RUN 
+// node agt_lgt.js or xvfb-run node agt_lgt.js
+//Created by HELKYDS
+//LAST MODIFIED: 22-10-2022
+
+/* GET arg as Numero de Referencia from REGISTO DE PAGAMENTO - LIQUIDACAO GENERICA DE TRIBUTO
+ * Will check the SITE https://portaldocontribuinte.minfin.gov.ao/imprimir-verificar-nota-de-liquidacao?dliNumber
+ * Return the PDF to be Added and OCR by Tools.angolaerp.co.ao
+ */
+
+var fs = require('fs');
+const fsPromises = require("fs/promises");
+const path = require('path');
+
+const puppeteer = require('puppeteer');
+
+const pastaPDF = 'tools.angolaerp.co.ao/public/files/pdf';
+
+
+//Verify arg
+console.log('arg ',process.argv);
+console.log('len ',process.argv.slice(2).length);
+if (process.argv.slice(2).length < 1) {
+    console.log('Precisa do Numero de Referencia!!!');
+    return;
+} else {
+    console.log('TEM O Numero de Referencia.');
+    console.log(process.argv.slice(2)[0]);
+    var dlinumber = process.argv.slice(2)[0];
+    //console.log('dlinumber ',dlinumber);
+
+}
+
+//DELETE all files from tools.angolaerp.co.ao/public/files/pdf
+const emptyFolder = async (folderPath) => {
+    try {
+        // Find all files in the folder
+        const files = await fsPromises.readdir(folderPath);
+        for (const file of files) {
+            await fsPromises.unlink(path.resolve(folderPath, file));
+            console.log(`${folderPath}/${file} has been removed successfully`);
+        }
+    } catch (err){
+        console.log(err);
+    }
+}
+
+// Test it
+//emptyFolder('/tmp/pdf');
+emptyFolder(pastaPDF );
+
+
+(async () => {
+    const browser = await puppeteer.launch();
+    //const browser = await puppeteer.launch({headless: false});
+    const page = await browser.newPage();
+    await page.setRequestInterception(true);
+
+    const session = await page.target().createCDPSession()
+    await session.send('Page.setDownloadBehavior', {
+                behavior: 'allow',
+                downloadPath: pastaPDF + '/'
+            })
+
+    /*
+    page.on('popup', req => {
+        //console.log('request:', req.url())
+        console.log('++++++++++++++++++++++++++popup');
+        console.log(req);
+        //req.continue();
+    });
+
+
+    
+    page.on('targetcreated', req => {
+        //console.log('request:', req.url())
+        console.log('++++++++++++++++++++++++++targetcreated');
+        console.log(req);
+        //req.continue();
+    });
+    */
+    
+    page.on('request', req => {
+        //console.log('++++++++++++++++++++++++++request');
+        req.continue();
+    });
+    /*
+    page.on('requestfinished', (req) => {
+        console.log('++++++++++++++++++++++++++finished');
+        console.log(req.url());
+    });
+    */
+
+    
+    //200101118673098
+    //220103880810536
+    //dlinumber = '220103880810536'
+    const response = await page.goto('https://portaldocontribuinte.minfin.gov.ao/imprimir-verificar-nota-de-liquidacao?dliNumber=' + dlinumber);     
+    
+    console.log({
+    //    url: response.url(),
+        statusCode: response.status(),
+    //    body: await response.text()
+    });
+
+    //await page.waitForSelector('button[name="btnViewDAR"]');
+    //const f = await page.$("#btnViewDAR")
+    //response = await page.click(f);
+    //response = await page.click('button[name="btnViewDAR"]');
+    //await page.evaluate(() => {
+    //    document.querySelector('#btnViewDAR').click();
+    //});
+    
+    //const xp = '//*[@class="elements"]//button[text()="Visualizar Nota de Liquidação"]';
+    //const el = await page.waitForXPath(xp);    
+    //console.log(el);
+    
+    const [button] = await page.$x("//button[contains(., 'Visualizar Nota de Liquidação')]");
+    if (button) {
+        console.info('BOTAO ENCONTRADOOOOOOO....');    
+        //await button.click();
+        //console.info('+++++++++++++++++++++++++++ DADOS BOTAO ....');    
+        //console.log(button);
+        
+        //const newPagePromise = new Promise(resolve => 
+            //browser.once("targetcreated", target => resolve(target.page()))
+        //);
+        
+        const [response] = await Promise.all([
+            page.waitForResponse(response => response.url()), button.click(), await page.waitForTimeout(4000),
+        ]);
+        const dataObj = await response.text();
+        console.log('+++++++++++++++++++++++++++++++dataObj');
+        
+        
+        //console.log(dataObj);
+        if (dataObj.indexOf('showpdf') != -1) {
+            console.log(dataObj.indexOf('/showpdf?key='));
+            console.log(dataObj.indexOf('.pdf'));
+            console.log(dataObj.substring(dataObj.indexOf('/showpdf?key='),dataObj.indexOf('.pdf')+4));
+            const ficheiroPDF = dataObj.substring(dataObj.indexOf('/showpdf?key='),dataObj.indexOf('.pdf')+4);
+            console.log("https://portaldocontribuinte.minfin.gov.ao" + ficheiroPDF);
+            
+            //const newTarget = await page._browser.waitForTarget(target => target.opener()); //check that you opened this page, rather than just checking the url
+            //const newPage = await newTarget.page(); //get the page object
+            // await newPage.once("load",()=>{}); //this doesn't work; wait till page is loaded
+            //await newPage.waitForSelector("body"); //wait for page to be loaded
+            console.log('========================browser');
+            console.log(browser);
+        }    
+    }
+
+    // Close the browser - done! 
+    await page.waitForTimeout(4000)
+    await browser.close();
+    if (response.status() == 200) {
+        fs.renameSync(pastaPDF + '/showpdf.pdf',pastaPDF + '/' + dlinumber + '.pdf');
+        console.log('VERIFICAR PASTA ' + pastaPDF + '/' + dlinumber + '.pdf');
+        return (pastaPDF + '/' + dlinumber + '.pdf');
+    }
+})();
+    

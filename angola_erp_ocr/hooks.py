@@ -90,23 +90,24 @@ app_license = "MIT"
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
+scheduler_events = {
 # 	"all": [
 # 		"angola_erp_ocr.tasks.all"
 # 	],
 # 	"daily": [
 # 		"angola_erp_ocr.tasks.daily"
+        "angola_erp_ocr.util.ferramenta.apagar_ficheiros_uploaded"
 # 	],
 # 	"hourly": [
 # 		"angola_erp_ocr.tasks.hourly"
 # 	],
-# 	"weekly": [
-# 		"angola_erp_ocr.tasks.weekly"
-# 	]
+    "weekly": [
+#        "angola_erp_ocr.util.ferramenta.apagar_ficheiros_uploaded"
+    ]
 # 	"monthly": [
 # 		"angola_erp_ocr.tasks.monthly"
 # 	]
-# }
+}
 
 # Testing
 # -------
@@ -127,3 +128,5 @@ app_license = "MIT"
 # 	"Task": "angola_erp_ocr.task.get_dashboard_data"
 # }
 
+before_tests = "angola_erp_ocr.install.before_tests"
+fixtures = [{'doctype': 'OCR Language'}]

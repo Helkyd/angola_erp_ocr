@@ -1,0 +1,48 @@
+{
+ "autoname": "field:doctype_link",
+ "creation": "2022-04-02 04:59:04.879705",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "doctype_link",
+  "mappings"
+ ],
+ "fields": [
+  {
+   "fieldname": "doctype_link",
+   "fieldtype": "Link",
+   "label": "Doctype Link",
+   "options": "DocType",
+   "unique": 1
+  },
+  {
+   "fieldname": "mappings",
+   "fieldtype": "Table",
+   "label": "Mappings",
+   "options": "OCR Import Mapping"
+  }
+ ],
+ "modified": "2022-04-02 05:02:13.718081",
+ "modified_by": "Administrator",
+ "module": "Angola Erp Ocr",
+ "name": "OCR Import",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
